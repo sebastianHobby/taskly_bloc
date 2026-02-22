@@ -6,16 +6,15 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
+import 'package:taskly_bloc/presentation/features/values/view/value_delete_reassignment_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_bloc/presentation/shared/ui/confirmation_dialog_helpers.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/value_form.dart';
-import 'package:taskly_ui/taskly_ui_sections.dart';
 
 class ValueDetailSheetPage extends StatelessWidget {
   const ValueDetailSheetPage({
@@ -199,26 +198,14 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
     required String id,
     required String itemName,
   }) async {
-    final confirmed = await ConfirmationDialog.show(
+    final deleted = await showValueDeleteReassignmentSheet(
       context,
-      title: context.l10n.deleteValue,
-      confirmLabel: context.l10n.deleteLabel,
-      cancelLabel: context.l10n.cancelLabel,
-      isDestructive: true,
-      icon: Icons.delete_outline_rounded,
-      iconColor: Theme.of(context).colorScheme.error,
-      iconBackgroundColor: Theme.of(
-        context,
-      ).colorScheme.errorContainer.withValues(alpha: 0.3),
-      content: buildDeleteConfirmationContent(
-        context,
-        itemName: itemName,
-        description: context.l10n.deleteValueCascadeDescription,
-      ),
+      valueId: id,
+      valueName: itemName,
     );
 
-    if (confirmed && mounted) {
-      context.read<ValueDetailBloc>().add(ValueDetailEvent.delete(id: id));
+    if (deleted && mounted) {
+      await closeEditor(context);
     }
   }
 

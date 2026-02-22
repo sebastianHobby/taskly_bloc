@@ -30,4 +30,16 @@ final class ValueWriteService {
   Future<void> delete(String valueId, {OperationContext? context}) {
     return _valueRepository.delete(valueId, context: context);
   }
+
+  Future<int> reassignProjectsAndDelete({
+    required String valueId,
+    required String replacementValueId,
+    OperationContext? context,
+  }) {
+    return _valueRepository.reassignProjectsAndDelete(
+      valueId: valueId,
+      replacementValueId: replacementValueId,
+      context: context,
+    );
+  }
 }

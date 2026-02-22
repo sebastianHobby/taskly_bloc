@@ -724,6 +724,13 @@ class _FakeValueRepository implements ValueRepositoryContract {
   @override
   Future<void> delete(String id, {OperationContext? context}) async =>
       throw UnimplementedError();
+
+  @override
+  Future<int> reassignProjectsAndDelete({
+    required String valueId,
+    required String replacementValueId,
+    OperationContext? context,
+  }) async => throw UnimplementedError();
 }
 
 class _FakeAnalyticsRepository implements AnalyticsRepositoryContract {

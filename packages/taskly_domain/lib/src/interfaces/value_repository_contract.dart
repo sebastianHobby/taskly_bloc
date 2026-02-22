@@ -49,4 +49,14 @@ abstract class ValueRepositoryContract {
     OperationContext? context,
   });
   Future<void> delete(String id, {OperationContext? context});
+
+  /// Reassign projects from [valueId] to [replacementValueId] and delete
+  /// [valueId] atomically.
+  ///
+  /// Returns the number of projects that were reassigned.
+  Future<int> reassignProjectsAndDelete({
+    required String valueId,
+    required String replacementValueId,
+    OperationContext? context,
+  });
 }

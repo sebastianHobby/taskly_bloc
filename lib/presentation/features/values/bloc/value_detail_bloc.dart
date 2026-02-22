@@ -18,9 +18,6 @@ sealed class ValueDetailEvent with _$ValueDetailEvent {
     required UpdateValueCommand command,
   }) = _ValueDetailUpdate;
 
-  const factory ValueDetailEvent.delete({required String id}) =
-      _ValueDetailDelete;
-
   const factory ValueDetailEvent.create({
     required CreateValueCommand command,
   }) = _ValueDetailCreate;
@@ -63,7 +60,6 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     on<_ValueDetailLoadById>(_onGet, transformer: restartable());
     on<_ValueDetailCreate>(_onCreate, transformer: droppable());
     on<_ValueDetailUpdate>(_onUpdate, transformer: droppable());
-    on<_ValueDetailDelete>(_onDelete, transformer: droppable());
 
     if (valueId != null) {
       add(ValueDetailEvent.loadById(valueId: valueId));
@@ -195,30 +191,6 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
       () => _valueWriteService.update(event.command, context: context),
       context: context,
     );
-  }
-
-  Future<void> _onDelete(
-    _ValueDetailDelete event,
-    Emitter<ValueDetailState> emit,
-  ) async {
-    final context = _newContext(
-      intent: 'value_delete_requested',
-      operation: 'values.delete',
-      entityId: event.id,
-    );
-    try {
-      await _valueWriteService.delete(event.id, context: context);
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-      emit(createOperationSuccessState(EntityOperation.delete));
-    } catch (error, stackTrace) {
-      _reportIfUnexpectedOrUnmapped(
-        error,
-        stackTrace,
-        context: context,
-        message: 'Value delete failed',
-      );
-      emit(createOperationFailureState(_toUiSafeError(error, stackTrace)));
-    }
   }
 
   Future<void> _executeValidatedCommand(

@@ -942,6 +942,16 @@ class FakeValueRepository implements ValueRepositoryContract {
   }
 
   @override
+  Future<int> reassignProjectsAndDelete({
+    required String valueId,
+    required String replacementValueId,
+    OperationContext? context,
+  }) async {
+    _last = _last.where((v) => v.id != valueId).toList(growable: false);
+    return 0;
+  }
+
+  @override
   Future<List<Value>> getValuesByIds(List<String> ids) async =>
       _last.where((v) => ids.contains(v.id)).toList();
 

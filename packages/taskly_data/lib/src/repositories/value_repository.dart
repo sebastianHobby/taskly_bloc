@@ -441,11 +441,88 @@ class ValueRepository implements ValueRepositoryContract {
     return FailureGuard.run(
       () async {
         talker.debug('[ValueRepository] delete: id=$id');
-
+        final projectRefs =
+            await (driftDb.selectOnly(driftDb.projectTable)
+                  ..addColumns([driftDb.projectTable.id.count()])
+                  ..where(driftDb.projectTable.primaryValueId.equals(id)))
+                .getSingle();
+        final projectCount =
+            projectRefs.read(driftDb.projectTable.id.count()) ?? 0;
+        if (projectCount > 0) {
+          throw RepositoryValidationException(
+            'Cannot delete value while projects are assigned to it. '
+            'Reassign projects first.',
+          );
+        }
         await _deleteValue(drift.ValueTableCompanion(id: drift_pkg.Value(id)));
       },
       area: 'data.value',
       opName: 'delete',
+      context: context,
+    );
+  }
+
+  @override
+  Future<int> reassignProjectsAndDelete({
+    required String valueId,
+    required String replacementValueId,
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final sourceId = valueId.trim();
+        final targetId = replacementValueId.trim();
+        if (sourceId.isEmpty || targetId.isEmpty) {
+          throw RepositoryValidationException(
+            'Source and replacement value IDs are required.',
+          );
+        }
+        if (sourceId == targetId) {
+          throw RepositoryValidationException(
+            'Replacement value must differ from source value.',
+          );
+        }
+
+        final sourceExists = await _getValueById(sourceId);
+        if (sourceExists == null) {
+          throw RepositoryNotFoundException('Value to delete was not found.');
+        }
+        final replacementExists = await _getValueById(targetId);
+        if (replacementExists == null) {
+          throw RepositoryValidationException(
+            'Replacement value was not found.',
+          );
+        }
+
+        final now = _clock.nowUtc();
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
+
+        return driftDb.transaction(() async {
+          final reassigned =
+              await (driftDb.update(
+                driftDb.projectTable,
+              )..where((p) => p.primaryValueId.equals(sourceId))).write(
+                drift.ProjectTableCompanion(
+                  primaryValueId: drift_pkg.Value(targetId),
+                  updatedAt: drift_pkg.Value(now),
+                  psMetadata: psMetadata == null
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(psMetadata),
+                ),
+              );
+
+          final deleted = await _deleteValue(
+            drift.ValueTableCompanion(id: drift_pkg.Value(sourceId)),
+          );
+          if (deleted == 0) {
+            throw RepositoryNotFoundException('Value to delete was not found.');
+          }
+
+          return reassigned;
+        });
+      },
+      area: 'data.value',
+      opName: 'reassign_projects_and_delete',
       context: context,
     );
   }

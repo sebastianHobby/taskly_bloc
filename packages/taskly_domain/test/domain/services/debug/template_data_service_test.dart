@@ -57,6 +57,16 @@ class _InMemoryValueRepo extends Fake implements ValueRepositoryContract {
   Future<void> delete(String id, {OperationContext? context}) async {
     _values.removeWhere((value) => value.id == id);
   }
+
+  @override
+  Future<int> reassignProjectsAndDelete({
+    required String valueId,
+    required String replacementValueId,
+    OperationContext? context,
+  }) async {
+    _values.removeWhere((value) => value.id == valueId);
+    return 0;
+  }
 }
 
 class _InMemoryProjectRepo extends Fake implements ProjectRepositoryContract {

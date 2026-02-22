@@ -146,5 +146,83 @@ void main() {
       expect(values.length, equals(1));
       expect(values.single.name, equals('Health'));
     });
+
+    testSafe('delete is blocked when assigned projects exist', () async {
+      final db = createAutoClosingDb();
+      final idGen = IdGenerator.withUserId('user-1');
+      final repo = ValueRepository(driftDb: db, idGenerator: idGen);
+
+      await repo.create(name: 'Health', color: '#111111');
+      await repo.create(name: 'Career', color: '#222222');
+      final healthId = idGen.valueId(name: 'Health');
+
+      await db
+          .into(db.projectTable)
+          .insert(
+            ProjectTableCompanion.insert(
+              id: const drift.Value('project-1'),
+              name: 'Project',
+              completed: false,
+              primaryValueId: drift.Value(healthId),
+            ),
+          );
+
+      await expectLater(
+        () => repo.delete(healthId),
+        throwsA(isA<InputValidationFailure>()),
+      );
+    });
+
+    testSafe(
+      'reassignProjectsAndDelete reassigns projects and deletes source value',
+      () async {
+        final db = createAutoClosingDb();
+        final idGen = IdGenerator.withUserId('user-1');
+        final repo = ValueRepository(driftDb: db, idGenerator: idGen);
+
+        await repo.create(name: 'Health', color: '#111111');
+        await repo.create(name: 'Career', color: '#222222');
+        final healthId = idGen.valueId(name: 'Health');
+        final careerId = idGen.valueId(name: 'Career');
+
+        await db
+            .into(db.projectTable)
+            .insert(
+              ProjectTableCompanion.insert(
+                id: const drift.Value('project-1'),
+                name: 'Project One',
+                completed: false,
+                primaryValueId: drift.Value(healthId),
+              ),
+            );
+        await db
+            .into(db.projectTable)
+            .insert(
+              ProjectTableCompanion.insert(
+                id: const drift.Value('project-2'),
+                name: 'Project Two',
+                completed: false,
+                primaryValueId: drift.Value(healthId),
+              ),
+            );
+
+        final reassigned = await repo.reassignProjectsAndDelete(
+          valueId: healthId,
+          replacementValueId: careerId,
+        );
+
+        expect(reassigned, equals(2));
+
+        final values = await db.select(db.valueTable).get();
+        expect(values.map((v) => v.id), isNot(contains(healthId)));
+        expect(values.map((v) => v.id), contains(careerId));
+
+        final projects = await db.select(db.projectTable).get();
+        expect(
+          projects.map((p) => p.primaryValueId).toSet(),
+          equals(<String?>{careerId}),
+        );
+      },
+    );
   });
 }

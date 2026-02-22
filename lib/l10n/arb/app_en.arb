@@ -439,6 +439,81 @@
     "@deleteValue": {
         "description": "Label for deleting a value"
     },
+    "valueDeleteReassignStep1Title": "Remove \"{valueName}\"",
+    "@valueDeleteReassignStep1Title": {
+        "description": "Step 1 title for value deletion reassignment flow.",
+        "placeholders": {
+            "valueName": {}
+        }
+    },
+    "valueDeleteReassignStep2Title": "Pick replacement",
+    "@valueDeleteReassignStep2Title": {
+        "description": "Step 2 title for value deletion reassignment flow."
+    },
+    "valueDeleteReassignStep1Progress": "Step 1 of 2",
+    "@valueDeleteReassignStep1Progress": {
+        "description": "Progress label for value deletion reassignment step 1."
+    },
+    "valueDeleteReassignStep2Progress": "Step 2 of 2",
+    "@valueDeleteReassignStep2Progress": {
+        "description": "Progress label for value deletion reassignment step 2."
+    },
+    "valueDeleteReassignImpactBody": "{projectCount} projects depend on this value.",
+    "@valueDeleteReassignImpactBody": {
+        "description": "Body text describing impacted projects before value deletion.",
+        "placeholders": {
+            "projectCount": {}
+        }
+    },
+    "valueDeleteReassignImpactRule": "Projects must keep a value.",
+    "@valueDeleteReassignImpactRule": {
+        "description": "Invariant reminder in value delete reassignment flow."
+    },
+    "valueDeleteReassignAffectedProjectsLabel": "Affected projects ({projectCount})",
+    "@valueDeleteReassignAffectedProjectsLabel": {
+        "description": "Label above affected projects list in value delete reassignment flow.",
+        "placeholders": {
+            "projectCount": {}
+        }
+    },
+    "valueDeleteReassignAffectedProjectsMore": "+{remainingCount} more",
+    "@valueDeleteReassignAffectedProjectsMore": {
+        "description": "Label for additional affected projects not shown in preview.",
+        "placeholders": {
+            "remainingCount": {}
+        }
+    },
+    "valueDeleteReassignNeedReplacementBody": "Create a replacement value before deleting.",
+    "@valueDeleteReassignNeedReplacementBody": {
+        "description": "Body shown when there are no replacement values available."
+    },
+    "valueDeleteReassignReplacementFieldLabel": "Replacement value",
+    "@valueDeleteReassignReplacementFieldLabel": {
+        "description": "Field label for replacement value selection."
+    },
+    "valueDeleteReassignCreateReplacementAction": "Create new value",
+    "@valueDeleteReassignCreateReplacementAction": {
+        "description": "Action label to create a replacement value in-flow."
+    },
+    "valueDeleteReassignResultSummary": "{projectCount} projects -> {replacementName}",
+    "@valueDeleteReassignResultSummary": {
+        "description": "Summary preview of reassignment result.",
+        "placeholders": {
+            "projectCount": {},
+            "replacementName": {}
+        }
+    },
+    "valueDeleteReassignConfirmAction": "Reassign {projectCount} projects & delete",
+    "@valueDeleteReassignConfirmAction": {
+        "description": "Primary confirmation action for value reassignment delete.",
+        "placeholders": {
+            "projectCount": {}
+        }
+    },
+    "valueDeleteReassignSingleSelectionOnly": "Select one value at a time to delete.",
+    "@valueDeleteReassignSingleSelectionOnly": {
+        "description": "Message shown when user attempts bulk value delete in selection mode."
+    },
     "editValue": "Edit value",
     "@editValue": {
         "description": "Label for editing a value"

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/features/project_picker/view/project_picker_modal.dart';
+import 'package:taskly_bloc/presentation/features/values/view/value_delete_reassignment_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
@@ -221,6 +222,29 @@ class SelectionAppBar extends StatelessWidget implements PreferredSizeWidget {
     final selection = context.read<SelectionBloc>();
     final metas = selection.selectedEntitiesMeta();
     if (metas.isEmpty) return;
+
+    final valueOnly = metas.every((m) => m.key.entityType == EntityType.value);
+    if (valueOnly) {
+      if (metas.length != 1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.valueDeleteReassignSingleSelectionOnly),
+          ),
+        );
+        return;
+      }
+
+      final selected = metas.single;
+      final deleted = await showValueDeleteReassignmentSheet(
+        context,
+        valueId: selected.key.entityId,
+        valueName: selected.displayName,
+      );
+      if (!context.mounted || !deleted) return;
+      selection.exitSelectionMode();
+      onExit();
+      return;
+    }
 
     final confirmed = await ConfirmationDialog.show(
       context,

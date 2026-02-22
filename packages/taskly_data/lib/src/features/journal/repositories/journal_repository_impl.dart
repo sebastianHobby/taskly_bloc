@@ -127,9 +127,7 @@ class JournalRepositoryImpl
   }) async {
     return FailureGuard.run(
       () async {
-        final entryId = entry.id.isEmpty
-            ? _idGenerator.journalEntryId()
-            : entry.id;
+        final entryId = await _resolveJournalEntryIdForUpsert(entry);
 
         final updated =
             await (_database.update(
@@ -179,6 +177,26 @@ class JournalRepositoryImpl
       opName: 'upsertJournalEntry',
       context: context,
     );
+  }
+
+  Future<String> _resolveJournalEntryIdForUpsert(JournalEntry entry) async {
+    if (entry.id.isNotEmpty) return entry.id;
+
+    final entryDateOnly = dateOnly(entry.entryDate);
+    final existing =
+        await (_database.select(_database.journalEntries)
+              ..where((e) => e.entryDate.equals(entryDateOnly))
+              ..orderBy([
+                (e) => OrderingTerm.desc(e.updatedAt),
+                (e) => OrderingTerm.desc(e.entryTime),
+              ]))
+            .get();
+
+    if (existing.isNotEmpty) {
+      return existing.first.id;
+    }
+
+    return _idGenerator.journalEntryId();
   }
 
   @override
