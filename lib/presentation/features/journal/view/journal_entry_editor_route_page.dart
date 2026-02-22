@@ -380,9 +380,6 @@ class _JournalEntryEditorRoutePageState
             final valueLabel = _hasMeaningfulValue(value)
                 ? dailyTrackerValueLabel(definition: definition, value: value)
                 : l10n.journalNotSetLabel;
-            final scopeLabel = isDaily
-                ? l10n.journalDailyAppliesTodaySubtitle
-                : l10n.journalTrackerPerLogSubtitle;
 
             return Container(
               margin: EdgeInsets.only(bottom: tokens.spaceXs),
@@ -425,29 +422,6 @@ class _JournalEntryEditorRoutePageState
                               ),
                             ),
                           ),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: tokens.spaceXs,
-                              vertical: tokens.spaceXxs,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(
-                                tokens.radiusPill,
-                              ),
-                              border: Border.all(
-                                color: theme.colorScheme.outlineVariant,
-                              ),
-                            ),
-                            child: Text(
-                              scopeLabel,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: tokens.spaceXs),
                           Text(
                             valueLabel,
                             style: theme.textTheme.labelLarge?.copyWith(
@@ -537,6 +511,7 @@ class _JournalEntryEditorRoutePageState
             required bool isDaily,
             required String emptyLabel,
             required String manageRouteKey,
+            String? subtitle,
           }) {
             return Card(
               color: theme.colorScheme.surfaceContainerHigh,
@@ -559,6 +534,15 @@ class _JournalEntryEditorRoutePageState
                         ),
                       ],
                     ),
+                    if (subtitle != null) ...[
+                      SizedBox(height: tokens.spaceXxs),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                     SizedBox(height: tokens.spaceSm),
                     if (trackers.isEmpty)
                       ListTile(
@@ -664,6 +648,7 @@ class _JournalEntryEditorRoutePageState
                       isDaily: true,
                       emptyLabel: l10n.journalNoDailyCheckIns,
                       manageRouteKey: 'journal_manage_daily_checkins',
+                      subtitle: l10n.journalDailyAppliesTodaySubtitle,
                     ),
                     SizedBox(height: tokens.spaceLg),
                     if (entryGroups.isEmpty)
