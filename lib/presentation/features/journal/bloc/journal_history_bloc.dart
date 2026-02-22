@@ -1,9 +1,11 @@
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
@@ -28,6 +30,16 @@ final class JournalHistoryLoadMoreRequested extends JournalHistoryEvent {
   const JournalHistoryLoadMoreRequested();
 }
 
+final class JournalHistoryStarterPackDismissed extends JournalHistoryEvent {
+  const JournalHistoryStarterPackDismissed();
+}
+
+final class JournalHistoryStarterPackApplied extends JournalHistoryEvent {
+  const JournalHistoryStarterPackApplied(this.selectedIds);
+
+  final Set<String> selectedIds;
+}
+
 sealed class JournalHistoryState {
   const JournalHistoryState();
 }
@@ -42,10 +54,14 @@ final class JournalHistoryLoaded extends JournalHistoryState {
   const JournalHistoryLoaded({
     required this.days,
     required this.filters,
+    required this.showStarterPack,
+    required this.starterOptions,
   });
 
   final List<JournalHistoryDaySummary> days;
   final JournalHistoryFilters filters;
+  final bool showStarterPack;
+  final List<JournalStarterOption> starterOptions;
 }
 
 final class JournalHistoryError extends JournalHistoryState {
@@ -60,8 +76,12 @@ class JournalHistoryBloc
   JournalHistoryBloc({
     required JournalRepositoryContract repository,
     required HomeDayKeyService dayKeyService,
+    required SettingsRepositoryContract settingsRepository,
+    required DateTime Function() nowUtc,
   }) : _repository = repository,
        _dayKeyService = dayKeyService,
+       _settingsRepository = settingsRepository,
+       _nowUtc = nowUtc,
        super(JournalHistoryLoading(JournalHistoryFilters.initial())) {
     on<JournalHistoryStarted>(_onStarted, transformer: restartable());
     on<JournalHistoryFiltersChanged>(
@@ -72,18 +92,179 @@ class JournalHistoryBloc
       _onLoadMoreRequested,
       transformer: droppable(),
     );
+    on<JournalHistoryStarterPackDismissed>(
+      _onStarterPackDismissed,
+      transformer: sequential(),
+    );
+    on<JournalHistoryStarterPackApplied>(
+      _onStarterPackApplied,
+      transformer: sequential(),
+    );
   }
 
   static const int _windowStepDays = 30;
   static const int _maxLookbackDays = 3650;
+  static const String _starterPackSeenKey = 'journal_starter_pack_start_01b';
 
   final JournalRepositoryContract _repository;
   final HomeDayKeyService _dayKeyService;
+  final SettingsRepositoryContract _settingsRepository;
+  final DateTime Function() _nowUtc;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+  bool _starterPackSeen = false;
+
+  static const List<JournalStarterOption> _starterOptions =
+      <JournalStarterOption>[
+        JournalStarterOption(
+          id: 'stress',
+          category: 'Essentials',
+          name: 'Stress',
+          scope: 'entry',
+          valueType: 'rating',
+          valueKind: 'rating',
+          iconName: 'health',
+          defaultSelected: true,
+          minInt: 1,
+          maxInt: 5,
+          stepInt: 1,
+        ),
+        JournalStarterOption(
+          id: 'sleep_quality',
+          category: 'Essentials',
+          name: 'Sleep quality',
+          scope: 'sleep_night',
+          valueType: 'rating',
+          valueKind: 'rating',
+          iconName: 'bedtime',
+          defaultSelected: true,
+          minInt: 1,
+          maxInt: 5,
+          stepInt: 1,
+        ),
+        JournalStarterOption(
+          id: 'exercise',
+          category: 'Essentials',
+          name: 'Exercise',
+          scope: 'day',
+          valueType: 'yes_no',
+          valueKind: 'boolean',
+          iconName: 'fitness_center',
+          defaultSelected: true,
+        ),
+        JournalStarterOption(
+          id: 'water_intake',
+          category: 'Essentials',
+          name: 'Water intake',
+          scope: 'day',
+          valueType: 'quantity',
+          valueKind: 'number',
+          iconName: 'water_drop',
+          defaultSelected: true,
+          minInt: 0,
+          maxInt: 5000,
+          stepInt: 250,
+          unitKind: 'ml',
+          opKind: 'add',
+        ),
+        JournalStarterOption(
+          id: 'social_time',
+          category: 'Optional',
+          name: 'Social time',
+          scope: 'day',
+          valueType: 'choice',
+          valueKind: 'single_choice',
+          iconName: 'group',
+          defaultSelected: false,
+          choices: <String>['None', 'Low', 'Medium', 'High'],
+        ),
+        JournalStarterOption(
+          id: 'energy',
+          category: 'Optional',
+          name: 'Energy',
+          scope: 'entry',
+          valueType: 'rating',
+          valueKind: 'rating',
+          iconName: 'bolt',
+          defaultSelected: false,
+          minInt: 1,
+          maxInt: 5,
+          stepInt: 1,
+        ),
+        JournalStarterOption(
+          id: 'running',
+          category: 'Hobbies',
+          name: 'Running',
+          scope: 'day',
+          valueType: 'yes_no',
+          valueKind: 'boolean',
+          iconName: 'directions_run',
+          defaultSelected: false,
+        ),
+        JournalStarterOption(
+          id: 'guitar_practice',
+          category: 'Hobbies',
+          name: 'Guitar practice',
+          scope: 'day',
+          valueType: 'quantity',
+          valueKind: 'number',
+          iconName: 'music_note',
+          defaultSelected: false,
+          minInt: 0,
+          maxInt: 180,
+          stepInt: 15,
+          unitKind: 'minutes',
+          opKind: 'add',
+        ),
+        JournalStarterOption(
+          id: 'reading',
+          category: 'Hobbies',
+          name: 'Reading',
+          scope: 'day',
+          valueType: 'quantity',
+          valueKind: 'number',
+          iconName: 'menu_book',
+          defaultSelected: false,
+          minInt: 0,
+          maxInt: 180,
+          stepInt: 15,
+          unitKind: 'minutes',
+          opKind: 'add',
+        ),
+        JournalStarterOption(
+          id: 'cooking',
+          category: 'Hobbies',
+          name: 'Cooking',
+          scope: 'day',
+          valueType: 'yes_no',
+          valueKind: 'boolean',
+          iconName: 'restaurant',
+          defaultSelected: false,
+        ),
+        JournalStarterOption(
+          id: 'gaming',
+          category: 'Hobbies',
+          name: 'Gaming',
+          scope: 'day',
+          valueType: 'quantity',
+          valueKind: 'number',
+          iconName: 'sports_esports',
+          defaultSelected: false,
+          minInt: 0,
+          maxInt: 240,
+          stepInt: 30,
+          unitKind: 'minutes',
+          opKind: 'add',
+        ),
+      ];
 
   Future<void> _onStarted(
     JournalHistoryStarted event,
     Emitter<JournalHistoryState> emit,
   ) async {
+    _starterPackSeen = await _settingsRepository.load(
+      SettingsKey.microLearningSeen(_starterPackSeenKey),
+    );
     await _onFiltersChanged(
       JournalHistoryFiltersChanged(JournalHistoryFilters.initial()),
       emit,
@@ -144,7 +325,17 @@ class JournalHistoryBloc
                 .toList(growable: false);
           }
 
-          return JournalHistoryLoaded(days: days, filters: filters);
+          final hasCustomTracker = defs.any(
+            (d) => d.isActive && d.deletedAt == null && d.systemKey == null,
+          );
+          final showStarterPack = !_starterPackSeen && !hasCustomTracker;
+
+          return JournalHistoryLoaded(
+            days: days,
+            filters: filters,
+            showStarterPack: showStarterPack,
+            starterOptions: _starterOptions,
+          );
         },
       ),
       onData: emit.call,
@@ -176,6 +367,159 @@ class JournalHistoryBloc
       JournalHistoryFiltersChanged(
         currentFilters.copyWith(lookbackDays: nextLookbackDays),
       ),
+    );
+  }
+
+  Future<void> _onStarterPackDismissed(
+    JournalHistoryStarterPackDismissed event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    await _markStarterPackSeen();
+    final current = state;
+    if (current is! JournalHistoryLoaded) return;
+    emit(
+      JournalHistoryLoaded(
+        days: current.days,
+        filters: current.filters,
+        showStarterPack: false,
+        starterOptions: current.starterOptions,
+      ),
+    );
+  }
+
+  Future<void> _onStarterPackApplied(
+    JournalHistoryStarterPackApplied event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    final selected = _starterOptions
+        .where((opt) => event.selectedIds.contains(opt.id))
+        .toList(growable: false);
+    if (selected.isEmpty) {
+      await _onStarterPackDismissed(
+        const JournalHistoryStarterPackDismissed(),
+        emit,
+      );
+      return;
+    }
+
+    final defs = await _repository.watchTrackerDefinitions().first;
+    final existingByName = {
+      for (final d in defs)
+        if (d.deletedAt == null) d.name.trim().toLowerCase(): d,
+    };
+    final groups = await _repository.watchTrackerGroups().first;
+    final groupByName = {
+      for (final g in groups)
+        if (g.isActive) g.name.trim().toLowerCase(): g,
+    };
+    final now = _nowUtc();
+    final context = _contextFactory.create(
+      feature: 'journal',
+      screen: 'journal_hub',
+      intent: 'apply_starter_pack',
+      operation: 'journal.saveTrackerDefinition',
+      entityType: 'tracker_definition',
+      extraFields: <String, Object?>{'count': selected.length},
+    );
+
+    String? hobbiesGroupId;
+    if (selected.any((o) => o.category == 'Hobbies')) {
+      final existingHobbies = groupByName['hobbies'];
+      if (existingHobbies != null) {
+        hobbiesGroupId = existingHobbies.id;
+      } else {
+        await _repository.saveTrackerGroup(
+          TrackerGroup(
+            id: '',
+            name: 'Hobbies',
+            sortOrder: 500,
+            isActive: true,
+            createdAt: now,
+            updatedAt: now,
+            userId: null,
+          ),
+          context: context,
+        );
+        final refreshedGroups = await _repository.watchTrackerGroups().first;
+        for (final g in refreshedGroups) {
+          if (g.isActive && g.name.trim().toLowerCase() == 'hobbies') {
+            hobbiesGroupId = g.id;
+            break;
+          }
+        }
+      }
+    }
+
+    for (final option in selected) {
+      final existing = existingByName[option.name.trim().toLowerCase()];
+      if (existing != null) continue;
+
+      String? groupId;
+      if (option.category == 'Hobbies') {
+        groupId = hobbiesGroupId;
+      }
+
+      final definition = TrackerDefinition(
+        id: '',
+        name: option.name,
+        scope: option.scope,
+        valueType: option.valueType,
+        createdAt: now,
+        updatedAt: now,
+        isActive: true,
+        sortOrder: 1000 + selected.indexOf(option) * 10,
+        groupId: groupId,
+        source: 'user',
+        opKind:
+            option.opKind ?? (option.valueType == 'quantity' ? 'add' : 'set'),
+        valueKind: option.valueKind,
+        minInt: option.minInt,
+        maxInt: option.maxInt,
+        stepInt: option.stepInt,
+        unitKind: option.unitKind,
+        config: <String, dynamic>{'iconName': option.iconName},
+      );
+      await _repository.saveTrackerDefinition(definition, context: context);
+    }
+
+    for (final option in selected.where((opt) => opt.choices.isNotEmpty)) {
+      final savedDefs = await _repository.watchTrackerDefinitions().first;
+      final def = savedDefs.firstWhere(
+        (d) => d.name == option.name && d.deletedAt == null,
+        orElse: () =>
+            throw StateError('Missing starter tracker ${option.name}'),
+      );
+      for (var i = 0; i < option.choices.length; i++) {
+        final label = option.choices[i];
+        await _repository.saveTrackerDefinitionChoice(
+          TrackerDefinitionChoice(
+            id: '',
+            trackerId: def.id,
+            choiceKey: label.toLowerCase(),
+            label: label,
+            sortOrder: i * 10,
+            isActive: true,
+            createdAt: now,
+            updatedAt: now,
+            userId: null,
+          ),
+          context: context,
+        );
+      }
+    }
+
+    await _onStarterPackDismissed(
+      const JournalHistoryStarterPackDismissed(),
+      emit,
+    );
+  }
+
+  Future<void> _markStarterPackSeen() async {
+    if (_starterPackSeen) return;
+    _starterPackSeen = true;
+    await _settingsRepository.save(
+      SettingsKey.microLearningSeen(_starterPackSeenKey),
+      true,
     );
   }
 
@@ -299,6 +643,12 @@ class JournalHistoryBloc
                 dayStateByTrackerIdByDay[day] ??
                 const <String, TrackerStateDay>{},
           ),
+          dailyCompletedCount:
+              (dayStateByTrackerIdByDay[day] ??
+                      const <String, TrackerStateDay>{})
+                  .values
+                  .where((s) => s.value != null)
+                  .length,
           dailySummaryTotalCount: dailyDefs.length,
         ),
     ];
@@ -358,6 +708,7 @@ final class JournalHistoryDaySummary {
     required this.moodTrackerId,
     required this.moodAverage,
     required this.dailySummaryItems,
+    required this.dailyCompletedCount,
     required this.dailySummaryTotalCount,
   });
 
@@ -368,6 +719,7 @@ final class JournalHistoryDaySummary {
   final String? moodTrackerId;
   final double? moodAverage;
   final List<JournalDailySummaryItem> dailySummaryItems;
+  final int dailyCompletedCount;
   final int dailySummaryTotalCount;
 }
 
@@ -376,6 +728,40 @@ final class JournalDailySummaryItem {
 
   final String label;
   final String value;
+}
+
+final class JournalStarterOption {
+  const JournalStarterOption({
+    required this.id,
+    required this.category,
+    required this.name,
+    required this.scope,
+    required this.valueType,
+    required this.valueKind,
+    required this.iconName,
+    required this.defaultSelected,
+    this.opKind,
+    this.minInt,
+    this.maxInt,
+    this.stepInt,
+    this.unitKind,
+    this.choices = const <String>[],
+  });
+
+  final String id;
+  final String category;
+  final String name;
+  final String scope;
+  final String valueType;
+  final String valueKind;
+  final String iconName;
+  final bool defaultSelected;
+  final String? opKind;
+  final int? minInt;
+  final int? maxInt;
+  final int? stepInt;
+  final String? unitKind;
+  final List<String> choices;
 }
 
 final class JournalHistoryFilters {

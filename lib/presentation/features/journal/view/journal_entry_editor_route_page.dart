@@ -6,6 +6,7 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_library_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_input_widgets.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -252,10 +253,7 @@ class _JournalEntryEditorRoutePageState
             return Row(
               children: [
                 Expanded(
-                  child: Text(
-                    definition.name,
-                    style: theme.textTheme.titleSmall,
-                  ),
+                  child: _TrackerTitle(definition: definition),
                 ),
                 ToggleButtons(
                   isSelected: [!value, value],
@@ -295,7 +293,7 @@ class _JournalEntryEditorRoutePageState
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(definition.name, style: theme.textTheme.titleSmall),
+                _TrackerTitle(definition: definition),
                 SizedBox(height: tokens.spaceSm),
                 Wrap(
                   spacing: tokens.spaceSm,
@@ -338,7 +336,7 @@ class _JournalEntryEditorRoutePageState
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(definition.name, style: theme.textTheme.titleSmall),
+                    _TrackerTitle(definition: definition),
                     SizedBox(height: tokens.spaceSm),
                     TrackerChoiceInput(
                       choices: choices,
@@ -922,6 +920,32 @@ class _MoodOptionButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TrackerTitle extends StatelessWidget {
+  const _TrackerTitle({required this.definition});
+
+  final TrackerDefinition definition;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          trackerIconData(definition),
+          size: 16,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        SizedBox(width: TasklyTokens.of(context).spaceXs),
+        Expanded(
+          child: Text(
+            definition.name,
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
+        ),
+      ],
     );
   }
 }

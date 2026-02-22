@@ -64,8 +64,8 @@ class NavigationIconResolver {
         selectedIcon: Icons.book,
       ),
       'trackers' => (
-        icon: Icons.timeline_outlined,
-        selectedIcon: Icons.timeline,
+        icon: Icons.monitor_heart_outlined,
+        selectedIcon: Icons.monitor_heart,
       ),
       'tasks' => (
         icon: Icons.checklist_outlined,

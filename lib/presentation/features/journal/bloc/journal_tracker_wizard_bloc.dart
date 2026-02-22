@@ -42,6 +42,12 @@ final class JournalTrackerWizardGroupChanged extends JournalTrackerWizardEvent {
   final String? groupId;
 }
 
+final class JournalTrackerWizardIconChanged extends JournalTrackerWizardEvent {
+  const JournalTrackerWizardIconChanged(this.iconName);
+
+  final String? iconName;
+}
+
 final class JournalTrackerWizardScopeChanged extends JournalTrackerWizardEvent {
   const JournalTrackerWizardScopeChanged(this.scope);
 
@@ -144,6 +150,7 @@ final class JournalTrackerWizardState {
     required this.step,
     required this.name,
     required this.groupId,
+    required this.iconName,
     required this.groups,
     required this.scope,
     required this.measurement,
@@ -163,6 +170,7 @@ final class JournalTrackerWizardState {
       step: 0,
       name: '',
       groupId: null,
+      iconName: null,
       groups: <TrackerGroup>[],
       scope: null,
       measurement: null,
@@ -181,6 +189,7 @@ final class JournalTrackerWizardState {
   final int step;
   final String name;
   final String? groupId;
+  final String? iconName;
   final List<TrackerGroup> groups;
   final JournalTrackerScopeOption? scope;
   final JournalTrackerMeasurementType? measurement;
@@ -198,6 +207,7 @@ final class JournalTrackerWizardState {
     int? step,
     String? name,
     String? groupId,
+    String? iconName,
     List<TrackerGroup>? groups,
     JournalTrackerScopeOption? scope,
     JournalTrackerMeasurementType? measurement,
@@ -215,6 +225,7 @@ final class JournalTrackerWizardState {
       step: step ?? this.step,
       name: name ?? this.name,
       groupId: groupId ?? this.groupId,
+      iconName: iconName ?? this.iconName,
       groups: groups ?? this.groups,
       scope: scope ?? this.scope,
       measurement: measurement ?? this.measurement,
@@ -244,6 +255,7 @@ class JournalTrackerWizardBloc
     on<JournalTrackerWizardStepChanged>(_onStepChanged);
     on<JournalTrackerWizardNameChanged>(_onNameChanged);
     on<JournalTrackerWizardGroupChanged>(_onGroupChanged);
+    on<JournalTrackerWizardIconChanged>(_onIconChanged);
     on<JournalTrackerWizardScopeChanged>(_onScopeChanged);
     on<JournalTrackerWizardMeasurementChanged>(_onMeasurementChanged);
     on<JournalTrackerWizardRatingConfigChanged>(_onRatingConfigChanged);
@@ -366,9 +378,12 @@ class JournalTrackerWizardBloc
     JournalTrackerWizardNameChanged event,
     Emitter<JournalTrackerWizardState> emit,
   ) {
+    final trimmed = event.name.trim();
+    final fallbackIcon = trimmed.isEmpty ? null : _defaultIconForName(trimmed);
     emit(
       state.copyWith(
         name: event.name,
+        iconName: state.iconName ?? fallbackIcon,
         status: const JournalTrackerWizardIdle(),
       ),
     );
@@ -381,6 +396,18 @@ class JournalTrackerWizardBloc
     emit(
       state.copyWith(
         groupId: event.groupId,
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
+  }
+
+  void _onIconChanged(
+    JournalTrackerWizardIconChanged event,
+    Emitter<JournalTrackerWizardState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        iconName: event.iconName?.trim(),
         status: const JournalTrackerWizardIdle(),
       ),
     );
@@ -612,7 +639,10 @@ class JournalTrackerWizardBloc
           createdAt: now,
           updatedAt: now,
           roles: const <String>[],
-          config: const <String, dynamic>{},
+          config: <String, dynamic>{
+            if (state.iconName != null && state.iconName!.trim().isNotEmpty)
+              'iconName': state.iconName!.trim(),
+          },
           goal: const <String, dynamic>{},
           isActive: true,
           sortOrder: groupDefs.length * 10 + 100,
@@ -718,5 +748,22 @@ class JournalTrackerWizardBloc
         .replaceAll(RegExp('_+'), '_')
         .replaceAll(RegExp(r'^_|_$'), '');
     return normalized.isEmpty ? 'option' : normalized;
+  }
+
+  String _defaultIconForName(String name) {
+    final normalized = name.toLowerCase();
+    if (normalized.contains('mood')) return 'mood';
+    if (normalized.contains('sleep')) return 'bedtime';
+    if (normalized.contains('exercise')) return 'fitness_center';
+    if (normalized.contains('water')) return 'water_drop';
+    if (normalized.contains('social')) return 'group';
+    if (normalized.contains('stress')) return 'health';
+    if (normalized.contains('energy')) return 'bolt';
+    if (normalized.contains('running')) return 'directions_run';
+    if (normalized.contains('guitar')) return 'music_note';
+    if (normalized.contains('reading')) return 'menu_book';
+    if (normalized.contains('cooking')) return 'restaurant';
+    if (normalized.contains('gaming')) return 'sports_esports';
+    return 'trackers';
   }
 }

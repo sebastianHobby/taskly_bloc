@@ -25,6 +25,8 @@ class _JournalHubPageState extends State<JournalHubPage> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isLoadMoreInFlight = false;
+  bool _isSearchExpanded = false;
+  bool _starterPromptShownThisSession = false;
 
   @override
   void initState() {
@@ -188,6 +190,124 @@ class _JournalHubPageState extends State<JournalHubPage> {
     );
   }
 
+  Future<void> _showStarterPackSheet(
+    BuildContext context,
+    JournalHistoryLoaded state,
+  ) async {
+    final selected = <String>{
+      for (final option in state.starterOptions)
+        if (option.defaultSelected) option.id,
+    };
+    final grouped = <String, List<JournalStarterOption>>{};
+    for (final option in state.starterOptions) {
+      (grouped[option.category] ??= <JournalStarterOption>[]).add(option);
+    }
+
+    final applied = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                TasklyTokens.of(sheetContext).spaceLg,
+                TasklyTokens.of(sheetContext).spaceSm,
+                TasklyTokens.of(sheetContext).spaceLg,
+                TasklyTokens.of(sheetContext).spaceLg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Set up your starter trackers',
+                    style: Theme.of(sheetContext).textTheme.titleLarge,
+                  ),
+                  SizedBox(height: TasklyTokens.of(sheetContext).spaceXxs),
+                  Text(
+                    'Choose what to add now. You can edit anytime.',
+                    style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(
+                        sheetContext,
+                      ).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: [
+                        for (final entry in grouped.entries) ...[
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: TasklyTokens.of(sheetContext).spaceSm,
+                            ),
+                            child: Text(
+                              entry.key,
+                              style: Theme.of(sheetContext).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          for (final option in entry.value)
+                            CheckboxListTile(
+                              value: selected.contains(option.id),
+                              dense: true,
+                              title: Text(option.name),
+                              subtitle: Text(
+                                '${option.valueType} · ${option.scope}',
+                              ),
+                              onChanged: (checked) {
+                                setSheetState(() {
+                                  if (checked == true) {
+                                    selected.add(option.id);
+                                  } else {
+                                    selected.remove(option.id);
+                                  }
+                                });
+                              },
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: TasklyTokens.of(sheetContext).spaceSm),
+                  Row(
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(sheetContext).pop(false),
+                        child: Text(sheetContext.l10n.notNowLabel),
+                      ),
+                      const Spacer(),
+                      FilledButton(
+                        onPressed: () {
+                          context.read<JournalHistoryBloc>().add(
+                            JournalHistoryStarterPackApplied(selected),
+                          );
+                          Navigator.of(sheetContext).pop(true);
+                        },
+                        child: Text('Add selected'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!context.mounted) return;
+    if (applied != true) {
+      context.read<JournalHistoryBloc>().add(
+        const JournalHistoryStarterPackDismissed(),
+      );
+    }
+  }
+
   void _onSearchChanged(String value, JournalHistoryFilters filters) {
     context.read<JournalHistoryBloc>().add(
       JournalHistoryFiltersChanged(
@@ -204,11 +324,22 @@ class _JournalHubPageState extends State<JournalHubPage> {
       create: (context) => JournalHistoryBloc(
         repository: context.read<JournalRepositoryContract>(),
         dayKeyService: context.read<HomeDayKeyService>(),
+        settingsRepository: context.read<SettingsRepositoryContract>(),
+        nowUtc: context.read<NowService>().nowUtc,
       )..add(const JournalHistoryStarted()),
       child: BlocListener<JournalHistoryBloc, JournalHistoryState>(
-        listener: (_, state) {
+        listener: (context, state) {
           if (state is JournalHistoryLoaded || state is JournalHistoryError) {
             _isLoadMoreInFlight = false;
+          }
+          if (state is JournalHistoryLoaded &&
+              state.showStarterPack &&
+              !_starterPromptShownThisSession) {
+            _starterPromptShownThisSession = true;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!context.mounted) return;
+              _showStarterPackSheet(context, state);
+            });
           }
         },
         child: BlocBuilder<JournalHistoryBloc, JournalHistoryState>(
@@ -225,6 +356,9 @@ class _JournalHubPageState extends State<JournalHubPage> {
                 TextPosition(offset: _searchController.text.length),
               );
             }
+            if (filters.searchText.isNotEmpty) {
+              _isSearchExpanded = true;
+            }
 
             final body = switch (state) {
               JournalHistoryLoading() => const Center(
@@ -240,6 +374,16 @@ class _JournalHubPageState extends State<JournalHubPage> {
               ),
             };
 
+            final days = switch (state) {
+              JournalHistoryLoaded(:final days) => days,
+              _ => const <JournalHistoryDaySummary>[],
+            };
+
+            final todaySummary = days.firstWhere(
+              (day) => _isSameLocalDay(day.day, nowLocal),
+              orElse: () => _emptySummaryFor(nowLocal),
+            );
+
             return Scaffold(
               appBar: AppBar(
                 actions: [
@@ -254,29 +398,29 @@ class _JournalHubPageState extends State<JournalHubPage> {
                       context,
                       'journal_manage_trackers',
                     ),
-                    icon: const Icon(Icons.settings_input_component),
+                    icon: const Icon(Icons.monitor_heart_outlined),
                   ),
                 ],
               ),
               body: Column(
                 children: [
                   const _JournalTitleHeader(),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      TasklyTokens.of(context).spaceLg,
-                      TasklyTokens.of(context).spaceSm,
-                      TasklyTokens.of(context).spaceLg,
-                      TasklyTokens.of(context).spaceMd,
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.journalSearchEntriesLabel,
-                        prefixIcon: const Icon(Icons.search),
-                      ),
-                      onChanged: (value) => _onSearchChanged(value, filters),
-                    ),
+                  _SearchHeader(
+                    controller: _searchController,
+                    isExpanded: _isSearchExpanded,
+                    onToggle: () {
+                      setState(() {
+                        _isSearchExpanded = !_isSearchExpanded;
+                        if (!_isSearchExpanded &&
+                            _searchController.text.isNotEmpty) {
+                          _searchController.clear();
+                          _onSearchChanged('', filters);
+                        }
+                      });
+                    },
+                    onChanged: (value) => _onSearchChanged(value, filters),
                   ),
+                  _TodayPulseCard(summary: todaySummary),
                   Expanded(child: body),
                 ],
               ),
@@ -293,6 +437,147 @@ class _JournalHubPageState extends State<JournalHubPage> {
         ),
       ),
     );
+  }
+
+  static JournalHistoryDaySummary _emptySummaryFor(DateTime nowLocal) {
+    return JournalHistoryDaySummary(
+      day: DateTime.utc(nowLocal.year, nowLocal.month, nowLocal.day),
+      entries: const <JournalEntry>[],
+      eventsByEntryId: const <String, List<TrackerEvent>>{},
+      definitionById: const <String, TrackerDefinition>{},
+      moodTrackerId: null,
+      moodAverage: null,
+      dailySummaryItems: const <JournalDailySummaryItem>[],
+      dailyCompletedCount: 0,
+      dailySummaryTotalCount: 0,
+    );
+  }
+
+  static bool _isSameLocalDay(DateTime a, DateTime b) {
+    final al = a.toLocal();
+    final bl = b.toLocal();
+    return al.year == bl.year && al.month == bl.month && al.day == bl.day;
+  }
+}
+
+class _SearchHeader extends StatelessWidget {
+  const _SearchHeader({
+    required this.controller,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        tokens.spaceSm,
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: context.l10n.journalSearchEntriesLabel,
+            onPressed: onToggle,
+            icon: Icon(isExpanded ? Icons.close : Icons.search),
+          ),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: isExpanded
+                  ? TextField(
+                      key: const ValueKey('journal_search_field'),
+                      controller: controller,
+                      decoration: InputDecoration(
+                        labelText: context.l10n.journalSearchEntriesLabel,
+                        prefixIcon: const Icon(Icons.search),
+                      ),
+                      onChanged: onChanged,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TodayPulseCard extends StatelessWidget {
+  const _TodayPulseCard({required this.summary});
+
+  final JournalHistoryDaySummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final hasMood = summary.moodAverage != null;
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        0,
+        tokens.spaceLg,
+        tokens.spaceSm,
+      ),
+      padding: EdgeInsets.all(tokens.spaceMd),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            child: Text(hasMood ? _moodEmoji(summary.moodAverage!) : '—'),
+          ),
+          SizedBox(width: tokens.spaceSm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Today Pulse',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                SizedBox(height: tokens.spaceXxs),
+                Text(
+                  hasMood
+                      ? 'Mood ${summary.moodAverage!.toStringAsFixed(1)} · '
+                            '${summary.dailyCompletedCount}/${summary.dailySummaryTotalCount} trackers'
+                      : '${summary.dailyCompletedCount}/${summary.dailySummaryTotalCount} trackers',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          Text(
+            context.l10n.journalEntryCountLabel(summary.entries.length),
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _moodEmoji(double value) {
+    if (value < 1.5) return '😟';
+    if (value < 2.5) return '🙁';
+    if (value < 3.5) return '😐';
+    if (value < 4.5) return '🙂';
+    return '😄';
   }
 }
 
@@ -399,24 +684,63 @@ class _DayTimelineSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: EdgeInsets.only(bottom: tokens.spaceSm),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Container(
+            width: double.infinity,
+            margin: EdgeInsets.only(bottom: tokens.spaceSm),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spaceSm,
+              vertical: tokens.spaceXs,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+            child: Row(
               children: [
-                Text(
-                  dateLabel,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        dateLabel,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      SizedBox(height: tokens.spaceXxs),
+                      Text(
+                        metadata,
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(height: tokens.spaceXxs),
-                Text(
-                  metadata,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                if (summary.moodAverage != null)
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spaceSm,
+                      vertical: tokens.spaceXxs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(tokens.radiusPill),
+                    ),
+                    child: Text(
+                      '${_moodEmoji(summary.moodAverage!)} ${summary.moodAverage!.toStringAsFixed(1)}',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -445,10 +769,19 @@ class _DayTimelineSection extends StatelessWidget {
       summary.entries.length,
     );
     final mood = summary.moodAverage == null
-        ? context.l10n.journalMoodAverageEmpty
+        ? null
         : context.l10n.journalMoodAverageValue(
             summary.moodAverage!.toStringAsFixed(1),
           );
+    if (mood == null) return entryCount;
     return '$entryCount · $mood';
+  }
+
+  String _moodEmoji(double value) {
+    if (value < 1.5) return '😟';
+    if (value < 2.5) return '🙁';
+    if (value < 3.5) return '😐';
+    if (value < 4.5) return '🙂';
+    return '😄';
   }
 }

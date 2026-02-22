@@ -113,6 +113,19 @@ final class JournalManageLibraryRenameTrackerRequested
   final Completer<void> completer;
 }
 
+final class JournalManageLibrarySetTrackerIconRequested
+    extends JournalManageLibraryEvent {
+  const JournalManageLibrarySetTrackerIconRequested({
+    required this.def,
+    required this.iconName,
+    required this.completer,
+  });
+
+  final TrackerDefinition def;
+  final String iconName;
+  final Completer<void> completer;
+}
+
 final class JournalManageLibrarySetTrackerActiveRequested
     extends JournalManageLibraryEvent {
   const JournalManageLibrarySetTrackerActiveRequested({
@@ -182,6 +195,9 @@ class JournalManageLibraryBloc
     on<JournalManageLibraryRenameGroupRequested>(_onRenameGroupRequested);
     on<JournalManageLibraryDeleteGroupRequested>(_onDeleteGroupRequested);
     on<JournalManageLibraryRenameTrackerRequested>(_onRenameTrackerRequested);
+    on<JournalManageLibrarySetTrackerIconRequested>(
+      _onSetTrackerIconRequested,
+    );
     on<JournalManageLibrarySetTrackerActiveRequested>(
       _onSetTrackerActiveRequested,
     );
@@ -615,6 +631,59 @@ class JournalManageLibraryBloc
     }
   }
 
+  Future<void> _onSetTrackerIconRequested(
+    JournalManageLibrarySetTrackerIconRequested event,
+    Emitter<JournalManageLibraryState> emit,
+  ) async {
+    final iconName = event.iconName.trim();
+    if (event.def.id.trim().isEmpty || iconName.isEmpty) {
+      _complete(event.completer);
+      return;
+    }
+
+    _setStatus(emit, const JournalManageLibrarySaving());
+
+    final context = _newContext(
+      intent: 'set_tracker_icon',
+      operation: 'journal.saveTrackerDefinition',
+      entityId: event.def.id,
+      extraFields: <String, Object?>{'iconName': iconName},
+    );
+
+    try {
+      final nextConfig = <String, dynamic>{...event.def.config};
+      nextConfig['iconName'] = iconName;
+
+      await _repository.saveTrackerDefinition(
+        event.def.copyWith(config: nextConfig, updatedAt: _nowUtc()),
+        context: context,
+      );
+
+      if (emit.isDone) return;
+      _setStatus(emit, const JournalManageLibrarySaved());
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageLibraryBloc] setTrackerIcon failed',
+      );
+
+      if (emit.isDone) return;
+      _setStatus(
+        emit,
+        JournalManageLibraryActionError(
+          _uiMessageFor(
+            error,
+            fallback: 'Failed to update tracker icon. Please try again.',
+          ),
+        ),
+      );
+    } finally {
+      _complete(event.completer);
+    }
+  }
+
   Future<void> _onMoveTrackerToGroupRequested(
     JournalManageLibraryMoveTrackerToGroupRequested event,
     Emitter<JournalManageLibraryState> emit,
@@ -869,6 +938,21 @@ class JournalManageLibraryBloc
       JournalManageLibrarySetTrackerActiveRequested(
         def: def,
         isActive: isActive,
+        completer: completer,
+      ),
+    );
+    return completer.future;
+  }
+
+  Future<void> setTrackerIcon({
+    required TrackerDefinition def,
+    required String iconName,
+  }) {
+    final completer = Completer<void>();
+    add(
+      JournalManageLibrarySetTrackerIconRequested(
+        def: def,
+        iconName: iconName,
         completer: completer,
       ),
     );

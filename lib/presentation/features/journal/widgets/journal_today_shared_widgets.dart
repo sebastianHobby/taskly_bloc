@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -183,11 +184,22 @@ class JournalLogCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(tokens.radiusMd),
                           border: Border.all(color: border),
                         ),
-                        child: Text(
-                          item,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              item.icon,
+                              size: 14,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            SizedBox(width: tokens.spaceXxs),
+                            Text(
+                              item.text,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],
@@ -218,8 +230,8 @@ class JournalLogCard extends StatelessWidget {
     return MoodRating.fromValue(moodValue);
   }
 
-  List<String> _buildSummaryItems(AppLocalizations l10n) {
-    final candidates = <String>[];
+  List<_TrackerSummaryChip> _buildSummaryItems(AppLocalizations l10n) {
+    final candidates = <_TrackerSummaryChip>[];
     final moodId = moodTrackerId;
     final latestByTrackerId = <String, TrackerEvent>{};
 
@@ -234,35 +246,61 @@ class JournalLogCard extends StatelessWidget {
     for (final e in latestByTrackerId.values) {
       if (moodId != null && e.trackerId == moodId) continue;
 
-      final name =
-          definitionById[e.trackerId]?.name ?? l10n.journalTrackerFallbackName;
+      final definition = definitionById[e.trackerId];
+      final name = definition?.name ?? l10n.journalTrackerFallbackName;
       final value = e.value;
+      final icon = definition == null
+          ? Icons.track_changes_outlined
+          : trackerIconData(definition);
 
       if (value is bool) {
         if (!value) continue;
-        candidates.add(l10n.journalTrackerOkLabel(name));
+        candidates.add(
+          _TrackerSummaryChip(
+            text: l10n.journalTrackerValueLabel(name, l10n.doneLabel),
+            icon: icon,
+          ),
+        );
         continue;
       }
 
       if (value is int) {
-        candidates.add(l10n.journalTrackerValueLabel(name, '$value'));
+        candidates.add(
+          _TrackerSummaryChip(
+            text: l10n.journalTrackerValueLabel(name, '$value'),
+            icon: icon,
+          ),
+        );
         continue;
       }
 
       if (value is double) {
         candidates.add(
-          l10n.journalTrackerValueLabel(name, value.toStringAsFixed(1)),
+          _TrackerSummaryChip(
+            text: l10n.journalTrackerValueLabel(name, value.toStringAsFixed(1)),
+            icon: icon,
+          ),
         );
         continue;
       }
 
       if (value is String) {
-        candidates.add(l10n.journalTrackerValueLabel(name, value));
+        candidates.add(
+          _TrackerSummaryChip(
+            text: l10n.journalTrackerValueLabel(name, value),
+            icon: icon,
+          ),
+        );
         continue;
       }
 
       if (value != null) {
-        candidates.add(l10n.journalTrackerValueLabel(name, '$value'));
+        candidates.add(
+          _TrackerSummaryChip(
+            text: l10n.journalTrackerValueLabel(name, '$value'),
+            icon: icon,
+          ),
+        );
       }
     }
 
@@ -271,9 +309,19 @@ class JournalLogCard extends StatelessWidget {
     final remaining = candidates.length - 3;
     return [
       ...candidates.take(3),
-      l10n.journalTrackerMoreLabel(remaining),
+      _TrackerSummaryChip(
+        text: l10n.journalTrackerMoreLabel(remaining),
+        icon: Icons.more_horiz,
+      ),
     ];
   }
+}
+
+final class _TrackerSummaryChip {
+  const _TrackerSummaryChip({required this.text, required this.icon});
+
+  final String text;
+  final IconData icon;
 }
 
 Color _moodTint(ColorScheme scheme, MoodRating mood) {

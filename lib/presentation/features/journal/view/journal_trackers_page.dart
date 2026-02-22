@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_library_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_ui/taskly_ui_forms.dart';
+import 'package:taskly_ui/taskly_ui_icons.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalTrackersPage extends StatelessWidget {
@@ -142,6 +146,31 @@ class _ManageLibraryView extends StatelessWidget {
       );
     }
 
+    Future<String?> showIconPickerSheet(String? selectedIconName) {
+      return showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        showDragHandle: true,
+        builder: (sheetContext) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            TasklyTokens.of(sheetContext).spaceLg,
+            TasklyTokens.of(sheetContext).spaceSm,
+            TasklyTokens.of(sheetContext).spaceLg,
+            TasklyTokens.of(sheetContext).spaceLg,
+          ),
+          child: TasklyFormIconSearchPicker(
+            icons: tasklySymbolIcons,
+            selectedIconName: selectedIconName,
+            searchHintText: sheetContext.l10n.valueFormIconSearchHint,
+            noIconsFoundLabel: sheetContext.l10n.valueFormIconNoResults,
+            tooltipBuilder: formatIconLabel,
+            onSelected: (iconName) => Navigator.of(sheetContext).pop(iconName),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.journalManageTrackersTitle),
@@ -272,6 +301,9 @@ class _ManageLibraryView extends StatelessWidget {
                             return Column(
                               children: [
                                 ListTile(
+                                  leading: CircleAvatar(
+                                    child: Icon(trackerIconData(d)),
+                                  ),
                                   title: Text(d.name),
                                   subtitle: Text(
                                     l10n.journalTrackerTypeScopeLabel(
@@ -294,6 +326,32 @@ class _ManageLibraryView extends StatelessWidget {
                                                     def: d,
                                                     isActive: v,
                                                   ),
+                                      ),
+                                      IconButton(
+                                        tooltip: l10n.valueFormIconLabel,
+                                        onPressed: isSaving
+                                            ? null
+                                            : () async {
+                                                final selected =
+                                                    await showIconPickerSheet(
+                                                      effectiveTrackerIconName(
+                                                        d,
+                                                      ),
+                                                    );
+                                                if (selected == null) return;
+                                                if (!context.mounted) return;
+                                                await context
+                                                    .read<
+                                                      JournalManageLibraryBloc
+                                                    >()
+                                                    .setTrackerIcon(
+                                                      def: d,
+                                                      iconName: selected,
+                                                    );
+                                              },
+                                        icon: const Icon(
+                                          Icons.emoji_symbols_outlined,
+                                        ),
                                       ),
                                       IconButton(
                                         tooltip: l10n.renameLabel,

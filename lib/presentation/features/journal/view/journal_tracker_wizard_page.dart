@@ -3,8 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_tracker_wizard_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_ui/taskly_ui_forms.dart';
+import 'package:taskly_ui/taskly_ui_icons.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalTrackerWizardPage extends StatelessWidget {
@@ -193,6 +197,64 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                           : (value) => context
                                 .read<JournalTrackerWizardBloc>()
                                 .add(JournalTrackerWizardGroupChanged(value)),
+                    ),
+                    SizedBox(height: tokens.spaceSm),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(context.l10n.valueFormIconLabel),
+                      subtitle: Text(
+                        state.iconName == null
+                            ? context.l10n.valueFormIconHint
+                            : formatIconLabel(state.iconName!),
+                      ),
+                      leading: CircleAvatar(
+                        child: Icon(
+                          getIconDataFromName(state.iconName) ??
+                              getIconDataFromName(
+                                defaultTrackerIconName(
+                                  trackerName: state.name,
+                                  valueType: 'rating',
+                                ),
+                              ) ??
+                              Icons.track_changes_outlined,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: isSaving
+                          ? null
+                          : () async {
+                              final selected =
+                                  await showModalBottomSheet<String>(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    useSafeArea: true,
+                                    showDragHandle: true,
+                                    builder: (context) => Padding(
+                                      padding: EdgeInsets.fromLTRB(
+                                        tokens.spaceLg,
+                                        tokens.spaceSm,
+                                        tokens.spaceLg,
+                                        tokens.spaceLg,
+                                      ),
+                                      child: TasklyFormIconSearchPicker(
+                                        icons: tasklySymbolIcons,
+                                        selectedIconName: state.iconName,
+                                        searchHintText: context
+                                            .l10n
+                                            .valueFormIconSearchHint,
+                                        noIconsFoundLabel:
+                                            context.l10n.valueFormIconNoResults,
+                                        tooltipBuilder: formatIconLabel,
+                                        onSelected: (iconName) =>
+                                            Navigator.of(context).pop(iconName),
+                                      ),
+                                    ),
+                                  );
+                              if (!context.mounted || selected == null) return;
+                              context.read<JournalTrackerWizardBloc>().add(
+                                JournalTrackerWizardIconChanged(selected),
+                              );
+                            },
                     ),
                   ],
                 ),

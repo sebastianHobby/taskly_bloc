@@ -7,6 +7,7 @@ import '../../../../helpers/test_imports.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
@@ -14,12 +15,16 @@ class MockJournalRepository extends Mock implements JournalRepositoryContract {}
 
 class MockHomeDayKeyService extends Mock implements HomeDayKeyService {}
 
+class MockSettingsRepository extends Mock
+    implements SettingsRepositoryContract {}
+
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);
 
   late MockJournalRepository repository;
   late MockHomeDayKeyService dayKeyService;
+  late MockSettingsRepository settingsRepository;
   late TestStreamController<List<TrackerDefinition>> defsController;
   late TestStreamController<List<JournalEntry>> entriesController;
   late TestStreamController<List<TrackerStateDay>> dayStateController;
@@ -28,6 +33,7 @@ void main() {
   setUp(() {
     repository = MockJournalRepository();
     dayKeyService = MockHomeDayKeyService();
+    settingsRepository = MockSettingsRepository();
 
     defsController = TestStreamController.seeded(<TrackerDefinition>[]);
     entriesController = TestStreamController.seeded(<JournalEntry>[]);
@@ -53,6 +59,18 @@ void main() {
     when(
       () => dayKeyService.todayDayKeyUtc(),
     ).thenReturn(DateTime.utc(2026, 1, 28));
+    when(
+      () => settingsRepository.load(
+        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => settingsRepository.save(
+        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -67,6 +85,8 @@ void main() {
     build: () => JournalHistoryBloc(
       repository: repository,
       dayKeyService: dayKeyService,
+      settingsRepository: settingsRepository,
+      nowUtc: () => DateTime.utc(2026, 1, 28, 9),
     ),
     act: (bloc) {
       final moodTracker = TrackerDefinition(

@@ -10,6 +10,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 
 import '../../../helpers/test_imports.dart';
@@ -28,6 +29,9 @@ class FakeNowService implements NowService {
   DateTime nowUtc() => now.toUtc();
 }
 
+class MockSettingsRepositoryContract extends Mock
+    implements SettingsRepositoryContract {}
+
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -37,6 +41,7 @@ void main() {
 
   late MockJournalRepositoryContract repository;
   late MockHomeDayKeyService homeDayKeyService;
+  late MockSettingsRepositoryContract settingsRepository;
   late BehaviorSubject<List<TrackerDefinition>> defsSubject;
   late BehaviorSubject<List<JournalEntry>> entriesSubject;
   late BehaviorSubject<List<TrackerEvent>> eventsSubject;
@@ -45,6 +50,7 @@ void main() {
   setUp(() {
     repository = MockJournalRepositoryContract();
     homeDayKeyService = MockHomeDayKeyService();
+    settingsRepository = MockSettingsRepositoryContract();
     defsSubject = BehaviorSubject<List<TrackerDefinition>>();
     entriesSubject = BehaviorSubject<List<JournalEntry>>();
     eventsSubject = BehaviorSubject<List<TrackerEvent>>();
@@ -72,6 +78,18 @@ void main() {
     when(
       () => repository.watchTrackerStateDay(range: any(named: 'range')),
     ).thenAnswer((_) => dayStatesSubject);
+    when(
+      () => settingsRepository.load(
+        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => settingsRepository.save(
+        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -97,6 +115,9 @@ void main() {
               ),
               RepositoryProvider<HomeDayKeyService>.value(
                 value: homeDayKeyService,
+              ),
+              RepositoryProvider<SettingsRepositoryContract>.value(
+                value: settingsRepository,
               ),
             ],
             child: const JournalHubPage(),
