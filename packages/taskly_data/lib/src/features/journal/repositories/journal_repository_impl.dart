@@ -7,6 +7,7 @@ import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/repositories/mappers/journal_predicate_mapper.dart';
 import 'package:taskly_data/src/repositories/mixins/query_builder_mixin.dart';
 import 'package:taskly_data/src/repositories/query_stream_cache.dart';
+import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_data/src/repositories/stream_cache_policy.dart';
 import 'package:taskly_domain/taskly_domain.dart' hide Value;
 
@@ -41,7 +42,7 @@ class JournalRepositoryImpl
       );
     }
 
-    query.orderBy([(e) => OrderingTerm.desc(e.entryDate)]);
+    _applyJournalOrdering(query);
 
     return query.watch().map((rows) => rows.map(_mapToJournalEntry).toList());
   }
@@ -58,7 +59,7 @@ class JournalRepositoryImpl
         query.where((tbl) => whereExpr);
       }
 
-      query.orderBy([(e) => OrderingTerm.desc(e.entryDate)]);
+      _applyJournalOrdering(query);
 
       return query.watch().map((rows) => rows.map(_mapToJournalEntry).toList());
     }
@@ -89,45 +90,70 @@ class JournalRepositoryImpl
   }
 
   @override
-  Future<JournalEntry?> getJournalEntryByDate({required DateTime date}) async {
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    final query = _database.select(_database.journalEntries)
-      ..where((e) => e.entryDate.equals(dateOnly))
-      ..orderBy([(e) => OrderingTerm.desc(e.entryTime)]);
-
-    final result = await query.getSingleOrNull();
-    return result == null ? null : _mapToJournalEntry(result);
-  }
-
-  @override
   Future<List<JournalEntry>> getJournalEntriesByDate({
     required DateTime date,
   }) async {
     final dateOnly = DateTime(date.year, date.month, date.day);
     final query = _database.select(_database.journalEntries)
       ..where((e) => e.entryDate.equals(dateOnly))
-      ..orderBy([(e) => OrderingTerm.desc(e.entryTime)]);
+      ..orderBy([
+        (e) => OrderingTerm.desc(e.entryTime),
+        (e) => OrderingTerm.desc(e.createdAt),
+      ]);
 
     final results = await query.get();
     return results.map(_mapToJournalEntry).toList();
   }
 
   @override
-  Future<void> saveJournalEntry(
-    JournalEntry entry, {
-    OperationContext? context,
-  }) async {
-    await upsertJournalEntry(entry, context: context);
-  }
-
-  @override
-  Future<String> upsertJournalEntry(
+  Future<String> createJournalEntry(
     JournalEntry entry, {
     OperationContext? context,
   }) async {
     return FailureGuard.run(
       () async {
-        final entryId = await _resolveJournalEntryIdForUpsert(entry);
+        final entryId = entry.id.trim().isEmpty
+            ? _idGenerator.journalEntryId()
+            : entry.id;
+
+        await _database
+            .into(_database.journalEntries)
+            .insert(
+              JournalEntriesCompanion(
+                id: Value(entryId),
+                entryDate: Value(entry.entryDate),
+                entryTime: Value(entry.entryTime),
+                occurredAt: Value(entry.occurredAt),
+                localDate: Value(entry.localDate),
+                journalText: Value(entry.journalText),
+                createdAt: Value(entry.createdAt),
+                updatedAt: Value(entry.updatedAt),
+                deletedAt: Value(entry.deletedAt),
+              ),
+              mode: InsertMode.insertOrAbort,
+            );
+
+        return entryId;
+      },
+      area: 'data.journal',
+      opName: 'createJournalEntry',
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> updateJournalEntry(
+    JournalEntry entry, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final entryId = entry.id.trim();
+        if (entryId.isEmpty) {
+          throw RepositoryException(
+            'updateJournalEntry requires a non-empty entry id',
+          );
+        }
 
         final updated =
             await (_database.update(
@@ -146,57 +172,15 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          final existing =
-              await (_database.selectOnly(_database.journalEntries)
-                    ..addColumns([_database.journalEntries.id])
-                    ..where(_database.journalEntries.id.equals(entryId)))
-                  .getSingleOrNull();
-          if (existing == null) {
-            await _database
-                .into(_database.journalEntries)
-                .insert(
-                  JournalEntriesCompanion(
-                    id: Value(entryId),
-                    entryDate: Value(entry.entryDate),
-                    entryTime: Value(entry.entryTime),
-                    occurredAt: Value(entry.occurredAt),
-                    localDate: Value(entry.localDate),
-                    journalText: Value(entry.journalText),
-                    createdAt: Value(entry.createdAt),
-                    updatedAt: Value(entry.updatedAt),
-                    deletedAt: Value(entry.deletedAt),
-                  ),
-                  mode: InsertMode.insertOrAbort,
-                );
-          }
+          throw RepositoryNotFoundException(
+            'No journal entry found to update id=$entryId',
+          );
         }
-
-        return entryId;
       },
       area: 'data.journal',
-      opName: 'upsertJournalEntry',
+      opName: 'updateJournalEntry',
       context: context,
     );
-  }
-
-  Future<String> _resolveJournalEntryIdForUpsert(JournalEntry entry) async {
-    if (entry.id.isNotEmpty) return entry.id;
-
-    final entryDateOnly = dateOnly(entry.entryDate);
-    final existing =
-        await (_database.select(_database.journalEntries)
-              ..where((e) => e.entryDate.equals(entryDateOnly))
-              ..orderBy([
-                (e) => OrderingTerm.desc(e.updatedAt),
-                (e) => OrderingTerm.desc(e.entryTime),
-              ]))
-            .get();
-
-    if (existing.isNotEmpty) {
-      return existing.first.id;
-    }
-
-    return _idGenerator.journalEntryId();
   }
 
   @override
@@ -214,6 +198,16 @@ class JournalRepositoryImpl
       opName: 'deleteJournalEntry',
       context: context,
     );
+  }
+
+  void _applyJournalOrdering(
+    SimpleSelectStatement<$JournalEntriesTable, JournalEntryEntity> query,
+  ) {
+    query.orderBy([
+      (e) => OrderingTerm.desc(e.entryDate),
+      (e) => OrderingTerm.desc(e.entryTime),
+      (e) => OrderingTerm.desc(e.createdAt),
+    ]);
   }
 
   // === Trackers (OPT-A: event-log + projections) ===

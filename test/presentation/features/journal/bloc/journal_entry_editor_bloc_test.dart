@@ -127,7 +127,7 @@ void main() {
       (_) async => null,
     );
     when(
-      () => repository.upsertJournalEntry(
+      () => repository.createJournalEntry(
         any(),
         context: any(named: 'context'),
       ),
@@ -281,7 +281,7 @@ void main() {
     ],
     verify: (_) {
       final entryCaptured = verify(
-        () => repository.upsertJournalEntry(
+        () => repository.createJournalEntry(
           captureAny<JournalEntry>(),
           context: captureAny(named: 'context'),
         ),

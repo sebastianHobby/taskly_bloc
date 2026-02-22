@@ -16,7 +16,7 @@ void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);
 
-  testSafe('journal repository upsert/update emits stream updates', () async {
+  testSafe('journal repository create/update emits stream updates', () async {
     final db = createTestDb();
     addTearDown(() => closeTestDb(db));
 
@@ -46,10 +46,10 @@ void main() {
       correlationId: 'corr-1',
       feature: 'journal',
       intent: 'test',
-      operation: 'journal.upsert',
+      operation: 'journal.create',
     );
 
-    final entryId = await journalRepository.upsertJournalEntry(
+    final entryId = await journalRepository.createJournalEntry(
       entry,
       context: context,
     );
@@ -59,7 +59,7 @@ void main() {
     );
     expect(created.single.id, entryId);
 
-    await journalRepository.upsertJournalEntry(
+    await journalRepository.updateJournalEntry(
       entry.copyWith(id: entryId, journalText: 'Updated'),
       context: context,
     );

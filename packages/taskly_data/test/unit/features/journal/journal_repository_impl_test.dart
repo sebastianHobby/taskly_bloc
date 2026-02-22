@@ -16,7 +16,7 @@ void main() {
   setUp(setUpTestEnvironment);
 
   group('JournalRepositoryImpl', () {
-    testSafe('upsertJournalEntry saves and queries by id/date', () async {
+    testSafe('create/update journal entry and list by date', () async {
       final db = createAutoClosingDb();
       final repo = JournalRepositoryImpl(db, IdGenerator.withUserId('user-1'));
       final entryDate = DateTime(2025, 1, 1);
@@ -34,13 +34,18 @@ void main() {
         deletedAt: null,
       );
 
-      final id = await repo.upsertJournalEntry(entry);
+      final id = await repo.createJournalEntry(entry);
       final fetched = await repo.getJournalEntryById(id);
       expect(fetched, matcher.isNotNull);
       expect(fetched!.journalText, equals('Hello'));
 
-      final byDate = await repo.getJournalEntryByDate(date: entryDate);
-      expect(byDate, matcher.isNotNull);
+      await repo.updateJournalEntry(
+        fetched.copyWith(journalText: 'Updated'),
+      );
+
+      final byDate = await repo.getJournalEntriesByDate(date: entryDate);
+      expect(byDate, isNotEmpty);
+      expect(byDate.first.journalText, equals('Updated'));
     });
 
     testSafe('watchJournalEntriesByQuery filters by id', () async {
@@ -58,10 +63,10 @@ void main() {
         updatedAt: DateTime.utc(2025, 1, 1),
         deletedAt: null,
       );
-      await repo.upsertJournalEntry(entry1);
+      await repo.createJournalEntry(entry1);
 
       final entry2 = entry1.copyWith(id: 'e2', journalText: 'Second');
-      await repo.upsertJournalEntry(entry2);
+      await repo.createJournalEntry(entry2);
 
       final results = await repo
           .watchJournalEntriesByQuery(

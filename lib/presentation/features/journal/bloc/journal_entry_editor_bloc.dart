@@ -721,10 +721,19 @@ class JournalEntryEditorBloc
               updatedAt: nowUtc,
             );
 
-      final entryId = await _repository.upsertJournalEntry(
-        entryToSave,
-        context: context,
-      );
+      late final String entryId;
+      if (existing == null) {
+        entryId = await _repository.createJournalEntry(
+          entryToSave,
+          context: context,
+        );
+      } else {
+        await _repository.updateJournalEntry(
+          entryToSave.copyWith(id: existing.id),
+          context: context,
+        );
+        entryId = existing.id;
+      }
 
       await _repository.appendTrackerEvent(
         TrackerEvent(

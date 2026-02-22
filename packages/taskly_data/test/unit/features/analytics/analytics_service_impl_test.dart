@@ -843,22 +843,18 @@ class _FakeJournalRepository implements JournalRepositoryContract {
   Future<JournalEntry?> getJournalEntryById(String id) async => null;
 
   @override
-  Future<JournalEntry?> getJournalEntryByDate({required DateTime date}) async =>
-      null;
-
-  @override
   Future<List<JournalEntry>> getJournalEntriesByDate({
     required DateTime date,
   }) async => const <JournalEntry>[];
 
   @override
-  Future<void> saveJournalEntry(
+  Future<String> createJournalEntry(
     JournalEntry entry, {
     OperationContext? context,
   }) async => throw UnimplementedError();
 
   @override
-  Future<String> upsertJournalEntry(
+  Future<void> updateJournalEntry(
     JournalEntry entry, {
     OperationContext? context,
   }) async => throw UnimplementedError();

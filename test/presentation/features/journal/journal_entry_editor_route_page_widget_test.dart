@@ -185,7 +185,7 @@ void main() {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     defsSubject.add([moodDef]);
     when(
-      () => repository.upsertJournalEntry(
+      () => repository.createJournalEntry(
         any(),
         context: any(named: 'context'),
       ),
@@ -207,7 +207,7 @@ void main() {
     await tester.pumpForStream();
 
     verify(
-      () => repository.upsertJournalEntry(
+      () => repository.createJournalEntry(
         any(),
         context: any(named: 'context'),
       ),
@@ -226,7 +226,7 @@ void main() {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     defsSubject.add([moodDef]);
     when(
-      () => repository.upsertJournalEntry(
+      () => repository.createJournalEntry(
         any(),
         context: any(named: 'context'),
       ),

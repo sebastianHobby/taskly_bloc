@@ -35,26 +35,20 @@ abstract class JournalRepositoryContract {
 
   Future<JournalEntry?> getJournalEntryById(String id);
 
-  Future<JournalEntry?> getJournalEntryByDate({
-    required DateTime date,
-  });
-
   /// Get all journal entries for a specific date (supports multiple entries per
   /// day).
   Future<List<JournalEntry>> getJournalEntriesByDate({
     required DateTime date,
   });
 
-  Future<void> saveJournalEntry(
+  /// Create a new journal entry and return the ID that was used.
+  Future<String> createJournalEntry(
     JournalEntry entry, {
     OperationContext? context,
   });
 
-  /// Upsert a journal entry and return the ID that was used.
-  ///
-  /// This is useful for workflows that need a stable entry ID to attach
-  /// tracker events (e.g. mood) to the entry.
-  Future<String> upsertJournalEntry(
+  /// Update an existing journal entry by ID.
+  Future<void> updateJournalEntry(
     JournalEntry entry, {
     OperationContext? context,
   });

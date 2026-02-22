@@ -21,11 +21,6 @@ class StubJournalRepository implements JournalRepositoryContract {
   }
 
   @override
-  Future<JournalEntry?> getJournalEntryByDate({required DateTime date}) async {
-    return null;
-  }
-
-  @override
   Future<List<JournalEntry>> getJournalEntriesByDate({
     required DateTime date,
   }) async {
@@ -33,18 +28,18 @@ class StubJournalRepository implements JournalRepositoryContract {
   }
 
   @override
-  Future<void> saveJournalEntry(
-    JournalEntry entry, {
-    OperationContext? context,
-  }) async {}
-
-  @override
-  Future<String> upsertJournalEntry(
+  Future<String> createJournalEntry(
     JournalEntry entry, {
     OperationContext? context,
   }) async {
     return entry.id;
   }
+
+  @override
+  Future<void> updateJournalEntry(
+    JournalEntry entry, {
+    OperationContext? context,
+  }) async {}
 
   @override
   Future<void> deleteJournalEntry(

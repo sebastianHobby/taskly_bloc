@@ -18,6 +18,8 @@ Defines support signals, weekly review cards, journal integration, and stats con
   edits.
 - Journal home is a single chronological timeline feed (newest first) grouped
   by day headers with compact metadata (entry count + mood average).
+- Journal supports multiple entries per day; entry identity is `journal_entries.id`
+  and edits are ID-targeted (never day-level upsert/merge by `entry_date`).
 - Journal history is not a separate screen; search and filters live on the main
   Journal feed.
 - Journal home timeline supports infinite scroll by expanding the date window
