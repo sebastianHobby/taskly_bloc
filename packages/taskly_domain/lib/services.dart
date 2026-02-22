@@ -8,6 +8,7 @@ export 'src/services/sync/initial_sync_service.dart';
 export 'src/services/notifications/notification_presenter.dart';
 export 'src/services/notifications/pending_notifications_processor.dart';
 export 'src/services/notifications/plan_my_day_reminder_service.dart';
+export 'src/services/notifications/task_reminder_service.dart';
 export 'src/models/scheduled/scheduled_date_tag.dart';
 export 'src/models/scheduled/scheduled_occurrence.dart';
 export 'src/models/scheduled/scheduled_occurrence_ref.dart';

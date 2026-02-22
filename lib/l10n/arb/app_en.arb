@@ -5086,6 +5086,22 @@
     "@taskReminderDueDateRequiredHint": {
         "description": "Hint shown when before-due reminder is unavailable without a due date"
     },
+    "taskReminderDueRemovedTitle": "Keep this reminder?",
+    "@taskReminderDueRemovedTitle": {
+        "description": "Dialog title shown when removing a due date while a before-due reminder is active"
+    },
+    "taskReminderDueRemovedBody": "This reminder is set relative to the due date. Pick a date/time reminder or remove the reminder.",
+    "@taskReminderDueRemovedBody": {
+        "description": "Dialog body shown when removing a due date while a before-due reminder is active"
+    },
+    "taskReminderDueRemovedPickAction": "Pick date/time",
+    "@taskReminderDueRemovedPickAction": {
+        "description": "Action label to convert a before-due reminder into an absolute reminder"
+    },
+    "taskReminderDueRemovedRemoveAction": "Remove reminder",
+    "@taskReminderDueRemovedRemoveAction": {
+        "description": "Action label to remove reminder when due date is removed"
+    },
     "taskReminderBeforeMinutes": "{minutes, plural, =1{1 minute before} other{{minutes} minutes before}}",
     "@taskReminderBeforeMinutes": {
         "description": "Label for reminder offset in minutes before due date",

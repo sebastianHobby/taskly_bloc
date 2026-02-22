@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -562,7 +563,6 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
   @override
   Widget build(BuildContext context) {
     final selection = context.read<SelectionBloc>();
-    final l10n = context.l10n;
     final todayDate = dateOnly(widget.today);
 
     final plannedEntries = widget.plannedItems
@@ -643,43 +643,12 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
     if (routineRows.isEmpty && taskRows.isEmpty) {
       final hasItems =
           widget.availableTaskCount > 0 || widget.availableRoutineCount > 0;
-      final hasPlan = widget.hasPlan;
-
-      final (title, description) = hasPlan
-          ? (
-              l10n.myDayAllClearTitle,
-              l10n.myDayAllClearSubtitle,
-            )
-          : hasItems
-          ? (
-              l10n.myDayNoPlanTitle,
-              l10n.myDayNoPlanSubtitle,
-            )
-          : (
-              l10n.myDayNoTasksTitle,
-              l10n.myDayNoTasksSubtitle,
-            );
-
-      final String? actionLabel;
-      final VoidCallback? onAction;
-      if (hasPlan) {
-        actionLabel = l10n.myDayUpdatePlanTitle;
-        onAction = widget.onOpenPlan;
-      } else if (hasItems) {
-        actionLabel = l10n.myDayPlanMyDayTitle;
-        onAction = widget.onOpenPlan;
-      } else {
-        actionLabel = l10n.myDayAddTasksOrRoutinesAction;
-        onAction = () => Routing.toScreenKey(context, 'projects');
-      }
-
-      return _MyDayEmptyState(
+      return MyDayEmptyStateView(
         icon: widget.emptyStateIcon,
-        title: title,
-        description: description,
-        actionLabel: actionLabel,
-        onAction: onAction,
-        showPlanAnchor: !hasPlan && hasItems,
+        hasPlan: widget.hasPlan,
+        hasItems: hasItems,
+        onOpenPlan: widget.onOpenPlan,
+        onOpenProjects: () => Routing.toScreenKey(context, 'projects'),
       );
     }
 
@@ -1234,6 +1203,66 @@ class _MyDayEmptyState extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+@visibleForTesting
+class MyDayEmptyStateView extends StatelessWidget {
+  const MyDayEmptyStateView({
+    required this.icon,
+    required this.hasPlan,
+    required this.hasItems,
+    required this.onOpenPlan,
+    required this.onOpenProjects,
+    super.key,
+  });
+
+  final IconData icon;
+  final bool hasPlan;
+  final bool hasItems;
+  final VoidCallback onOpenPlan;
+  final VoidCallback onOpenProjects;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    final (title, description) = hasPlan
+        ? (
+            l10n.myDayAllClearTitle,
+            l10n.myDayAllClearSubtitle,
+          )
+        : hasItems
+        ? (
+            l10n.myDayNoPlanTitle,
+            l10n.myDayNoPlanSubtitle,
+          )
+        : (
+            l10n.myDayNoTasksTitle,
+            l10n.myDayNoTasksSubtitle,
+          );
+
+    final String? actionLabel;
+    final VoidCallback? onAction;
+    if (hasPlan) {
+      actionLabel = l10n.myDayUpdatePlanTitle;
+      onAction = onOpenPlan;
+    } else if (hasItems) {
+      actionLabel = l10n.myDayPlanMyDayTitle;
+      onAction = onOpenPlan;
+    } else {
+      actionLabel = l10n.myDayAddTasksOrRoutinesAction;
+      onAction = onOpenProjects;
+    }
+
+    return _MyDayEmptyState(
+      icon: icon,
+      title: title,
+      description: description,
+      actionLabel: actionLabel,
+      onAction: onAction,
+      showPlanAnchor: !hasPlan && hasItems,
     );
   }
 }

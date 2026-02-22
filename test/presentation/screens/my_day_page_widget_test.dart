@@ -20,6 +20,7 @@ import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_
 import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_query_service.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_session_query_service.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_page.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -68,6 +69,7 @@ class MockAllocationOrchestrator extends Mock
 
 class MockOccurrenceCommandService extends Mock
     implements OccurrenceCommandService {}
+
 
 void main() {
   setUpAll(() {
@@ -529,15 +531,17 @@ void main() {
 
   Future<void> pumpMyDay(WidgetTester tester) async {
     debugPrint('[my_day_test] pumpMyDay start');
-    myDaySessionQueryService.start();
-    appLifecycleController.emit(AppLifecycleEvent.resumed);
     await tester.pumpApp(buildSubject());
     debugPrint('[my_day_test] pumpMyDay after pumpApp');
+    myDaySessionQueryService.start();
+    sessionAllocationCacheService.start();
+    appLifecycleController.emit(AppLifecycleEvent.resumed);
     await tester.pumpForStream();
     debugPrint('[my_day_test] pumpMyDay after pumpForStream');
     await tester.pump(speedDialInitDelay);
     debugPrint('[my_day_test] pumpMyDay after speedDial');
   }
+
 
   testWidgetsSafe('my day shows loading state while waiting for data', (
     tester,
@@ -681,4 +685,48 @@ void main() {
       await queue.cancel();
     });
   });
+
+  testWidgetsSafe(
+    'my day empty state prompts add tasks or routines when none exist',
+    (tester) async {
+      await tester.pumpApp(
+        MyDayEmptyStateView(
+          icon: Icons.today_rounded,
+          hasPlan: false,
+          hasItems: false,
+          onOpenPlan: () {},
+          onOpenProjects: () {},
+        ),
+      );
+
+      final l10n =
+          tester.element(find.byType(MyDayEmptyStateView)).l10n;
+      expect(find.text(l10n.myDayNoTasksTitle), findsOneWidget);
+      expect(find.text(l10n.myDayNoTasksSubtitle), findsOneWidget);
+      expect(find.text(l10n.myDayAddTasksOrRoutinesAction), findsOneWidget);
+      expect(find.text(l10n.myDayPlanMyDayTitle), findsNothing);
+    },
+  );
+
+  testWidgetsSafe(
+    'my day empty state shows build plan when tasks or routines exist',
+    (tester) async {
+      await tester.pumpApp(
+        MyDayEmptyStateView(
+          icon: Icons.today_rounded,
+          hasPlan: false,
+          hasItems: true,
+          onOpenPlan: () {},
+          onOpenProjects: () {},
+        ),
+      );
+
+      final l10n =
+          tester.element(find.byType(MyDayEmptyStateView)).l10n;
+      expect(find.text(l10n.myDayNoPlanTitle), findsOneWidget);
+      expect(find.text(l10n.myDayNoPlanSubtitle), findsOneWidget);
+      expect(find.text(l10n.myDayPlanMyDayTitle), findsOneWidget);
+      expect(find.text(l10n.myDayAddTasksOrRoutinesAction), findsNothing);
+    },
+  );
 }

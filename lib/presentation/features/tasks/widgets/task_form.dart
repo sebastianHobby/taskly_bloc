@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
@@ -358,13 +360,113 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     });
   }
 
-  void _setDateForTarget(_TaskDateEditorTarget target, DateTime? value) {
+  Future<void> _setDateForTarget(
+    _TaskDateEditorTarget target,
+    DateTime? value,
+  ) async {
+    if (target == _TaskDateEditorTarget.due && value == null) {
+      final reminderKind =
+          widget
+                  .formKey
+                  .currentState
+                  ?.fields[TaskFieldKeys.reminderKind.id]
+                  ?.value
+              as TaskReminderKind? ??
+          TaskReminderKind.none;
+      if (reminderKind == TaskReminderKind.beforeDue) {
+        final resolution = await _showReminderDueRemovedPrompt(context);
+        if (!mounted || resolution == null) return;
+
+        switch (resolution) {
+          case _ReminderDueRemovalResolution.pickDateTime:
+            final pickedUtc = await _pickAbsoluteReminderDateTime(context);
+            if (!mounted || pickedUtc == null) return;
+            widget.formKey.currentState?.fields[TaskFieldKeys.reminderKind.id]
+                ?.didChange(TaskReminderKind.absolute);
+            widget.formKey.currentState?.fields[TaskFieldKeys.reminderAtUtc.id]
+                ?.didChange(pickedUtc);
+            widget
+                .formKey
+                .currentState
+                ?.fields[TaskFieldKeys.reminderMinutesBeforeDue.id]
+                ?.didChange(null);
+          case _ReminderDueRemovalResolution.removeReminder:
+            widget.formKey.currentState?.fields[TaskFieldKeys.reminderKind.id]
+                ?.didChange(TaskReminderKind.none);
+            widget.formKey.currentState?.fields[TaskFieldKeys.reminderAtUtc.id]
+                ?.didChange(null);
+            widget
+                .formKey
+                .currentState
+                ?.fields[TaskFieldKeys.reminderMinutesBeforeDue.id]
+                ?.didChange(null);
+        }
+      }
+    }
+
     final fieldKey = target == _TaskDateEditorTarget.planned
         ? TaskFieldKeys.startDate.id
         : TaskFieldKeys.deadlineDate.id;
     widget.formKey.currentState?.fields[fieldKey]?.didChange(value);
     markDirty();
     setState(() => _activeDateEditor = null);
+  }
+
+  Future<DateTime?> _pickAbsoluteReminderDateTime(BuildContext context) async {
+    final nowLocal = context.read<NowService>().nowLocal();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: nowLocal,
+      firstDate: DateTime(nowLocal.year - 2),
+      lastDate: DateTime(nowLocal.year + 10),
+    );
+    if (date == null || !context.mounted) return null;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(nowLocal),
+    );
+    if (time == null) return null;
+    final localDateTime = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    return localDateTime.toUtc();
+  }
+
+  Future<_ReminderDueRemovalResolution?> _showReminderDueRemovedPrompt(
+    BuildContext context,
+  ) {
+    return showDialog<_ReminderDueRemovalResolution>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(context.l10n.taskReminderDueRemovedTitle),
+          content: Text(context.l10n.taskReminderDueRemovedBody),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(context.l10n.cancelLabel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(
+                _ReminderDueRemovalResolution.removeReminder,
+              ),
+              child: Text(context.l10n.taskReminderDueRemovedRemoveAction),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(
+                _ReminderDueRemovalResolution.pickDateTime,
+              ),
+              child: Text(context.l10n.taskReminderDueRemovedPickAction),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<RecurrencePickerResult?> _pickRecurrence({
@@ -1268,7 +1370,9 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                               ? startDate
                               : deadlineDate,
                           onDateSelected: (value) {
-                            _setDateForTarget(_activeDateEditor!, value);
+                            unawaited(
+                              _setDateForTarget(_activeDateEditor!, value),
+                            );
                           },
                           onClose: () {
                             setState(() => _activeDateEditor = null);
@@ -1387,6 +1491,11 @@ final class _ReminderSelectionResult {
   final _ReminderSelectionMode mode;
   final DateTime? reminderAtUtc;
   final int? reminderMinutesBeforeDue;
+}
+
+enum _ReminderDueRemovalResolution {
+  pickDateTime,
+  removeReminder,
 }
 
 class _TaskProjectValueRow extends StatelessWidget {

@@ -203,6 +203,14 @@ Future<void> setupDependencies() async {
         clock: getIt<Clock>(),
       ),
     )
+    ..registerLazySingleton<TaskReminderService>(
+      () => TaskReminderService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        temporalTriggerService: getIt<TemporalTriggerService>(),
+        presenter: getIt<NotificationPresenter>(),
+        clock: getIt<Clock>(),
+      ),
+    )
     ..registerLazySingleton<AllocationOrchestrator>(
       () => AllocationOrchestrator(
         taskRepository: getIt<TaskRepositoryContract>(),
@@ -324,6 +332,7 @@ Future<void> setupDependencies() async {
         appLifecycleService: getIt<AppLifecycleService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
         planMyDayReminderService: getIt<PlanMyDayReminderService>(),
+        taskReminderService: getIt<TaskReminderService>(),
         attentionTemporalInvalidationService:
             getIt<AttentionTemporalInvalidationService>(),
         attentionPrewarmService: getIt<AttentionPrewarmService>(),
