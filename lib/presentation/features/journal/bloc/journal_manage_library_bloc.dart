@@ -139,6 +139,17 @@ final class JournalManageLibrarySetTrackerActiveRequested
   final Completer<void> completer;
 }
 
+final class JournalManageLibraryDeleteTrackerRequested
+    extends JournalManageLibraryEvent {
+  const JournalManageLibraryDeleteTrackerRequested({
+    required this.def,
+    required this.completer,
+  });
+
+  final TrackerDefinition def;
+  final Completer<void> completer;
+}
+
 final class JournalManageLibraryMoveTrackerToGroupRequested
     extends JournalManageLibraryEvent {
   const JournalManageLibraryMoveTrackerToGroupRequested({
@@ -201,6 +212,7 @@ class JournalManageLibraryBloc
     on<JournalManageLibrarySetTrackerActiveRequested>(
       _onSetTrackerActiveRequested,
     );
+    on<JournalManageLibraryDeleteTrackerRequested>(_onDeleteTrackerRequested);
     on<JournalManageLibraryMoveTrackerToGroupRequested>(
       _onMoveTrackerToGroupRequested,
     );
@@ -684,6 +696,51 @@ class JournalManageLibraryBloc
     }
   }
 
+  Future<void> _onDeleteTrackerRequested(
+    JournalManageLibraryDeleteTrackerRequested event,
+    Emitter<JournalManageLibraryState> emit,
+  ) async {
+    if (event.def.id.trim().isEmpty) {
+      _complete(event.completer);
+      return;
+    }
+
+    _setStatus(emit, const JournalManageLibrarySaving());
+
+    final context = _newContext(
+      intent: 'delete_tracker',
+      operation: 'journal.deleteTrackerAndData',
+      entityId: event.def.id,
+    );
+
+    try {
+      await _repository.deleteTrackerAndData(event.def.id, context: context);
+
+      if (emit.isDone) return;
+      _setStatus(emit, const JournalManageLibrarySaved());
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalManageLibraryBloc] deleteTracker failed',
+      );
+
+      if (emit.isDone) return;
+      _setStatus(
+        emit,
+        JournalManageLibraryActionError(
+          _uiMessageFor(
+            error,
+            fallback: 'Failed to delete tracker. Please try again.',
+          ),
+        ),
+      );
+    } finally {
+      _complete(event.completer);
+    }
+  }
+
   Future<void> _onMoveTrackerToGroupRequested(
     JournalManageLibraryMoveTrackerToGroupRequested event,
     Emitter<JournalManageLibraryState> emit,
@@ -953,6 +1010,19 @@ class JournalManageLibraryBloc
       JournalManageLibrarySetTrackerIconRequested(
         def: def,
         iconName: iconName,
+        completer: completer,
+      ),
+    );
+    return completer.future;
+  }
+
+  Future<void> deleteTracker({
+    required TrackerDefinition def,
+  }) {
+    final completer = Completer<void>();
+    add(
+      JournalManageLibraryDeleteTrackerRequested(
+        def: def,
         completer: completer,
       ),
     );

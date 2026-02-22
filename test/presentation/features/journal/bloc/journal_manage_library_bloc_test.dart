@@ -91,6 +91,12 @@ void main() {
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => repository.deleteTrackerAndData(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
 
     addTearDown(groupsController.close);
     addTearDown(defsController.close);
@@ -240,6 +246,58 @@ void main() {
       verify(
         () => repository.deleteTrackerGroup(
           'g-1',
+          context: any(named: 'context'),
+        ),
+      ).called(1);
+    },
+  );
+
+  blocTestSafe<JournalManageLibraryBloc, JournalManageLibraryState>(
+    'deleteTracker removes tracker and historical data',
+    build: buildBloc,
+    act: (bloc) async {
+      groupsController.emit(const []);
+      defsController.emit([
+        TrackerDefinition(
+          id: 't-1',
+          name: 'Tracker',
+          scope: 'entry',
+          valueType: 'bool',
+          createdAt: nowUtc,
+          updatedAt: nowUtc,
+        ),
+      ]);
+
+      await bloc.deleteTracker(
+        def: TrackerDefinition(
+          id: 't-1',
+          name: 'Tracker',
+          scope: 'entry',
+          valueType: 'bool',
+          createdAt: nowUtc,
+          updatedAt: nowUtc,
+        ),
+      );
+    },
+    expect: () => [
+      isA<JournalManageLibraryLoaded>(),
+      isA<JournalManageLibraryLoaded>(),
+      isA<JournalManageLibraryLoaded>(),
+      isA<JournalManageLibraryLoaded>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalManageLibrarySaving>(),
+      ),
+      isA<JournalManageLibraryLoaded>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalManageLibrarySaved>(),
+      ),
+    ],
+    verify: (_) {
+      verify(
+        () => repository.deleteTrackerAndData(
+          't-1',
           context: any(named: 'context'),
         ),
       ).called(1);

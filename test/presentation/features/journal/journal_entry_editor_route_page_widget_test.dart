@@ -75,6 +75,12 @@ void main() {
         trackerId: any(named: 'trackerId'),
       ),
     ).thenAnswer((_) => Stream<List<TrackerEvent>>.value(const []));
+    when(
+      () => repository.appendTrackerEvent(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -135,16 +141,18 @@ void main() {
 
   testWidgetsSafe('renders editor content when loaded', (tester) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
-    final tracker = _trackerDef('tracker-1', 'Energy', groupId: 'group-1');
+    final tracker = _trackerDef('tracker-1', 'Energy', scope: 'daily');
 
     defsSubject.add([moodDef, tracker]);
-    groupsSubject.add([_group('group-1', 'Wellness')]);
 
     await pumpPage(tester);
     await tester.pumpForStream();
-    await _expandGroup(tester, 'Wellness');
 
     expect(find.text('Save log'), findsOneWidget);
+    expect(find.text(_l10n(tester).journalMoodGateHelper), findsOneWidget);
+
+    await _tapMood(tester, _l10n(tester).moodGoodLabel);
+    await tester.pumpForStream();
     expect(find.text('Energy'), findsOneWidget);
   });
 
@@ -314,15 +322,15 @@ void main() {
     tester,
   ) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
-    final trackerA = _trackerDef('tracker-1', 'Energy', groupId: 'group-1');
-    final trackerB = _trackerDef('tracker-2', 'Focus', groupId: 'group-1');
+    final trackerA = _trackerDef('tracker-1', 'Energy', scope: 'daily');
+    final trackerB = _trackerDef('tracker-2', 'Focus', scope: 'daily');
 
-    groupsSubject.add([_group('group-1', 'Wellness')]);
     defsSubject.add([moodDef, trackerA]);
 
     await pumpPage(tester);
     await tester.pumpForStream();
-    await _expandGroup(tester, 'Wellness');
+    await _tapMood(tester, _l10n(tester).moodGoodLabel);
+    await tester.pumpForStream();
 
     expect(find.text('Energy'), findsOneWidget);
 
@@ -337,6 +345,7 @@ void main() {
     final choiceDef = _trackerDef(
       'choice-1',
       'Location',
+      scope: 'daily',
       valueType: 'choice',
       valueKind: 'single_choice',
     );
@@ -374,7 +383,9 @@ void main() {
 
     await pumpPage(tester);
     await tester.pumpForStream();
-    await _expandGroup(tester, _l10n(tester).journalGroupUngrouped);
+    await _tapMood(tester, _l10n(tester).moodGoodLabel);
+    await tester.pumpForStream();
+    await _expandDailyModule(tester, 'Location');
 
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Work'), findsOneWidget);
@@ -398,6 +409,7 @@ void main() {
     final ratingDef = _trackerDef(
       'rating-1',
       'Energy',
+      scope: 'daily',
       valueType: 'rating',
       minInt: 2,
       maxInt: 8,
@@ -407,7 +419,9 @@ void main() {
 
     await pumpPage(tester);
     await tester.pumpForStream();
-    await _expandGroup(tester, _l10n(tester).journalGroupUngrouped);
+    await _tapMood(tester, _l10n(tester).moodGoodLabel);
+    await tester.pumpForStream();
+    await _expandDailyModule(tester, 'Energy');
 
     expect(find.widgetWithText(ChoiceChip, '2'), findsOneWidget);
     expect(find.widgetWithText(ChoiceChip, '8'), findsOneWidget);
@@ -418,6 +432,7 @@ void main() {
     final quantityDef = _trackerDef(
       'quantity-1',
       'Water',
+      scope: 'daily',
       valueType: 'quantity',
       valueKind: 'number',
       minInt: 2,
@@ -428,7 +443,9 @@ void main() {
 
     await pumpPage(tester);
     await tester.pumpForStream();
-    await _expandGroup(tester, _l10n(tester).journalGroupUngrouped);
+    await _tapMood(tester, _l10n(tester).moodGoodLabel);
+    await tester.pumpForStream();
+    await _expandDailyModule(tester, 'Water');
 
     expect(find.text('0'), findsOneWidget);
 
@@ -455,7 +472,10 @@ void main() {
       await tester.pumpForStream();
     }
 
-    expect(find.text('10'), findsOneWidget);
+    expect(
+      find.descendant(of: quantityInput, matching: find.text('10')),
+      findsOneWidget,
+    );
   });
 
   testWidgetsSafe('choice bottom sheet selects option', (tester) async {
@@ -463,6 +483,7 @@ void main() {
     final choiceDef = _trackerDef(
       'choice-1',
       'Context',
+      scope: 'daily',
       valueType: 'choice',
       valueKind: 'single_choice',
     );
@@ -498,7 +519,9 @@ void main() {
 
     await pumpPage(tester);
     await tester.pumpForStream();
-    await _expandGroup(tester, _l10n(tester).journalGroupUngrouped);
+    await _tapMood(tester, _l10n(tester).moodGoodLabel);
+    await tester.pumpForStream();
+    await _expandDailyModule(tester, 'Context');
 
     final l10n = _l10n(tester);
     await _tapTextButton(tester, l10n.journalChooseOptionLabel);
@@ -565,8 +588,8 @@ Future<void> _tapTextButton(WidgetTester tester, String text) async {
   await tester.tap(finder.first, warnIfMissed: false);
 }
 
-Future<void> _expandGroup(WidgetTester tester, String groupTitle) async {
-  final tileFinder = find.widgetWithText(ExpansionTile, groupTitle);
+Future<void> _expandDailyModule(WidgetTester tester, String trackerName) async {
+  final tileFinder = find.text(trackerName);
   if (tileFinder.evaluate().isEmpty) return;
   await tester.ensureVisible(tileFinder.first);
   await tester.pumpUntilCondition(
@@ -607,6 +630,7 @@ TrackerDefinition _trackerDef(
   String id,
   String name, {
   String? systemKey,
+  String? scope,
   String? groupId,
   String valueType = 'rating',
   String? valueKind,
@@ -618,7 +642,7 @@ TrackerDefinition _trackerDef(
   return TrackerDefinition(
     id: id,
     name: name,
-    scope: systemKey == 'mood' ? 'day' : 'entry',
+    scope: scope ?? (systemKey == 'mood' ? 'day' : 'entry'),
     valueType: valueType,
     createdAt: now,
     updatedAt: now,

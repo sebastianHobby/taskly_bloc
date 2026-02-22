@@ -178,6 +178,28 @@ class _DailyCheckinsView extends StatelessWidget {
                                 await context
                                     .read<JournalManageLibraryBloc>()
                                     .setTrackerActive(def: d, isActive: false);
+                                return;
+                              }
+                              if (value == 'delete') {
+                                final action = await _showDeleteTrackerDialog(
+                                  context,
+                                  trackerName: d.name,
+                                );
+                                if (!context.mounted || action == null) {
+                                  return;
+                                }
+                                if (action == _DeleteTrackerAction.archive) {
+                                  await context
+                                      .read<JournalManageLibraryBloc>()
+                                      .setTrackerActive(
+                                        def: d,
+                                        isActive: false,
+                                      );
+                                  return;
+                                }
+                                await context
+                                    .read<JournalManageLibraryBloc>()
+                                    .deleteTracker(def: d);
                               }
                             },
                             itemBuilder: (context) => [
@@ -192,6 +214,10 @@ class _DailyCheckinsView extends StatelessWidget {
                               PopupMenuItem<String>(
                                 value: 'archive',
                                 child: Text(l10n.journalArchiveLabel),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'delete',
+                                child: Text(l10n.deleteLabel),
                               ),
                             ],
                           ),
@@ -256,7 +282,45 @@ class _DailyCheckinsView extends StatelessWidget {
       ),
     );
   }
+
+  Future<_DeleteTrackerAction?> _showDeleteTrackerDialog(
+    BuildContext context, {
+    required String trackerName,
+  }) {
+    final l10n = context.l10n;
+    return showDialog<_DeleteTrackerAction>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.journalDeleteTrackerTitle),
+          content: Text(
+            l10n.journalDeleteTrackerMessage(trackerName),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.cancelLabel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(
+                _DeleteTrackerAction.archive,
+              ),
+              child: Text(l10n.journalArchiveInsteadLabel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(
+                _DeleteTrackerAction.delete,
+              ),
+              child: Text(l10n.deleteLabel),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
+
+enum _DeleteTrackerAction { archive, delete }
 
 class _NameBottomSheet extends StatefulWidget {
   const _NameBottomSheet({

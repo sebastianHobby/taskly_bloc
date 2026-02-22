@@ -5253,6 +5253,49 @@
     "@checklistLogActionLabel": {
         "description": "Primary dialog action label for routine checklist completion prompt"
     },
+    "journalMoodPromptSubtitle": "How are you feeling right now?",
+    "@journalMoodPromptSubtitle": {
+        "description": "Mood prompt subtitle on the journal editor"
+    },
+    "journalMoodGateHelper": "Pick your mood to continue",
+    "@journalMoodGateHelper": {
+        "description": "Helper text shown when mood must be selected first"
+    },
+    "journalDailyCheckinProgress": "{completed} of {total} daily check-ins logged",
+    "@journalDailyCheckinProgress": {
+        "description": "Progress text for completed daily check-ins in the journal editor",
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "total": {
+                "type": "int"
+            }
+        }
+    },
+    "journalWarmNotePlaceholder": "Add a few thoughts about your day...",
+    "@journalWarmNotePlaceholder": {
+        "description": "Warm placeholder for optional journal note input"
+    },
+    "journalNotSetLabel": "Not set",
+    "@journalNotSetLabel": {
+        "description": "Fallback label for unset daily check-in values"
+    },
+    "journalDeleteTrackerTitle": "Delete tracker?",
+    "@journalDeleteTrackerTitle": {
+        "description": "Title for delete tracker confirmation dialog"
+    },
+    "journalDeleteTrackerMessage": "Deleting \"{trackerName}\" removes it from all historical entries.",
+    "@journalDeleteTrackerMessage": {
+        "description": "Warning message shown before deleting a tracker and its historical data",
+        "placeholders": {
+            "trackerName": {}
+        }
+    },
+    "journalArchiveInsteadLabel": "Archive instead",
+    "@journalArchiveInsteadLabel": {
+        "description": "Alternative action in delete tracker confirmation dialog"
+    },
     "notNowLabel": "Not now",
     "@notNowLabel": {
         "description": "Action label for postponing immediate completion"
