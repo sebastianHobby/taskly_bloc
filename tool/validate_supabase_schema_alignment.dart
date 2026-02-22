@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 
 const _powersyncSchemaPath =
     'packages/taskly_data/lib/src/infrastructure/powersync/schema.dart';
@@ -8,12 +9,14 @@ const _driftDatabaseGeneratedPath =
     'packages/taskly_data/lib/src/infrastructure/drift/drift_database.g.dart';
 const _driftFeaturesDir =
     'packages/taskly_data/lib/src/infrastructure/drift/features';
+const _schema = 'public';
 
 const _ignoredColumns = <String>{'_metadata'};
 
 Future<void> main(List<String> args) async {
   final requireDb = args.contains('--require-db');
   final linkedOnly = args.contains('--linked-only');
+  final strictDdl = args.contains('--strict-ddl');
 
   final powersyncTables = _parsePowerSyncSchema(_powersyncSchemaPath);
   if (powersyncTables.isEmpty) {
@@ -102,6 +105,209 @@ Future<void> main(List<String> args) async {
     'Supabase schema matches PowerSync schema.dart and Drift tables '
     '(${powersyncTables.length} tables checked).',
   );
+
+  if (!strictDdl) {
+    return;
+  }
+
+  final strictResult = await _runStrictDdlValidation(requireDb: requireDb);
+  if (!strictResult.ok) {
+    stderr.writeln(strictResult.message);
+    exitCode = 1;
+    return;
+  }
+
+  stdout.writeln(
+    'Strict DDL validation passed (migrations <-> local <-> linked).',
+  );
+}
+
+class _ValidationResult {
+  const _ValidationResult({required this.ok, required this.message});
+
+  final bool ok;
+  final String message;
+}
+
+class _CommandResult {
+  const _CommandResult({
+    required this.exitCode,
+    required this.stdout,
+    required this.stderr,
+  });
+
+  final int exitCode;
+  final String stdout;
+  final String stderr;
+
+  String get combinedOutput => '${stdout.trim()}\n${stderr.trim()}'.trim();
+}
+
+Future<_ValidationResult> _runStrictDdlValidation({
+  required bool requireDb,
+}) async {
+  final start = await _runSupabase(['db', 'start']);
+  if (start.exitCode != 0) {
+    return _ValidationResult(
+      ok: !requireDb,
+      message: requireDb
+          ? 'Failed to start local Supabase DB.\n${start.combinedOutput}'
+          : 'SKIP: Could not start local Supabase DB.\n${start.combinedOutput}',
+    );
+  }
+
+  final reset = await _runSupabase(['db', 'reset', '--local', '--no-seed']);
+  if (reset.exitCode != 0) {
+    return _ValidationResult(
+      ok: false,
+      message:
+          'Failed to reset/apply local migrations.\n${reset.combinedOutput}',
+    );
+  }
+
+  final localDiff = await _runSupabase([
+    'db',
+    'diff',
+    '--local',
+    '--schema',
+    _schema,
+    '--use-migra',
+  ]);
+  if (localDiff.exitCode != 0) {
+    return _ValidationResult(
+      ok: false,
+      message:
+          'Failed to diff local migrations against local DB.\n${localDiff.combinedOutput}',
+    );
+  }
+
+  final localStatements = _extractDdlStatements(localDiff.stdout);
+  if (localStatements.isNotEmpty) {
+    return _ValidationResult(
+      ok: false,
+      message:
+          'Local DB differs from local migrations after reset.\n'
+          'First DDL statements:\n${_formatSample(localStatements)}',
+    );
+  }
+
+  final linkedDiff = await _runSupabase([
+    'db',
+    'diff',
+    '--linked',
+    '--schema',
+    _schema,
+    '--use-migra',
+  ]);
+  if (linkedDiff.exitCode != 0) {
+    return _ValidationResult(
+      ok: !requireDb,
+      message: requireDb
+          ? 'Failed to diff local migrations against linked remote DB.\n${linkedDiff.combinedOutput}'
+          : 'SKIP: Could not diff local migrations against linked remote DB.\n${linkedDiff.combinedOutput}',
+    );
+  }
+
+  final linkedStatements = _extractDdlStatements(linkedDiff.stdout);
+  if (linkedStatements.isNotEmpty) {
+    return _ValidationResult(
+      ok: false,
+      message:
+          'Linked remote DB DDL differs from local migrations.\n'
+          'First DDL statements:\n${_formatSample(linkedStatements)}',
+    );
+  }
+
+  final migrationList = await _runSupabase(['migration', 'list', '--linked']);
+  if (migrationList.exitCode != 0) {
+    return _ValidationResult(
+      ok: !requireDb,
+      message: requireDb
+          ? 'Failed to list linked migrations.\n${migrationList.combinedOutput}'
+          : 'SKIP: Could not list linked migrations.\n${migrationList.combinedOutput}',
+    );
+  }
+
+  final migrationMismatches = _parseMigrationListMismatches(
+    migrationList.stdout,
+  );
+  if (migrationMismatches.isNotEmpty) {
+    return _ValidationResult(
+      ok: false,
+      message:
+          'Local and linked migration histories differ:\n'
+          '${migrationMismatches.map((m) => '  - $m').join('\n')}',
+    );
+  }
+
+  return const _ValidationResult(
+    ok: true,
+    message: 'Strict DDL validation passed.',
+  );
+}
+
+Future<_CommandResult> _runSupabase(List<String> args) async {
+  final result = await Process.run('supabase', args, runInShell: true);
+  return _CommandResult(
+    exitCode: result.exitCode,
+    stdout: '${result.stdout}',
+    stderr: '${result.stderr}',
+  );
+}
+
+List<String> _extractDdlStatements(String output) {
+  final ddlPrefix = RegExp(
+    r'^(create|alter|drop|grant|revoke|comment|truncate|set\s+check_function_bodies|create\s+or\s+replace)\b',
+    caseSensitive: false,
+  );
+  return const LineSplitter()
+      .convert(output)
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty && ddlPrefix.hasMatch(line))
+      .toList();
+}
+
+String _formatSample(List<String> statements) {
+  const maxLines = 20;
+  final sample = statements.take(maxLines).map((s) => '  $s').join('\n');
+  if (statements.length <= maxLines) {
+    return sample;
+  }
+  return '$sample\n  ... (+${statements.length - maxLines} more)';
+}
+
+List<String> _parseMigrationListMismatches(String output) {
+  final mismatches = <String>[];
+  final lines = const LineSplitter().convert(output);
+  for (final raw in lines) {
+    final line = raw.trimRight();
+    if (!line.contains('|')) {
+      continue;
+    }
+
+    if (line.contains('Local') && line.contains('Remote')) {
+      continue;
+    }
+    if (line.trim().startsWith('-')) {
+      continue;
+    }
+
+    final parts = line
+        .split('|')
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+    if (parts.length < 2) {
+      continue;
+    }
+
+    final local = parts[0];
+    final remote = parts[1];
+    if (local != remote) {
+      mismatches.add('Local `$local` vs Remote `$remote`');
+    }
+  }
+  return mismatches;
 }
 
 Map<String, Set<String>> _parsePowerSyncSchema(String path) {
@@ -261,7 +467,7 @@ Future<String?> _dumpSupabasePublicSchema({required bool linkedOnly}) async {
         'dump',
         '--linked',
         '--schema',
-        'public',
+        _schema,
         '--file',
         tempFile.path,
       ],
@@ -276,7 +482,7 @@ Future<String?> _dumpSupabasePublicSchema({required bool linkedOnly}) async {
           '--db-url',
           dbUrl,
           '--schema',
-          'public',
+          _schema,
           '--file',
           tempFile.path,
         ]);
@@ -297,7 +503,7 @@ Future<String?> _dumpSupabasePublicSchema({required bool linkedOnly}) async {
         'dump',
         '--linked',
         '--schema',
-        'public',
+        _schema,
         '--file',
         tempFile.path,
       ];

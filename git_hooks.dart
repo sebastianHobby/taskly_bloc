@@ -164,6 +164,7 @@ Future<bool> _runSchemaParityCheck() async {
         'tool/validate_supabase_schema_alignment.dart',
         '--require-db',
         '--linked-only',
+        '--strict-ddl',
       ],
       runInShell: true,
     );
