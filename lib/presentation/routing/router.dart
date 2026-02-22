@@ -19,7 +19,6 @@ import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
-import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_wizard_page.dart';
@@ -43,7 +42,6 @@ import 'package:taskly_bloc/presentation/features/settings/view/settings_account
 import 'package:taskly_bloc/presentation/features/settings/view/settings_developer_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_micro_learning_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_notifications_page.dart';
-import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_bloc/presentation/features/onboarding/view/onboarding_flow_page.dart';
 
@@ -491,20 +489,12 @@ GoRouter createRouter({
             builder: (_, __) => const SettingsNotificationsPage(),
           ),
           GoRoute(
-            path: Routing.screenPath('journal_history'),
-            builder: (_, __) => const JournalHistoryPage(),
-          ),
-          GoRoute(
             path: Routing.screenPath('journal_manage_trackers'),
             builder: (_, __) => const JournalTrackersPage(),
           ),
           GoRoute(
             path: '/journal/trackers/new',
             builder: (_, __) => const JournalTrackerWizardPage(),
-          ),
-          GoRoute(
-            path: Routing.screenPath('trackers'),
-            builder: (_, __) => const TrackersPage(),
           ),
           GoRoute(
             path: '/debug/tiles',

@@ -98,6 +98,53 @@ void main() {
     });
 
     testSafe(
+      'saveTrackerGroup create reuses existing normalized-name group id',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = JournalRepositoryImpl(
+          db,
+          IdGenerator.withUserId('user-1'),
+        );
+
+        final existingCreatedAt = DateTime.utc(2025, 1, 1);
+        final existingUpdatedAt = DateTime.utc(2025, 1, 2);
+
+        await db
+            .into(db.trackerGroups)
+            .insert(
+              TrackerGroupsCompanion.insert(
+                id: const drift.Value('group-existing'),
+                name: 'Health',
+                isActive: const drift.Value(false),
+                sortOrder: const drift.Value(10),
+                createdAt: drift.Value(existingCreatedAt),
+                updatedAt: drift.Value(existingUpdatedAt),
+              ),
+            );
+
+        final now = DateTime.utc(2025, 2, 1);
+        await repo.saveTrackerGroup(
+          TrackerGroup(
+            id: '',
+            name: '  health  ',
+            createdAt: now,
+            updatedAt: now,
+            isActive: true,
+            sortOrder: 200,
+            userId: null,
+          ),
+        );
+
+        final rows = await db.select(db.trackerGroups).get();
+        expect(rows.length, equals(1));
+        expect(rows.single.id, equals('group-existing'));
+        expect(rows.single.name, equals('  health  '));
+        expect(rows.single.isActive, isTrue);
+        expect(rows.single.sortOrder, equals(200));
+      },
+    );
+
+    testSafe(
       'appendTrackerEvent and watchTrackerEvents decodes JSON',
       () async {
         final db = createAutoClosingDb();

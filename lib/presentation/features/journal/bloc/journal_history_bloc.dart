@@ -8,6 +8,8 @@ import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
+const Object _unset = Object();
+
 sealed class JournalHistoryEvent {
   const JournalHistoryEvent();
 }
@@ -20,6 +22,10 @@ final class JournalHistoryFiltersChanged extends JournalHistoryEvent {
   const JournalHistoryFiltersChanged(this.filters);
 
   final JournalHistoryFilters filters;
+}
+
+final class JournalHistoryLoadMoreRequested extends JournalHistoryEvent {
+  const JournalHistoryLoadMoreRequested();
 }
 
 sealed class JournalHistoryState {
@@ -62,7 +68,14 @@ class JournalHistoryBloc
       _onFiltersChanged,
       transformer: restartable(),
     );
+    on<JournalHistoryLoadMoreRequested>(
+      _onLoadMoreRequested,
+      transformer: droppable(),
+    );
   }
+
+  static const int _windowStepDays = 30;
+  static const int _maxLookbackDays = 3650;
 
   final JournalRepositoryContract _repository;
   final HomeDayKeyService _dayKeyService;
@@ -82,7 +95,9 @@ class JournalHistoryBloc
     Emitter<JournalHistoryState> emit,
   ) async {
     final filters = event.filters;
-    emit(JournalHistoryLoading(filters));
+    if (state is! JournalHistoryLoaded) {
+      emit(JournalHistoryLoading(filters));
+    }
 
     final todayDayKeyUtc = _dayKeyService.todayDayKeyUtc();
     final range = _buildDateRange(filters, todayDayKeyUtc: todayDayKeyUtc);
@@ -139,6 +154,31 @@ class JournalHistoryBloc
     );
   }
 
+  Future<void> _onLoadMoreRequested(
+    JournalHistoryLoadMoreRequested event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    final currentFilters = switch (state) {
+      JournalHistoryLoading(:final filters) => filters,
+      JournalHistoryLoaded(:final filters) => filters,
+      JournalHistoryError(:final filters) => filters,
+    };
+
+    if (currentFilters.rangeStart != null && currentFilters.rangeEnd != null) {
+      return;
+    }
+
+    final nextLookbackDays = (currentFilters.lookbackDays + _windowStepDays)
+        .clamp(_windowStepDays, _maxLookbackDays);
+    if (nextLookbackDays == currentFilters.lookbackDays) return;
+
+    add(
+      JournalHistoryFiltersChanged(
+        currentFilters.copyWith(lookbackDays: nextLookbackDays),
+      ),
+    );
+  }
+
   JournalQuery _buildQuery(
     JournalHistoryFilters filters, {
     required DateTime todayDayKeyUtc,
@@ -169,7 +209,9 @@ class JournalHistoryBloc
       predicates.add(
         JournalDatePredicate(
           operator: DateOperator.onOrAfter,
-          date: todayDayKeyUtc.subtract(const Duration(days: 29)),
+          date: todayDayKeyUtc.subtract(
+            Duration(days: filters.lookbackDays - 1),
+          ),
         ),
       );
     }
@@ -186,7 +228,9 @@ class JournalHistoryBloc
     final rangeStart = filters.rangeStart;
     final rangeEnd = filters.rangeEnd;
     if (rangeStart == null || rangeEnd == null) {
-      final startUtc = todayDayKeyUtc.subtract(const Duration(days: 29));
+      final startUtc = todayDayKeyUtc.subtract(
+        Duration(days: filters.lookbackDays - 1),
+      );
       return DateRange(start: startUtc, end: todayDayKeyUtc);
     }
     return DateRange(
@@ -340,6 +384,7 @@ final class JournalHistoryFilters {
     required this.rangeStart,
     required this.rangeEnd,
     required this.moodMinValue,
+    required this.lookbackDays,
   });
 
   factory JournalHistoryFilters.initial() => const JournalHistoryFilters(
@@ -347,24 +392,34 @@ final class JournalHistoryFilters {
     rangeStart: null,
     rangeEnd: null,
     moodMinValue: null,
+    lookbackDays: 30,
   );
 
   final String searchText;
   final DateTime? rangeStart;
   final DateTime? rangeEnd;
   final int? moodMinValue;
+  final int lookbackDays;
 
   JournalHistoryFilters copyWith({
     String? searchText,
-    DateTime? rangeStart,
-    DateTime? rangeEnd,
-    int? moodMinValue,
+    Object? rangeStart = _unset,
+    Object? rangeEnd = _unset,
+    Object? moodMinValue = _unset,
+    int? lookbackDays,
   }) {
     return JournalHistoryFilters(
       searchText: searchText ?? this.searchText,
-      rangeStart: rangeStart ?? this.rangeStart,
-      rangeEnd: rangeEnd ?? this.rangeEnd,
-      moodMinValue: moodMinValue ?? this.moodMinValue,
+      rangeStart: identical(rangeStart, _unset)
+          ? this.rangeStart
+          : rangeStart as DateTime?,
+      rangeEnd: identical(rangeEnd, _unset)
+          ? this.rangeEnd
+          : rangeEnd as DateTime?,
+      moodMinValue: identical(moodMinValue, _unset)
+          ? this.moodMinValue
+          : moodMinValue as int?,
+      lookbackDays: lookbackDays ?? this.lookbackDays,
     );
   }
 }

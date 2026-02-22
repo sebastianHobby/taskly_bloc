@@ -23,7 +23,6 @@ export 'src/services/occurrence_write_helper.dart';
 export 'src/features/analytics/repositories/analytics_repository_impl.dart';
 export 'src/features/analytics/services/analytics_service_impl.dart';
 
-export 'src/features/journal/maintenance/journal_tracker_seeder.dart';
 export 'src/features/journal/repositories/journal_repository_impl.dart';
 
 export 'src/features/notifications/repositories/pending_notifications_repository_impl.dart';

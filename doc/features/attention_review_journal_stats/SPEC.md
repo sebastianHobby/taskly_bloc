@@ -16,7 +16,13 @@ Defines support signals, weekly review cards, journal integration, and stats con
 - Journal home quick capture uses a modal bottom-sheet editor optimized for
   rapid logging; full-screen route edit/create remains available for detailed
   edits.
-- The editor supports selected-day creation from Journal home/day picker.
+- Journal home is a single chronological timeline feed (newest first) grouped
+  by day headers with compact metadata (entry count + mood average).
+- Journal history is not a separate screen; search and filters live on the main
+  Journal feed.
+- Journal home timeline supports infinite scroll by expanding the date window
+  as the user reaches the end of the list.
+- Journal home does not render a daily summary section.
 - Tracker writes for a selected day must be anchored to that selected day (not
   the device's current day) for both entry writes and day-scoped factor writes.
 - The editor renders factor inputs as two explicit sections with group

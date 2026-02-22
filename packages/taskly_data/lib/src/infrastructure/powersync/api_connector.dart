@@ -15,7 +15,6 @@ import 'package:taskly_data/src/infrastructure/powersync/powersync_status_stream
 import 'package:taskly_data/src/infrastructure/powersync/identifier_hash.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/attention/maintenance/attention_seeder.dart';
-import 'package:taskly_data/src/features/journal/maintenance/journal_tracker_seeder.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/powersync/schema.dart';
 import 'package:taskly_data/src/infrastructure/powersync/upload_data_normalizer.dart'
@@ -1185,12 +1184,6 @@ Future<void> runPostAuthMaintenance({
   await AttentionSeeder(db: driftDb, idGenerator: idGenerator).ensureSeeded();
 
   await _backfillAttentionRulesDomain(db: driftDb);
-
-  // Seed system Journal trackers + default preferences.
-  await JournalTrackerSeeder(
-    db: driftDb,
-    idGenerator: idGenerator,
-  ).ensureSeeded();
 
   await _cleanupOrphanedSystemAttentionRules(
     db: driftDb,

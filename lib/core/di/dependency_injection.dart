@@ -18,8 +18,6 @@ import 'package:taskly_domain/attention.dart'
 import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/core/services/time/app_lifecycle_service.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/services/projects_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
@@ -339,17 +337,6 @@ Future<void> setupDependencies() async {
       ),
     )
     // Presentation BLoCs/Cubits
-    ..registerFactory<JournalTodayBloc>(
-      () => JournalTodayBloc(
-        repository: getIt<JournalRepositoryContract>(),
-      ),
-    )
-    ..registerFactory<JournalHistoryBloc>(
-      () => JournalHistoryBloc(
-        repository: getIt<JournalRepositoryContract>(),
-        dayKeyService: getIt<HomeDayKeyService>(),
-      ),
-    )
     ..registerFactory<MyDayGateBloc>(
       () => MyDayGateBloc(
         queryService: getIt<MyDayGateQueryService>(),

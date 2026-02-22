@@ -10,9 +10,11 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/services.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/feature_mocks.dart';
+import '../../../mocks/presentation_mocks.dart';
 
 class FakeNowService implements NowService {
   FakeNowService(this.now);
@@ -34,19 +36,23 @@ void main() {
   setUp(setUpTestEnvironment);
 
   late MockJournalRepositoryContract repository;
+  late MockHomeDayKeyService homeDayKeyService;
   late BehaviorSubject<List<TrackerDefinition>> defsSubject;
   late BehaviorSubject<List<JournalEntry>> entriesSubject;
   late BehaviorSubject<List<TrackerEvent>> eventsSubject;
-  late BehaviorSubject<List<TrackerEvent>> weekEventsSubject;
   late BehaviorSubject<List<TrackerStateDay>> dayStatesSubject;
 
   setUp(() {
     repository = MockJournalRepositoryContract();
+    homeDayKeyService = MockHomeDayKeyService();
     defsSubject = BehaviorSubject<List<TrackerDefinition>>();
     entriesSubject = BehaviorSubject<List<JournalEntry>>();
     eventsSubject = BehaviorSubject<List<TrackerEvent>>();
-    weekEventsSubject = BehaviorSubject<List<TrackerEvent>>();
     dayStatesSubject = BehaviorSubject<List<TrackerStateDay>>();
+
+    when(
+      () => homeDayKeyService.todayDayKeyUtc(),
+    ).thenReturn(DateTime.utc(2025, 1, 15));
 
     when(
       () => repository.watchTrackerDefinitions(),
@@ -62,13 +68,7 @@ void main() {
         anchorDate: any(named: 'anchorDate'),
         trackerId: any(named: 'trackerId'),
       ),
-    ).thenAnswer((invocation) {
-      final range = invocation.namedArguments[#range] as DateRange?;
-      if (range != null && range.end.difference(range.start).inDays >= 6) {
-        return weekEventsSubject;
-      }
-      return eventsSubject;
-    });
+    ).thenAnswer((_) => eventsSubject);
     when(
       () => repository.watchTrackerStateDay(range: any(named: 'range')),
     ).thenAnswer((_) => dayStatesSubject);
@@ -78,7 +78,6 @@ void main() {
     await defsSubject.close();
     await entriesSubject.close();
     await eventsSubject.close();
-    await weekEventsSubject.close();
     await dayStatesSubject.close();
   });
 
@@ -95,6 +94,9 @@ void main() {
               ),
               RepositoryProvider<NowService>.value(
                 value: FakeNowService(DateTime(2025, 1, 15, 9)),
+              ),
+              RepositoryProvider<HomeDayKeyService>.value(
+                value: homeDayKeyService,
               ),
             ],
             child: const JournalHubPage(),
@@ -121,7 +123,6 @@ void main() {
     defsSubject.add([moodDef]);
     entriesSubject.add([entry]);
     eventsSubject.add([moodEvent]);
-    weekEventsSubject.add([moodEvent]);
     dayStatesSubject.add([dayState]);
 
     await pumpPage(tester);

@@ -369,7 +369,7 @@ class JournalRepositoryImpl
   }) async {
     return FailureGuard.run(
       () async {
-        final id = group.id.isEmpty ? _idGenerator.trackerGroupId() : group.id;
+        final id = await _resolveTrackerGroupIdForSave(group);
 
         final updated =
             await (_database.update(
@@ -411,6 +411,40 @@ class JournalRepositoryImpl
       opName: 'saveTrackerGroup',
       context: context,
     );
+  }
+
+  Future<String> _resolveTrackerGroupIdForSave(TrackerGroup group) async {
+    if (group.id.isNotEmpty) return group.id;
+
+    final normalizedName = _normalizeTrackerGroupName(group.name);
+    final existingId = await _findTrackerGroupIdByNormalizedName(
+      normalizedName,
+    );
+    if (existingId != null) return existingId;
+
+    return _idGenerator.trackerGroupId();
+  }
+
+  Future<String?> _findTrackerGroupIdByNormalizedName(
+    String normalizedName,
+  ) async {
+    if (normalizedName.isEmpty) return null;
+
+    final rows = await (_database.select(
+      _database.trackerGroups,
+    )..orderBy([(g) => OrderingTerm.desc(g.updatedAt)])).get();
+
+    for (final row in rows) {
+      if (_normalizeTrackerGroupName(row.name) == normalizedName) {
+        return row.id;
+      }
+    }
+
+    return null;
+  }
+
+  String _normalizeTrackerGroupName(String raw) {
+    return raw.trim().toLowerCase();
   }
 
   @override

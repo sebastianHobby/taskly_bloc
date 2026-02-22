@@ -70,7 +70,7 @@ abstract final class Routing {
   /// Push a screen onto the navigation stack.
   ///
   /// Use this for secondary screens that should return back to the current
-  /// screen (e.g. Journal History, Manage Trackers).
+  /// screen (e.g. Manage Trackers).
   static void pushScreenKey(BuildContext context, String screenKey) =>
       GoRouter.of(context).push(screenPath(screenKey));
 
