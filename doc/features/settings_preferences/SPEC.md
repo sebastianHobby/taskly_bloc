@@ -9,6 +9,7 @@ Defines user-configurable behavior toggles and preference propagation across fea
 - Settings changes propagate through domain/presentation contracts, not direct widget access.
 - Defaults are explicit and documented.
 - Feature toggles that affect support systems map to attention/maintenance behavior consistently.
+- Developer-only diagnostics may expose sync issue lists in debug mode.
 
 ## Testing minimums
 

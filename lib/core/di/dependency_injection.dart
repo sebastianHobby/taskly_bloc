@@ -136,6 +136,9 @@ Future<void> setupDependencies() async {
     ..registerSingleton<InitialSyncService>(
       getIt<TasklyDataBindings>().initialSyncService,
     )
+    ..registerSingleton<SyncIssueRepositoryContract>(
+      getIt<TasklyDataBindings>().syncIssueRepository,
+    )
     ..registerSingleton<HomeDayKeyService>(
       getIt<TasklyDataBindings>().homeDayKeyService,
     )

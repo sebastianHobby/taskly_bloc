@@ -5099,6 +5099,31 @@
     "@settingsDeveloperSubtitle": {
         "description": "Subtitle for developer settings entry"
     },
+    "settingsSyncIssuesTitle": "Sync issues",
+    "@settingsSyncIssuesTitle": {
+        "description": "Title for the debug sync issues page and list entry."
+    },
+    "settingsSyncIssuesSubtitle": "Recent open sync anomalies",
+    "@settingsSyncIssuesSubtitle": {
+        "description": "Subtitle for the debug sync issues settings entry."
+    },
+    "settingsSyncIssuesEmpty": "No open sync issues.",
+    "@settingsSyncIssuesEmpty": {
+        "description": "Empty state for the debug sync issues page."
+    },
+    "settingsSyncIssuesLoadFailed": "Couldn't load sync issues.",
+    "@settingsSyncIssuesLoadFailed": {
+        "description": "Error message shown when sync issues fail to load."
+    },
+    "settingsSyncIssuesOccurrences": "{count, plural, =1{1 occurrence} other{{count} occurrences}}",
+    "@settingsSyncIssuesOccurrences": {
+        "description": "Occurrence count label shown for sync issues in debug view.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "scopeHeaderLoadFailedMessage": "Couldn't load scope details.",
     "@scopeHeaderLoadFailedMessage": {
         "description": "Error message shown when the scope header fails to load"

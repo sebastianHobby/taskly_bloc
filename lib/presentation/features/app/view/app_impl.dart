@@ -166,6 +166,9 @@ class App extends StatelessWidget {
           Provider<InitialSyncService>(
             create: (_) => getIt<InitialSyncService>(),
           ),
+          Provider<SyncIssueRepositoryContract>(
+            create: (_) => getIt<SyncIssueRepositoryContract>(),
+          ),
           Provider<PendingNotificationsProcessor>(
             create: (_) => getIt<PendingNotificationsProcessor>(),
           ),

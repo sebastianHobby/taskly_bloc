@@ -27,6 +27,14 @@ Defines auth states, onboarding progression, startup synchronization gates, and 
     changes.
   - emit throttled snapshots (target: every 60 seconds).
 
+## Sync issue persistence contract
+
+- Upload/runtime anomalies may be persisted to `public.sync_issues` for
+  diagnostics.
+- Writes are user-scoped and deduplicated by `(user_id, fingerprint)`.
+- Repeated anomalies increment `occurrence_count` and update `last_seen_at`.
+- Persistence is best-effort and must not block sync upload progress.
+
 ## Testing minimums
 
 - Startup gate state machine.

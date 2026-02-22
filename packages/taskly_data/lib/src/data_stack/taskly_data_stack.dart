@@ -29,6 +29,7 @@ import 'package:taskly_data/src/repositories/project_repository.dart';
 import 'package:taskly_data/src/repositories/routine_repository.dart';
 import 'package:taskly_data/src/repositories/routine_checklist_repository.dart';
 import 'package:taskly_data/src/repositories/settings_repository.dart';
+import 'package:taskly_data/src/repositories/sync_issue_repository.dart';
 import 'package:taskly_data/src/repositories/task_repository.dart';
 import 'package:taskly_data/src/repositories/task_checklist_repository.dart';
 import 'package:taskly_data/src/repositories/value_repository.dart';
@@ -68,6 +69,7 @@ final class TasklyDataBindings {
     required this.pendingNotificationsRepository,
     required this.pendingNotificationsProcessor,
     required this.initialSyncService,
+    required this.syncIssueRepository,
   });
 
   final AppDatabase driftDb;
@@ -99,6 +101,7 @@ final class TasklyDataBindings {
   final PendingNotificationsProcessor pendingNotificationsProcessor;
 
   final InitialSyncService initialSyncService;
+  final SyncIssueRepositoryContract syncIssueRepository;
 }
 
 /// Strongly-typed handles for the day-1 data stack.
@@ -113,6 +116,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
     required this.idGenerator,
     required this.authRepository,
     required this.localDataMaintenanceService,
+    required this.syncIssueRepository,
     required Clock clock,
   }) : _clock = clock;
 
@@ -133,6 +137,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
 
   /// Local maintenance service implementation.
   final LocalDataMaintenanceService localDataMaintenanceService;
+  final SyncIssueRepositoryContract syncIssueRepository;
   final Clock _clock;
 
   final StreamController<SyncAnomaly> _syncAnomaliesController =
@@ -195,6 +200,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       localDataMaintenanceService: _PowerSyncLocalDataMaintenanceService(
         syncDb,
       ),
+      syncIssueRepository: SyncIssueRepository(client: supabaseClient),
       clock: clock,
     );
 
@@ -248,6 +254,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
     _connector = SupabaseConnector(
       syncDb,
       onAnomaly: _syncAnomaliesController.add,
+      onRecordSyncIssue: syncIssueRepository.recordAnomaly,
       syncSessionId: syncSessionId,
       clientId: clientId,
       userIdHash: userIdHash,
@@ -535,6 +542,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       pendingNotificationsRepository: pendingNotificationsRepository,
       pendingNotificationsProcessor: pendingNotificationsProcessor,
       initialSyncService: initialSyncService,
+      syncIssueRepository: syncIssueRepository,
     );
   }
 

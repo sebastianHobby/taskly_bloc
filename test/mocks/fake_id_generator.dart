@@ -39,6 +39,7 @@ class FakeIdGenerator implements IdGenerator {
   int _taskChecklistItemIdCounter = 0;
   int _routineChecklistItemIdCounter = 0;
   int _checklistEventIdCounter = 0;
+  int _syncIssueIdCounter = 0;
 
   // Call counts for verification
   int get taskIdCallCount => _taskIdCounter;
@@ -101,6 +102,9 @@ class FakeIdGenerator implements IdGenerator {
 
   @override
   String checklistEventId() => 'checklist-event-${_checklistEventIdCounter++}';
+
+  @override
+  String syncIssueId() => 'sync-issue-${_syncIssueIdCounter++}';
 
   // ═══════════════════════════════════════════════════════════════════════════
   // V5 DETERMINISTIC IDs - Predictable based on inputs
@@ -260,6 +264,7 @@ class FakeIdGenerator implements IdGenerator {
     _taskChecklistItemIdCounter = 0;
     _routineChecklistItemIdCounter = 0;
     _checklistEventIdCounter = 0;
+    _syncIssueIdCounter = 0;
   }
 
   /// Get the next task ID without incrementing the counter.

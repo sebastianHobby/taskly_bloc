@@ -30,6 +30,8 @@ Run local Supabase + PowerSync stack and validate app sync behavior end to end.
   - `sync.token.refresh.*` when refresh is triggered
   - `sync.upload.queue.high` under heavy local backlog
   - `sync.auth.expired` when credentials are invalidated
+- For forced sync anomalies, confirm `public.sync_issues` receives/updates rows
+  (dedupe by `fingerprint`, `occurrence_count` increments on repeats).
 - Confirm backend diagnostics can be correlated by `sync_session_id`
   from PowerSync `app_metadata`.
 

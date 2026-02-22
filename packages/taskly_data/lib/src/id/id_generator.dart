@@ -65,6 +65,7 @@ class IdGenerator {
     'tracker_groups',
     'user_profiles',
     'pending_notifications',
+    'sync_issues',
     'analytics_correlations',
     'analytics_insights',
     'attention_resolutions',
@@ -116,6 +117,7 @@ class IdGenerator {
 
   /// Generate random ID for pending notification.
   String pendingNotificationId() => _uuid.v4();
+  String syncIssueId() => _uuid.v4();
 
   /// Generate random ID for analytics correlation.
   String analyticsCorrelationId() => _uuid.v4();

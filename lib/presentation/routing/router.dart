@@ -41,6 +41,7 @@ import 'package:taskly_bloc/presentation/features/settings/view/settings_weekly_
 import 'package:taskly_bloc/presentation/features/settings/view/settings_language_region_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_account_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_developer_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_sync_issues_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_micro_learning_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_notifications_page.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
@@ -480,6 +481,10 @@ GoRouter createRouter({
           GoRoute(
             path: '${Routing.screenPath('settings')}/developer',
             builder: (_, __) => const SettingsDeveloperPage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/developer/sync-issues',
+            builder: (_, __) => const SettingsSyncIssuesPage(),
           ),
           GoRoute(
             path: '${Routing.screenPath('settings')}/micro-learning',

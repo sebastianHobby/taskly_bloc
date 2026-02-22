@@ -789,6 +789,7 @@ class RoutineSkipsTable extends Table {
     TrackerStateDay,
     TrackerStateEntry,
     PendingNotifications,
+    SyncIssues,
     // Attention System (unified attention management)
     AttentionRules,
     AttentionResolutions,
@@ -799,7 +800,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

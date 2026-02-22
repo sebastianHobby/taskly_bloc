@@ -1,5 +1,6 @@
 // This file performs setup of the PowerSync database
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
@@ -62,16 +63,19 @@ class SupabaseConnector extends PowerSyncBackendConnector {
   SupabaseConnector(
     this.db, {
     void Function(SyncAnomaly anomaly)? onAnomaly,
+    Future<void> Function(SyncAnomaly anomaly)? onRecordSyncIssue,
     Clock clock = systemClock,
     this.syncSessionId,
     this.clientId,
     this.userIdHash,
   }) : _onAnomaly = onAnomaly,
+       _onRecordSyncIssue = onRecordSyncIssue,
        _clock = clock;
 
   PowerSyncDatabase db;
 
   final void Function(SyncAnomaly anomaly)? _onAnomaly;
+  final Future<void> Function(SyncAnomaly anomaly)? _onRecordSyncIssue;
   final Clock _clock;
   final String? syncSessionId;
   final String? clientId;
@@ -876,6 +880,19 @@ class SupabaseConnector extends PowerSyncBackendConnector {
     } catch (e, st) {
       talker.handle(e, st, '[powersync] Failed to publish SyncAnomaly');
     }
+
+    final recordSyncIssue = _onRecordSyncIssue;
+    if (recordSyncIssue == null) return;
+
+    unawaited(
+      recordSyncIssue(anomaly).catchError((Object error, StackTrace st) {
+        talker.handle(
+          error,
+          st,
+          '[powersync] Failed to persist SyncAnomaly as sync issue',
+        );
+      }),
+    );
   }
 
   String _buildCrudSignature(List<CrudEntry> crud) {

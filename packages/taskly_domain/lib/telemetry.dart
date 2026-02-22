@@ -7,3 +7,4 @@ library;
 export 'src/telemetry/operation_context.dart';
 export 'src/telemetry/system_operation_context.dart';
 export 'src/telemetry/sync_anomaly.dart';
+export 'src/telemetry/sync_issue.dart';

@@ -18,6 +18,7 @@ export 'src/interfaces/project_repository_contract.dart';
 export 'src/interfaces/routine_repository_contract.dart';
 export 'src/interfaces/routine_checklist_repository_contract.dart';
 export 'src/interfaces/settings_repository_contract.dart';
+export 'src/interfaces/sync_issue_repository_contract.dart';
 export 'src/interfaces/task_repository_contract.dart';
 export 'src/interfaces/task_checklist_repository_contract.dart';
 export 'src/interfaces/value_repository_contract.dart';

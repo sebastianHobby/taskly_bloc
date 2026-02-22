@@ -4982,6 +4982,31 @@
     "@settingsDeveloperSubtitle": {
         "description": "Subtitle for developer settings entry"
     },
+    "settingsSyncIssuesTitle": "Problemas de sincronizacion",
+    "@settingsSyncIssuesTitle": {
+        "description": "Titulo de la pagina y entrada de problemas de sincronizacion en modo depuracion."
+    },
+    "settingsSyncIssuesSubtitle": "Anomalias de sincronizacion abiertas recientes",
+    "@settingsSyncIssuesSubtitle": {
+        "description": "Subtitulo de la entrada de problemas de sincronizacion en ajustes de desarrollador."
+    },
+    "settingsSyncIssuesEmpty": "No hay problemas de sincronizacion abiertos.",
+    "@settingsSyncIssuesEmpty": {
+        "description": "Estado vacio para la pagina de problemas de sincronizacion en depuracion."
+    },
+    "settingsSyncIssuesLoadFailed": "No se pudieron cargar los problemas de sincronizacion.",
+    "@settingsSyncIssuesLoadFailed": {
+        "description": "Mensaje de error cuando falla la carga de problemas de sincronizacion."
+    },
+    "settingsSyncIssuesOccurrences": "{count, plural, =1{1 ocurrencia} other{{count} ocurrencias}}",
+    "@settingsSyncIssuesOccurrences": {
+        "description": "Etiqueta de numero de ocurrencias para problemas de sincronizacion en depuracion.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
     "scopeHeaderLoadFailedMessage": "No se pudieron cargar los detalles del alcance.",
     "@scopeHeaderLoadFailedMessage": {
         "description": "Error message shown when the scope header fails to load"
