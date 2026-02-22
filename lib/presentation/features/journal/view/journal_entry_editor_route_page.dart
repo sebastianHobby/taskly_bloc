@@ -135,35 +135,16 @@ class _JournalEntryEditorRoutePageState
     required String title,
     String initialValue = '',
   }) async {
-    final controller = TextEditingController(text: initialValue);
-    try {
-      return await showDialog<String>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text(title),
-            content: TextField(
-              controller: controller,
-              autofocus: true,
-              decoration: InputDecoration(labelText: context.l10n.nameLabel),
-              onSubmitted: (value) => Navigator.of(context).pop(value),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(context.l10n.cancelLabel),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(controller.text),
-                child: Text(context.l10n.saveLabel),
-              ),
-            ],
-          );
-        },
-      );
-    } finally {
-      controller.dispose();
-    }
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) => _JournalNameDialog(
+        title: title,
+        initialValue: initialValue,
+        labelText: dialogContext.l10n.nameLabel,
+        cancelLabel: dialogContext.l10n.cancelLabel,
+        submitLabel: dialogContext.l10n.saveLabel,
+      ),
+    );
   }
 
   @override
@@ -575,8 +556,10 @@ class _JournalEntryEditorRoutePageState
                           context,
                           title: l10n.journalNewGroupTitle,
                         );
+                        if (!mounted) return;
                         if (name != null && name.trim().isNotEmpty) {
                           await manageBloc.createGroup(name.trim());
+                          if (!mounted) return;
                         }
                         setState(() => _manageMode = true);
                       },
@@ -808,6 +791,60 @@ class _MoodScalePicker extends StatelessWidget {
             selected: value == mood,
             onTap: () => onChanged(mood),
           ),
+      ],
+    );
+  }
+}
+
+class _JournalNameDialog extends StatefulWidget {
+  const _JournalNameDialog({
+    required this.title,
+    required this.initialValue,
+    required this.labelText,
+    required this.cancelLabel,
+    required this.submitLabel,
+  });
+
+  final String title;
+  final String initialValue;
+  final String labelText;
+  final String cancelLabel;
+  final String submitLabel;
+
+  @override
+  State<_JournalNameDialog> createState() => _JournalNameDialogState();
+}
+
+class _JournalNameDialogState extends State<_JournalNameDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: InputDecoration(labelText: widget.labelText),
+        onSubmitted: (value) => Navigator.of(context).pop(value),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(widget.cancelLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: Text(widget.submitLabel),
+        ),
       ],
     );
   }

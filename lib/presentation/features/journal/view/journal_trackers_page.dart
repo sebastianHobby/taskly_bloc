@@ -93,138 +93,53 @@ class _ManageLibraryView extends StatelessWidget {
     }
 
     Future<String?> showCreateGroupDialog() async {
-      final controller = TextEditingController();
-      try {
-        final result = await showDialog<String>(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: Text(l10n.journalNewGroupTitle),
-              content: TextField(
-                controller: controller,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: l10n.nameLabel,
-                  hintText: l10n.journalGroupNameHint,
-                ),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (value) => Navigator.of(context).pop(value),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(l10n.cancelLabel),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(controller.text),
-                  child: Text(l10n.createLabel),
-                ),
-              ],
-            );
-          },
-        );
+      final result = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => _JournalNameDialog(
+          title: l10n.journalNewGroupTitle,
+          initialValue: '',
+          labelText: l10n.nameLabel,
+          hintText: l10n.journalGroupNameHint,
+          cancelLabel: l10n.cancelLabel,
+          submitLabel: l10n.createLabel,
+        ),
+      );
 
-        final name = (result ?? '').trim();
-        if (name.isEmpty) return null;
-        return name;
-      } finally {
-        controller.dispose();
-      }
+      final name = (result ?? '').trim();
+      if (name.isEmpty) return null;
+      return name;
     }
 
     Future<String?> showRenameDialog(String currentName) async {
-      final controller = TextEditingController(text: currentName);
-      try {
-        final result = await showDialog<String>(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: Text(l10n.journalRenameGroupTitle),
-              content: TextField(
-                controller: controller,
-                autofocus: true,
-                decoration: InputDecoration(labelText: l10n.nameLabel),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (value) => Navigator.of(context).pop(value),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(l10n.cancelLabel),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(controller.text),
-                  child: Text(l10n.saveLabel),
-                ),
-              ],
-            );
-          },
-        );
+      final result = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => _JournalNameDialog(
+          title: l10n.journalRenameGroupTitle,
+          initialValue: currentName,
+          labelText: l10n.nameLabel,
+          cancelLabel: l10n.cancelLabel,
+          submitLabel: l10n.saveLabel,
+        ),
+      );
 
-        final name = (result ?? '').trim();
-        if (name.isEmpty) return null;
-        return name;
-      } finally {
-        controller.dispose();
-      }
+      final name = (result ?? '').trim();
+      if (name.isEmpty) return null;
+      return name;
     }
 
     Future<String?> showRenameTrackerBottomSheet(String currentName) async {
-      final controller = TextEditingController(text: currentName);
-      try {
-        return await showModalBottomSheet<String>(
-          context: context,
-          isScrollControlled: true,
-          useSafeArea: true,
-          builder: (context) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: TasklyTokens.of(context).spaceLg,
-                right: TasklyTokens.of(context).spaceLg,
-                top: TasklyTokens.of(context).spaceLg,
-                bottom:
-                    MediaQuery.viewInsetsOf(context).bottom +
-                    TasklyTokens.of(context).spaceLg,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.journalRenameTrackerTitle,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  TextField(
-                    controller: controller,
-                    autofocus: true,
-                    decoration: InputDecoration(labelText: l10n.nameLabel),
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (value) => Navigator.of(context).pop(value),
-                  ),
-                  SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  Row(
-                    children: [
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: Text(l10n.cancelLabel),
-                      ),
-                      FilledButton(
-                        onPressed: () =>
-                            Navigator.of(context).pop(controller.text),
-                        child: Text(l10n.saveLabel),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      } finally {
-        controller.dispose();
-      }
+      return showModalBottomSheet<String>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (sheetContext) => _JournalNameBottomSheet(
+          title: l10n.journalRenameTrackerTitle,
+          initialValue: currentName,
+          labelText: l10n.nameLabel,
+          cancelLabel: l10n.cancelLabel,
+          submitLabel: l10n.saveLabel,
+        ),
+      );
     }
 
     return Scaffold(
@@ -493,6 +408,144 @@ class _ManageLibraryView extends StatelessWidget {
               },
             ),
           SizedBox(height: TasklyTokens.of(context).spaceSm),
+        ],
+      ),
+    );
+  }
+}
+
+class _JournalNameDialog extends StatefulWidget {
+  const _JournalNameDialog({
+    required this.title,
+    required this.initialValue,
+    required this.labelText,
+    required this.cancelLabel,
+    required this.submitLabel,
+    this.hintText,
+  });
+
+  final String title;
+  final String initialValue;
+  final String labelText;
+  final String cancelLabel;
+  final String submitLabel;
+  final String? hintText;
+
+  @override
+  State<_JournalNameDialog> createState() => _JournalNameDialogState();
+}
+
+class _JournalNameDialogState extends State<_JournalNameDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: InputDecoration(
+          labelText: widget.labelText,
+          hintText: widget.hintText,
+        ),
+        textInputAction: TextInputAction.done,
+        onSubmitted: (value) => Navigator.of(context).pop(value),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(widget.cancelLabel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: Text(widget.submitLabel),
+        ),
+      ],
+    );
+  }
+}
+
+class _JournalNameBottomSheet extends StatefulWidget {
+  const _JournalNameBottomSheet({
+    required this.title,
+    required this.initialValue,
+    required this.labelText,
+    required this.cancelLabel,
+    required this.submitLabel,
+  });
+
+  final String title;
+  final String initialValue;
+  final String labelText;
+  final String cancelLabel;
+  final String submitLabel;
+
+  @override
+  State<_JournalNameBottomSheet> createState() =>
+      _JournalNameBottomSheetState();
+}
+
+class _JournalNameBottomSheetState extends State<_JournalNameBottomSheet> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: TasklyTokens.of(context).spaceLg,
+        right: TasklyTokens.of(context).spaceLg,
+        top: TasklyTokens.of(context).spaceLg,
+        bottom:
+            MediaQuery.viewInsetsOf(context).bottom +
+            TasklyTokens.of(context).spaceLg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.title,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            decoration: InputDecoration(labelText: widget.labelText),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (value) => Navigator.of(context).pop(value),
+          ),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
+          Row(
+            children: [
+              const Spacer(),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(widget.cancelLabel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(_controller.text),
+                child: Text(widget.submitLabel),
+              ),
+            ],
+          ),
         ],
       ),
     );

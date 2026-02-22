@@ -67,98 +67,18 @@ class TrackerChoiceInput extends StatelessWidget {
   }
 
   Future<void> _showChoiceSheet(BuildContext context) async {
-    final controller = TextEditingController();
-    final debouncer = Debouncer(const Duration(milliseconds: 300));
-    var isOpen = true;
-    String? next = selectedKey;
-    try {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        builder: (context) {
-          return StatefulBuilder(
-            builder: (context, setState) {
-              final query = controller.text.trim().toLowerCase();
-              final filtered = query.isEmpty
-                  ? choices
-                  : choices
-                        .where(
-                          (c) => c.label.toLowerCase().contains(query),
-                        )
-                        .toList(growable: false);
+    final result = await showModalBottomSheet<_ChoiceSelectionResult>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => _TrackerChoiceBottomSheet(
+        choices: choices,
+        selectedKey: selectedKey,
+      ),
+    );
 
-              return Padding(
-                padding: EdgeInsets.only(
-                  left: TasklyTokens.of(context).spaceLg,
-                  right: TasklyTokens.of(context).spaceLg,
-                  top: TasklyTokens.of(context).spaceLg,
-                  bottom:
-                      MediaQuery.viewInsetsOf(context).bottom +
-                      TasklyTokens.of(context).spaceLg,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: controller,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.journalSearchOptionsLabel,
-                        prefixIcon: const Icon(Icons.search),
-                      ),
-                      onChanged: (_) {
-                        debouncer.schedule(() {
-                          if (!isOpen || !context.mounted) return;
-                          setState(() {});
-                        });
-                      },
-                    ),
-                    SizedBox(height: TasklyTokens.of(context).spaceSm),
-                    if (selectedKey != null)
-                      ListTile(
-                        leading: const Icon(Icons.clear),
-                        title: Text(context.l10n.journalClearSelectionLabel),
-                        onTap: () {
-                          isOpen = false;
-                          debouncer.cancel();
-                          next = null;
-                          Navigator.of(context).pop();
-                        },
-                      ),
-                    Flexible(
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: filtered.length,
-                        itemBuilder: (context, index) {
-                          final choice = filtered[index];
-                          final selected = choice.choiceKey == selectedKey;
-                          return ListTile(
-                            title: Text(choice.label),
-                            trailing: selected ? const Icon(Icons.check) : null,
-                            onTap: () {
-                              isOpen = false;
-                              debouncer.cancel();
-                              next = choice.choiceKey;
-                              Navigator.of(context).pop();
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      );
-    } finally {
-      isOpen = false;
-      debouncer.dispose();
-      controller.dispose();
-    }
-
-    onSelected(next);
+    if (result == null) return;
+    onSelected(result.nextSelection);
   }
 }
 
@@ -240,74 +160,25 @@ class TrackerQuantityInput extends StatelessWidget {
   }
 
   Future<void> _showEditSheet(BuildContext context) async {
-    final controller = TextEditingController(text: '${value ?? 0}');
-    int? nextValue = value ?? 0;
+    final result = await showModalBottomSheet<_QuantityEditResult>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) => _TrackerQuantityEditBottomSheet(
+        initialValue: value ?? 0,
+        allowClear: onClear != null,
+      ),
+    );
 
-    try {
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        builder: (context) {
-          return Padding(
-            padding: EdgeInsets.only(
-              left: TasklyTokens.of(context).spaceLg,
-              right: TasklyTokens.of(context).spaceLg,
-              top: TasklyTokens.of(context).spaceLg,
-              bottom:
-                  MediaQuery.viewInsetsOf(context).bottom +
-                  TasklyTokens.of(context).spaceLg,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.journalEditValueTitle,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                SizedBox(height: TasklyTokens.of(context).spaceSm),
-                TextField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: context.l10n.valueLabel,
-                  ),
-                  onChanged: (value) => nextValue = int.tryParse(value),
-                ),
-                SizedBox(height: TasklyTokens.of(context).spaceSm),
-                Row(
-                  children: [
-                    if (onClear != null)
-                      TextButton(
-                        onPressed: () {
-                          nextValue = null;
-                          Navigator.of(context).pop();
-                        },
-                        child: Text(context.l10n.clearLabel),
-                      ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(context.l10n.cancelLabel),
-                    ),
-                    FilledButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: Text(context.l10n.saveLabel),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    } finally {
-      controller.dispose();
+    if (result == null || result.isCancelled) return;
+    if (result.isClear) {
+      onClear?.call();
+      return;
     }
 
+    final nextValue = result.value;
     if (nextValue != null) {
-      var output = nextValue!;
+      var output = nextValue;
       if (min != null && output < min!) output = min!;
       if (max != null && output > max!) output = max!;
       onChanged(output);
@@ -315,6 +186,207 @@ class TrackerQuantityInput extends StatelessWidget {
       onClear?.call();
     }
   }
+}
+
+class _TrackerChoiceBottomSheet extends StatefulWidget {
+  const _TrackerChoiceBottomSheet({
+    required this.choices,
+    required this.selectedKey,
+  });
+
+  final List<TrackerDefinitionChoice> choices;
+  final String? selectedKey;
+
+  @override
+  State<_TrackerChoiceBottomSheet> createState() =>
+      _TrackerChoiceBottomSheetState();
+}
+
+class _TrackerChoiceBottomSheetState extends State<_TrackerChoiceBottomSheet> {
+  late final TextEditingController _controller = TextEditingController();
+  late final Debouncer _debouncer = Debouncer(
+    const Duration(milliseconds: 300),
+  );
+
+  @override
+  void dispose() {
+    _debouncer.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = _controller.text.trim().toLowerCase();
+    final filtered = query.isEmpty
+        ? widget.choices
+        : widget.choices
+              .where((c) => c.label.toLowerCase().contains(query))
+              .toList(growable: false);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: TasklyTokens.of(context).spaceLg,
+        right: TasklyTokens.of(context).spaceLg,
+        top: TasklyTokens.of(context).spaceLg,
+        bottom:
+            MediaQuery.viewInsetsOf(context).bottom +
+            TasklyTokens.of(context).spaceLg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _controller,
+            decoration: InputDecoration(
+              labelText: context.l10n.journalSearchOptionsLabel,
+              prefixIcon: const Icon(Icons.search),
+            ),
+            onChanged: (_) {
+              _debouncer.schedule(() {
+                if (!mounted) return;
+                setState(() {});
+              });
+            },
+          ),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
+          if (widget.selectedKey != null)
+            ListTile(
+              leading: const Icon(Icons.clear),
+              title: Text(context.l10n.journalClearSelectionLabel),
+              onTap: () => Navigator.of(context).pop(
+                const _ChoiceSelectionResult(nextSelection: null),
+              ),
+            ),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final choice = filtered[index];
+                final selected = choice.choiceKey == widget.selectedKey;
+                return ListTile(
+                  title: Text(choice.label),
+                  trailing: selected ? const Icon(Icons.check) : null,
+                  onTap: () => Navigator.of(context).pop(
+                    _ChoiceSelectionResult(nextSelection: choice.choiceKey),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChoiceSelectionResult {
+  const _ChoiceSelectionResult({required this.nextSelection});
+
+  final String? nextSelection;
+}
+
+class _TrackerQuantityEditBottomSheet extends StatefulWidget {
+  const _TrackerQuantityEditBottomSheet({
+    required this.initialValue,
+    required this.allowClear,
+  });
+
+  final int initialValue;
+  final bool allowClear;
+
+  @override
+  State<_TrackerQuantityEditBottomSheet> createState() =>
+      _TrackerQuantityEditBottomSheetState();
+}
+
+class _TrackerQuantityEditBottomSheetState
+    extends State<_TrackerQuantityEditBottomSheet> {
+  late final TextEditingController _controller = TextEditingController(
+    text: '${widget.initialValue}',
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: TasklyTokens.of(context).spaceLg,
+        right: TasklyTokens.of(context).spaceLg,
+        top: TasklyTokens.of(context).spaceLg,
+        bottom:
+            MediaQuery.viewInsetsOf(context).bottom +
+            TasklyTokens.of(context).spaceLg,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.journalEditValueTitle,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: context.l10n.valueLabel,
+            ),
+          ),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
+          Row(
+            children: [
+              if (widget.allowClear)
+                TextButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop(const _QuantityEditResult.clear()),
+                  child: Text(context.l10n.clearLabel),
+                ),
+              const Spacer(),
+              TextButton(
+                onPressed: () => Navigator.of(
+                  context,
+                ).pop(const _QuantityEditResult.cancel()),
+                child: Text(context.l10n.cancelLabel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(
+                  _QuantityEditResult.save(
+                    int.tryParse(_controller.text.trim()),
+                  ),
+                ),
+                child: Text(context.l10n.saveLabel),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuantityEditResult {
+  const _QuantityEditResult._({
+    this.value,
+    this.isClear = false,
+    this.isCancelled = false,
+  });
+
+  const _QuantityEditResult.save(int? value) : this._(value: value);
+  const _QuantityEditResult.clear() : this._(isClear: true);
+  const _QuantityEditResult.cancel() : this._(isCancelled: true);
+
+  final int? value;
+  final bool isClear;
+  final bool isCancelled;
 }
 
 class _StepperHoldButton extends StatefulWidget {

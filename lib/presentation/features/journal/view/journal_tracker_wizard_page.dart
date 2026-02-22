@@ -472,8 +472,8 @@ class _QuantityConfigForm extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        TextField(
-          controller: TextEditingController(text: unit),
+        _SyncedTextField(
+          value: unit,
           decoration: InputDecoration(
             labelText: context.l10n.journalUnitOptionalLabel,
           ),
@@ -607,18 +607,65 @@ class _NumberField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = TextEditingController(
-      text: value == null ? '' : value.toString(),
-    );
-    return TextField(
-      controller: controller,
+    return _SyncedTextField(
+      value: value == null ? '' : value.toString(),
       enabled: enabled,
       keyboardType: TextInputType.number,
       decoration: InputDecoration(labelText: label),
-      onChanged: (value) {
-        final parsed = int.tryParse(value);
-        onChanged(parsed);
-      },
+      onChanged: (value) => onChanged(int.tryParse(value)),
+    );
+  }
+}
+
+class _SyncedTextField extends StatefulWidget {
+  const _SyncedTextField({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+    this.decoration,
+    this.keyboardType,
+  });
+
+  final String value;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+  final InputDecoration? decoration;
+  final TextInputType? keyboardType;
+
+  @override
+  State<_SyncedTextField> createState() => _SyncedTextFieldState();
+}
+
+class _SyncedTextFieldState extends State<_SyncedTextField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.value,
+  );
+
+  @override
+  void didUpdateWidget(covariant _SyncedTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value == _controller.text) return;
+    _controller.value = _controller.value.copyWith(
+      text: widget.value,
+      selection: TextSelection.collapsed(offset: widget.value.length),
+      composing: TextRange.empty,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _controller,
+      enabled: widget.enabled,
+      keyboardType: widget.keyboardType,
+      decoration: widget.decoration,
+      onChanged: widget.onChanged,
     );
   }
 }
