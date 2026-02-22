@@ -17,6 +17,8 @@ Architecture docs are split into normative rules, indexes, contracts, and operat
   [specs/TASKLY_UI_MATERIAL_ALIGNMENT_OPTION_B.md](specs/TASKLY_UI_MATERIAL_ALIGNMENT_OPTION_B.md)
 - Local E2E stack:
   [runbooks/LOCAL_E2E_STACK.md](runbooks/LOCAL_E2E_STACK.md)
+- Supabase schema parity:
+  [runbooks/SUPABASE_SCHEMA_PARITY.md](runbooks/SUPABASE_SCHEMA_PARITY.md)
 - Logging level rubric:
   [guides/LOGGING_RUBRIC.md](guides/LOGGING_RUBRIC.md)
 

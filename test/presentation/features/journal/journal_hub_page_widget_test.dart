@@ -45,7 +45,6 @@ void main() {
   late BehaviorSubject<List<TrackerDefinition>> defsSubject;
   late BehaviorSubject<List<JournalEntry>> entriesSubject;
   late BehaviorSubject<List<TrackerEvent>> eventsSubject;
-  late BehaviorSubject<List<TrackerStateDay>> dayStatesSubject;
 
   setUp(() {
     repository = MockJournalRepositoryContract();
@@ -54,7 +53,6 @@ void main() {
     defsSubject = BehaviorSubject<List<TrackerDefinition>>();
     entriesSubject = BehaviorSubject<List<JournalEntry>>();
     eventsSubject = BehaviorSubject<List<TrackerEvent>>();
-    dayStatesSubject = BehaviorSubject<List<TrackerStateDay>>();
 
     when(
       () => homeDayKeyService.todayDayKeyUtc(),
@@ -76,9 +74,6 @@ void main() {
       ),
     ).thenAnswer((_) => eventsSubject);
     when(
-      () => repository.watchTrackerStateDay(range: any(named: 'range')),
-    ).thenAnswer((_) => dayStatesSubject);
-    when(
       () => settingsRepository.load(
         SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
       ),
@@ -96,7 +91,6 @@ void main() {
     await defsSubject.close();
     await entriesSubject.close();
     await eventsSubject.close();
-    await dayStatesSubject.close();
   });
 
   Future<void> pumpPage(WidgetTester tester) async {
@@ -139,12 +133,9 @@ void main() {
     final entry = _entry(day, text: 'Morning note');
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     final moodEvent = _event('event-1', 'mood', entry.id, 4, day);
-    final dayState = _dayState('state-1', 'mood', day, 4);
-
     defsSubject.add([moodDef]);
     entriesSubject.add([entry]);
     eventsSubject.add([moodEvent]);
-    dayStatesSubject.add([dayState]);
 
     await pumpPage(tester);
     await tester.pumpForStream();
@@ -189,7 +180,6 @@ void main() {
         _event('water-2', 'water', 'entry-2', 200, day),
         _event('exercise-1', 'exercise', 'entry-1', true, day),
       ]);
-      dayStatesSubject.add(const []);
 
       await pumpPage(tester);
       await tester.pumpForStream();
@@ -247,22 +237,6 @@ TrackerEvent _event(
     occurredAt: when,
     recordedAt: when,
     entryId: entryId,
-    value: value,
-  );
-}
-
-TrackerStateDay _dayState(
-  String id,
-  String trackerId,
-  DateTime day,
-  Object value,
-) {
-  return TrackerStateDay(
-    id: id,
-    anchorType: 'day',
-    anchorDate: day,
-    trackerId: trackerId,
-    updatedAt: day,
     value: value,
   );
 }

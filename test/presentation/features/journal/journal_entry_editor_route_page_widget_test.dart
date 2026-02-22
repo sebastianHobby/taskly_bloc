@@ -427,6 +427,41 @@ void main() {
     expect(find.widgetWithText(ChoiceChip, '8'), findsOneWidget);
   });
 
+  testWidgetsSafe('renders entry trackers after mood with accordion inputs', (
+    tester,
+  ) async {
+    final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
+    final entryTracker = _trackerDef(
+      'entry-1',
+      'Gratitude',
+      scope: 'entry',
+      valueType: 'quantity',
+      valueKind: 'number',
+      minInt: 0,
+      maxInt: 10,
+      groupId: 'g-1',
+    );
+    groupsSubject.add([_group('g-1', 'Mindset')]);
+    defsSubject.add([moodDef, entryTracker]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsOneWidget);
+    expect(find.text('Gratitude'), findsNothing);
+
+    await _tapMood(tester, _l10n(tester).moodGoodLabel);
+    await tester.pumpForStream();
+
+    expect(find.text('Mindset'), findsOneWidget);
+    expect(find.text('Gratitude'), findsOneWidget);
+
+    await _tapTextButton(tester, 'Gratitude');
+    await tester.pumpForStream();
+
+    expect(find.byType(TrackerQuantityInput), findsOneWidget);
+  });
+
   testWidgetsSafe('quantity input clamps values', (tester) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     final quantityDef = _trackerDef(

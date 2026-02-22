@@ -408,16 +408,6 @@ class _JournalHubPageState extends State<JournalHubPage> {
               ),
             };
 
-            final days = switch (state) {
-              JournalHistoryLoaded(:final days) => days,
-              _ => const <JournalHistoryDaySummary>[],
-            };
-
-            final todaySummary = days.firstWhere(
-              (day) => _isSameLocalDay(day.day, nowLocal),
-              orElse: () => _emptySummaryFor(nowLocal),
-            );
-
             return Scaffold(
               appBar: AppBar(
                 actions: [
@@ -451,7 +441,6 @@ class _JournalHubPageState extends State<JournalHubPage> {
                     },
                     onChanged: (value) => _onSearchChanged(value, filters),
                   ),
-                  _TodayPulseCard(summary: todaySummary),
                   Expanded(child: body),
                 ],
               ),
@@ -468,27 +457,6 @@ class _JournalHubPageState extends State<JournalHubPage> {
         ),
       ),
     );
-  }
-
-  static JournalHistoryDaySummary _emptySummaryFor(DateTime nowLocal) {
-    return JournalHistoryDaySummary(
-      day: DateTime.utc(nowLocal.year, nowLocal.month, nowLocal.day),
-      entries: const <JournalEntry>[],
-      eventsByEntryId: const <String, List<TrackerEvent>>{},
-      definitionById: const <String, TrackerDefinition>{},
-      moodTrackerId: null,
-      moodAverage: null,
-      dayQuantityTotalsByTrackerId: const <String, double>{},
-      dailySummaryItems: const <JournalDailySummaryItem>[],
-      dailyCompletedCount: 0,
-      dailySummaryTotalCount: 0,
-    );
-  }
-
-  static bool _isSameLocalDay(DateTime a, DateTime b) {
-    final al = a.toLocal();
-    final bl = b.toLocal();
-    return al.year == bl.year && al.month == bl.month && al.day == bl.day;
   }
 }
 
@@ -541,75 +509,6 @@ class _SearchHeader extends StatelessWidget {
         ],
       ),
     );
-  }
-}
-
-class _TodayPulseCard extends StatelessWidget {
-  const _TodayPulseCard({required this.summary});
-
-  final JournalHistoryDaySummary summary;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final hasMood = summary.moodAverage != null;
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.fromLTRB(
-        tokens.spaceLg,
-        0,
-        tokens.spaceLg,
-        tokens.spaceSm,
-      ),
-      padding: EdgeInsets.all(tokens.spaceMd),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            child: Text(hasMood ? _moodEmoji(summary.moodAverage!) : '—'),
-          ),
-          SizedBox(width: tokens.spaceSm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Today Pulse',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: tokens.spaceXxs),
-                Text(
-                  hasMood
-                      ? 'Mood ${summary.moodAverage!.toStringAsFixed(1)} · '
-                            '${summary.dailyCompletedCount}/${summary.dailySummaryTotalCount} trackers'
-                      : '${summary.dailyCompletedCount}/${summary.dailySummaryTotalCount} trackers',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          Text(
-            context.l10n.journalEntryCountLabel(summary.entries.length),
-            style: Theme.of(context).textTheme.labelLarge,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _moodEmoji(double value) {
-    if (value < 1.5) return '😟';
-    if (value < 2.5) return '🙁';
-    if (value < 3.5) return '😐';
-    if (value < 4.5) return '🙂';
-    return '😄';
   }
 }
 

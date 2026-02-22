@@ -290,29 +290,25 @@ class JournalHistoryBloc
     final entries$ = _repository.watchJournalEntriesByQuery(
       _buildQuery(filters, todayDayKeyUtc: todayDayKeyUtc),
     );
-    final dayState$ = _repository.watchTrackerStateDay(range: range);
     final events$ = _repository.watchTrackerEvents(
       range: DateRange(start: range.start, end: endInclusive),
       anchorType: 'entry',
     );
 
     await emit.onEach<JournalHistoryLoaded>(
-      Rx.combineLatest4<
+      Rx.combineLatest3<
         List<TrackerDefinition>,
         List<JournalEntry>,
-        List<TrackerStateDay>,
         List<TrackerEvent>,
         JournalHistoryLoaded
       >(
         defs$,
         entries$,
-        dayState$,
         events$,
-        (defs, entries, dayStates, events) {
+        (defs, entries, events) {
           var days = _buildDaySummaries(
             defs: defs,
             entries: entries,
-            dayStates: dayStates,
             events: events,
           );
 
@@ -586,7 +582,6 @@ class JournalHistoryBloc
   List<JournalHistoryDaySummary> _buildDaySummaries({
     required List<TrackerDefinition> defs,
     required List<JournalEntry> entries,
-    required List<TrackerStateDay> dayStates,
     required List<TrackerEvent> events,
   }) {
     final definitionById = {for (final d in defs) d.id: d};
@@ -628,20 +623,6 @@ class JournalHistoryBloc
       (moodValuesByDay[day] ??= <int>[]).add(event.value! as int);
     }
 
-    final dayStateByTrackerIdByDay = <DateTime, Map<String, TrackerStateDay>>{};
-    for (final state in dayStates) {
-      final day = dateOnly(state.anchorDate.toUtc());
-      final map = dayStateByTrackerIdByDay[day] ??= <String, TrackerStateDay>{};
-      map[state.trackerId] = state;
-    }
-
-    final dailyDefs =
-        defs
-            .where((d) => d.isActive && d.deletedAt == null)
-            .where(_isDailyScope)
-            .toList(growable: false)
-          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
     final days = entriesByDay.keys.toList()..sort((a, b) => b.compareTo(a));
 
     return [
@@ -655,19 +636,6 @@ class JournalHistoryBloc
           moodAverage: _average(moodValuesByDay[day]),
           dayQuantityTotalsByTrackerId:
               quantityTotalsByDayTracker[day] ?? const <String, double>{},
-          dailySummaryItems: _buildDailySummaryItems(
-            defs: dailyDefs,
-            dayStates:
-                dayStateByTrackerIdByDay[day] ??
-                const <String, TrackerStateDay>{},
-          ),
-          dailyCompletedCount:
-              (dayStateByTrackerIdByDay[day] ??
-                      const <String, TrackerStateDay>{})
-                  .values
-                  .where((s) => s.value != null)
-                  .length,
-          dailySummaryTotalCount: dailyDefs.length,
         ),
     ];
   }
@@ -679,47 +647,16 @@ class JournalHistoryBloc
     return null;
   }
 
-  bool _isDailyScope(TrackerDefinition d) {
-    final scope = d.scope.trim().toLowerCase();
-    return scope == 'day' || scope == 'daily' || scope == 'sleep_night';
-  }
-
   bool _isQuantityDefinition(TrackerDefinition d) {
     final valueType = d.valueType.trim().toLowerCase();
     final valueKind = (d.valueKind ?? '').trim().toLowerCase();
     return valueType == 'quantity' || valueKind == 'number';
   }
 
-  List<JournalDailySummaryItem> _buildDailySummaryItems({
-    required List<TrackerDefinition> defs,
-    required Map<String, TrackerStateDay> dayStates,
-  }) {
-    final items = <JournalDailySummaryItem>[];
-    for (final d in defs) {
-      final value = dayStates[d.id]?.value;
-      if (value == null) continue;
-      final formatted = _formatSummaryValue(value);
-      if (formatted == null) continue;
-      items.add(JournalDailySummaryItem(label: d.name, value: formatted));
-      if (items.length == 3) break;
-    }
-    return items;
-  }
-
   double? _average(List<int>? values) {
     if (values == null || values.isEmpty) return null;
     final sum = values.fold<int>(0, (a, b) => a + b);
     return sum / values.length;
-  }
-
-  String? _formatSummaryValue(Object value) {
-    return switch (value) {
-      final bool v => v ? 'Yes' : null,
-      final int v => v.toString(),
-      final double v => v.toStringAsFixed(1),
-      final String v => v,
-      _ => value.toString(),
-    };
   }
 }
 
@@ -732,9 +669,6 @@ final class JournalHistoryDaySummary {
     required this.moodTrackerId,
     required this.moodAverage,
     required this.dayQuantityTotalsByTrackerId,
-    required this.dailySummaryItems,
-    required this.dailyCompletedCount,
-    required this.dailySummaryTotalCount,
   });
 
   final DateTime day;
@@ -744,16 +678,6 @@ final class JournalHistoryDaySummary {
   final String? moodTrackerId;
   final double? moodAverage;
   final Map<String, double> dayQuantityTotalsByTrackerId;
-  final List<JournalDailySummaryItem> dailySummaryItems;
-  final int dailyCompletedCount;
-  final int dailySummaryTotalCount;
-}
-
-final class JournalDailySummaryItem {
-  const JournalDailySummaryItem({required this.label, required this.value});
-
-  final String label;
-  final String value;
 }
 
 final class JournalStarterOption {

@@ -6,56 +6,6 @@ import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
-class JournalTodayEmptyState extends StatelessWidget {
-  const JournalTodayEmptyState({required this.onAddLog, super.key});
-
-  final VoidCallback onAddLog;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = TasklyTokens.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(tokens.spaceLg),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            theme.colorScheme.surface,
-            theme.colorScheme.surfaceContainerHighest,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.auto_stories_outlined,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          SizedBox(width: tokens.spaceSm),
-          Expanded(
-            child: Text(
-              context.l10n.journalNoLogsToday,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: onAddLog,
-            child: Text(context.l10n.journalAddLog),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class JournalLogCard extends StatelessWidget {
   const JournalLogCard({
     required this.entry,

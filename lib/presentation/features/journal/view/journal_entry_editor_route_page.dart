@@ -58,7 +58,7 @@ class JournalEntryEditorRoutePage extends StatefulWidget {
 class _JournalEntryEditorRoutePageState
     extends State<JournalEntryEditorRoutePage> {
   late final TextEditingController _noteController;
-  String? _expandedDailyTrackerId;
+  String? _expandedTrackerId;
 
   @override
   void initState() {
@@ -327,10 +327,9 @@ class _JournalEntryEditorRoutePageState
 
           final dailyTrackers = [...state.dailyTrackers]
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+          final entryTrackers = [...state.trackers]
+            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
           final dailyValues = effectiveDailyValues();
-          final completedDailyCount = dailyTrackers
-              .where((d) => _hasMeaningfulValue(dailyValues[d.id]))
-              .length;
           final hasMood = state.mood != null;
 
           String dailyTrackerValueLabel({
@@ -369,17 +368,29 @@ class _JournalEntryEditorRoutePageState
             return l10n.journalNotSetLabel;
           }
 
-          Widget dailyModuleTile(TrackerDefinition definition) {
-            final value = dailyValues[definition.id];
-            final expanded =
-                hasMood && _expandedDailyTrackerId == definition.id;
+          Widget trackerRowTile({
+            required TrackerDefinition definition,
+            required bool isDaily,
+          }) {
+            final value = isDaily
+                ? dailyValues[definition.id]
+                : state.entryValues[definition.id];
+            final expanded = hasMood && _expandedTrackerId == definition.id;
             final canExpand = hasMood && !isSaving;
-            final label = _hasMeaningfulValue(value)
+            final valueLabel = _hasMeaningfulValue(value)
                 ? dailyTrackerValueLabel(definition: definition, value: value)
                 : l10n.journalNotSetLabel;
+            final scopeLabel = isDaily
+                ? l10n.journalDailyAppliesTodaySubtitle
+                : l10n.journalTrackerPerLogSubtitle;
 
-            return Card(
-              margin: EdgeInsets.only(bottom: tokens.spaceSm),
+            return Container(
+              margin: EdgeInsets.only(bottom: tokens.spaceXs),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
               child: Column(
                 children: [
                   InkWell(
@@ -387,7 +398,7 @@ class _JournalEntryEditorRoutePageState
                     onTap: canExpand
                         ? () {
                             setState(() {
-                              _expandedDailyTrackerId = expanded
+                              _expandedTrackerId = expanded
                                   ? null
                                   : definition.id;
                             });
@@ -396,7 +407,7 @@ class _JournalEntryEditorRoutePageState
                     child: Padding(
                       padding: EdgeInsets.symmetric(
                         horizontal: tokens.spaceMd,
-                        vertical: tokens.spaceSm2,
+                        vertical: tokens.spaceSm,
                       ),
                       child: Row(
                         children: [
@@ -414,13 +425,36 @@ class _JournalEntryEditorRoutePageState
                               ),
                             ),
                           ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: tokens.spaceXs,
+                              vertical: tokens.spaceXxs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(
+                                tokens.radiusPill,
+                              ),
+                              border: Border.all(
+                                color: theme.colorScheme.outlineVariant,
+                              ),
+                            ),
+                            child: Text(
+                              scopeLabel,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: tokens.spaceXs),
                           Text(
-                            label,
+                            valueLabel,
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          SizedBox(width: tokens.spaceXs),
+                          SizedBox(width: tokens.spaceXxs),
                           Icon(
                             expanded
                                 ? Icons.keyboard_arrow_up
@@ -442,14 +476,24 @@ class _JournalEntryEditorRoutePageState
                         d: definition,
                         currentValue: value,
                         setValue: (updatedValue) {
-                          context.read<JournalEntryEditorBloc>().add(
-                            JournalEntryEditorDailyValueChanged(
-                              trackerId: definition.id,
-                              value: updatedValue,
-                            ),
-                          );
+                          final bloc = context.read<JournalEntryEditorBloc>();
+                          if (isDaily) {
+                            bloc.add(
+                              JournalEntryEditorDailyValueChanged(
+                                trackerId: definition.id,
+                                value: updatedValue,
+                              ),
+                            );
+                          } else {
+                            bloc.add(
+                              JournalEntryEditorEntryValueChanged(
+                                trackerId: definition.id,
+                                value: updatedValue,
+                              ),
+                            );
+                          }
                         },
-                        isDaily: true,
+                        isDaily: isDaily,
                       ),
                     ),
                   ],
@@ -458,7 +502,42 @@ class _JournalEntryEditorRoutePageState
             );
           }
 
-          Widget dailyCheckinsSection() {
+          Widget moodGateHint() {
+            return Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(tokens.spaceMd),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    color: theme.colorScheme.primary,
+                    size: 18,
+                  ),
+                  SizedBox(width: tokens.spaceSm),
+                  Expanded(
+                    child: Text(
+                      l10n.journalMoodGateHelper,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          Widget trackerGroupCard({
+            required String title,
+            required IconData icon,
+            required List<TrackerDefinition> trackers,
+            required bool isDaily,
+            required String emptyLabel,
+            required String manageRouteKey,
+          }) {
             return Card(
               color: theme.colorScheme.surfaceContainerHigh,
               child: Padding(
@@ -468,14 +547,11 @@ class _JournalEntryEditorRoutePageState
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          color: theme.colorScheme.primary,
-                        ),
+                        Icon(icon, color: theme.colorScheme.primary),
                         SizedBox(width: tokens.spaceXs),
                         Expanded(
                           child: Text(
-                            l10n.journalDailyCheckInsTitle,
+                            title,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -483,61 +559,57 @@ class _JournalEntryEditorRoutePageState
                         ),
                       ],
                     ),
-                    SizedBox(height: tokens.spaceXxs),
-                    Text(
-                      l10n.journalDailyAppliesTodaySubtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
                     SizedBox(height: tokens.spaceSm),
-                    if (dailyTrackers.isEmpty)
+                    if (trackers.isEmpty)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        title: Text(l10n.journalNoDailyCheckIns),
+                        title: Text(emptyLabel),
                         trailing: TextButton(
-                          onPressed: () => Routing.pushScreenKey(
-                            context,
-                            'journal_manage_daily_checkins',
-                          ),
+                          onPressed: () =>
+                              Routing.pushScreenKey(context, manageRouteKey),
                           child: Text(l10n.manageLabel),
                         ),
                       )
                     else if (!hasMood)
-                      Container(
-                        width: double.infinity,
-                        padding: EdgeInsets.all(tokens.spaceMd),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(tokens.radiusMd),
-                          border: Border.all(
-                            color: theme.colorScheme.outlineVariant,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.lock_outline,
-                              color: theme.colorScheme.primary,
-                              size: 18,
-                            ),
-                            SizedBox(width: tokens.spaceSm),
-                            Expanded(
-                              child: Text(
-                                l10n.journalMoodGateHelper,
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
+                      moodGateHint()
                     else
-                      for (final definition in dailyTrackers)
-                        dailyModuleTile(definition),
+                      for (final definition in trackers)
+                        trackerRowTile(
+                          definition: definition,
+                          isDaily: isDaily,
+                        ),
                   ],
                 ),
               ),
             );
+          }
+
+          final groupsById = {for (final g in state.groups) g.id: g};
+          final ungrouped =
+              entryTrackers
+                  .where(
+                    (d) =>
+                        d.groupId == null || !groupsById.containsKey(d.groupId),
+                  )
+                  .toList(growable: false)
+                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+          final entryGroups =
+              <({String title, List<TrackerDefinition> trackers})>[];
+          if (ungrouped.isNotEmpty) {
+            entryGroups.add(
+              (title: l10n.journalGroupUngrouped, trackers: ungrouped),
+            );
+          }
+          for (final group in state.groups) {
+            final inGroup =
+                entryTrackers
+                    .where((d) => d.groupId == group.id)
+                    .toList(growable: false)
+                  ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+            if (inGroup.isNotEmpty) {
+              entryGroups.add((title: group.name, trackers: inGroup));
+            }
           }
 
           final body = isLoading
@@ -585,21 +657,37 @@ class _JournalEntryEditorRoutePageState
                           .add(JournalEntryEditorMoodChanged(m)),
                     ),
                     SizedBox(height: tokens.spaceLg),
-                    dailyCheckinsSection(),
-                    if (hasMood && dailyTrackers.isNotEmpty) ...[
-                      SizedBox(height: tokens.spaceSm),
-                      Text(
-                        l10n.journalDailyCheckinProgress(
-                          completedDailyCount,
-                          dailyTrackers.length,
+                    trackerGroupCard(
+                      title: l10n.journalDailyCheckInsTitle,
+                      icon: Icons.calendar_today_outlined,
+                      trackers: dailyTrackers,
+                      isDaily: true,
+                      emptyLabel: l10n.journalNoDailyCheckIns,
+                      manageRouteKey: 'journal_manage_daily_checkins',
+                    ),
+                    SizedBox(height: tokens.spaceLg),
+                    if (entryGroups.isEmpty)
+                      trackerGroupCard(
+                        title: l10n.journalTrackersTitle,
+                        icon: Icons.tune,
+                        trackers: const <TrackerDefinition>[],
+                        isDaily: false,
+                        emptyLabel: l10n.journalNoEntryTrackers,
+                        manageRouteKey: 'journal_manage_trackers',
+                      )
+                    else
+                      for (final group in entryGroups) ...[
+                        trackerGroupCard(
+                          title: group.title,
+                          icon: Icons.tune,
+                          trackers: group.trackers,
+                          isDaily: false,
+                          emptyLabel: l10n.journalNoEntryTrackers,
+                          manageRouteKey: 'journal_manage_trackers',
                         ),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                        SizedBox(height: tokens.spaceLg),
+                      ],
                     if (hasMood) ...[
-                      SizedBox(height: tokens.spaceLg),
                       TextField(
                         controller: _noteController,
                         onChanged: (v) => context
