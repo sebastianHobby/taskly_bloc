@@ -41,6 +41,8 @@ final List<RegExp> fatalResponseCodes = [
 /// PostgREST error codes that indicate schema mismatch (table doesn't exist).
 /// PGRST205: Could not find the table in the schema cache
 const _schemaNotFoundCode = 'PGRST205';
+const _postgresUndefinedTableCode = '42P01';
+const _deprecatedProjectNextActionsRelation = 'public.project_next_actions';
 
 Map<String, dynamic> _normalizeUploadData(
   String table,
@@ -551,6 +553,47 @@ class SupabaseConnector extends PowerSyncBackendConnector {
           );
         }
         await transaction.complete();
+      } else if (_isDeprecatedProjectNextActionsMissingRelation(e)) {
+        // Legacy DB-side trigger/function references `public.project_next_actions`
+        // even though that relation has been removed. Treat as schema mismatch
+        // and drop the stale operation to prevent endless retry loops.
+        talker.warning(
+          '[powersync] Missing legacy relation '
+          '$_deprecatedProjectNextActionsRelation - discarding '
+          'operation for ${lastOp?.table}/${lastOp?.id}.',
+        );
+        _logSyncEvent(
+          'sync.upload.schema_not_found',
+          level: _SyncLogLevel.warn,
+          fields: <String, Object?>{
+            'table': lastOp?.table,
+            'row_id': lastOp?.id,
+            'remote_code': e.code,
+            'remote_message': e.message,
+            'remote_details': e.details,
+            'relation': _deprecatedProjectNextActionsRelation,
+            'transaction_ops': transaction.crud.length,
+            'last_op_index': lastOpIndex,
+          },
+        );
+
+        final op = lastOp;
+        if (op != null) {
+          _emitAnomaly(
+            kind: SyncAnomalyKind.supabaseRejectedButLocalApplied,
+            reason: SyncAnomalyReason.schemaNotFound,
+            op: op,
+            remoteCode: e.code,
+            remoteMessage: e.message,
+            details: <String, Object?>{
+              'transactionOps': transaction.crud.length,
+              'lastOpIndex': lastOpIndex,
+              'relation': _deprecatedProjectNextActionsRelation,
+              'postgrestDetails': e.details,
+            },
+          );
+        }
+        await transaction.complete();
       } else if (e.code != null &&
           fatalResponseCodes.any((re) => re.hasMatch(e.code!))) {
         /// Instead of blocking the queue with these errors,
@@ -989,6 +1032,14 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
   static String? _hashIdentifier(String? value) {
     return hashIdentifierForTelemetry(value);
+  }
+
+  bool _isDeprecatedProjectNextActionsMissingRelation(PostgrestException e) {
+    final code = e.code?.trim();
+    final message = e.message;
+    if (code != _postgresUndefinedTableCode) return false;
+    if (message.isEmpty) return false;
+    return message.contains(_deprecatedProjectNextActionsRelation);
   }
 }
 

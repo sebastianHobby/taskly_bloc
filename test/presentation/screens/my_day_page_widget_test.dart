@@ -70,7 +70,6 @@ class MockAllocationOrchestrator extends Mock
 class MockOccurrenceCommandService extends Mock
     implements OccurrenceCommandService {}
 
-
 void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
@@ -542,7 +541,6 @@ void main() {
     debugPrint('[my_day_test] pumpMyDay after speedDial');
   }
 
-
   testWidgetsSafe('my day shows loading state while waiting for data', (
     tester,
   ) async {
@@ -699,8 +697,7 @@ void main() {
         ),
       );
 
-      final l10n =
-          tester.element(find.byType(MyDayEmptyStateView)).l10n;
+      final l10n = tester.element(find.byType(MyDayEmptyStateView)).l10n;
       expect(find.text(l10n.myDayNoTasksTitle), findsOneWidget);
       expect(find.text(l10n.myDayNoTasksSubtitle), findsOneWidget);
       expect(find.text(l10n.myDayAddTasksOrRoutinesAction), findsOneWidget);
@@ -721,8 +718,7 @@ void main() {
         ),
       );
 
-      final l10n =
-          tester.element(find.byType(MyDayEmptyStateView)).l10n;
+      final l10n = tester.element(find.byType(MyDayEmptyStateView)).l10n;
       expect(find.text(l10n.myDayNoPlanTitle), findsOneWidget);
       expect(find.text(l10n.myDayNoPlanSubtitle), findsOneWidget);
       expect(find.text(l10n.myDayPlanMyDayTitle), findsOneWidget);
