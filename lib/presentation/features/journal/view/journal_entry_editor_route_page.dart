@@ -4,12 +4,14 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_library_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_input_widgets.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
-import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_bloc.dart';
-import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_input_widgets.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalEntryEditorRoutePage extends StatefulWidget {
@@ -17,12 +19,36 @@ class JournalEntryEditorRoutePage extends StatefulWidget {
     required this.entryId,
     required this.preselectedTrackerIds,
     required this.selectedDayLocal,
+    this.quickCapture = false,
     super.key,
   });
 
   final String? entryId;
   final Set<String> preselectedTrackerIds;
   final DateTime? selectedDayLocal;
+  final bool quickCapture;
+
+  static Future<bool?> showQuickCapture(
+    BuildContext context, {
+    required DateTime selectedDayLocal,
+  }) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (context) {
+        return FractionallySizedBox(
+          heightFactor: 0.9,
+          child: JournalEntryEditorRoutePage(
+            entryId: null,
+            preselectedTrackerIds: const <String>{},
+            selectedDayLocal: selectedDayLocal,
+            quickCapture: true,
+          ),
+        );
+      },
+    );
+  }
 
   @override
   State<JournalEntryEditorRoutePage> createState() =>
@@ -32,6 +58,9 @@ class JournalEntryEditorRoutePage extends StatefulWidget {
 class _JournalEntryEditorRoutePageState
     extends State<JournalEntryEditorRoutePage> {
   late final TextEditingController _noteController;
+  bool _manageMode = false;
+  String? _expandedDailyGroupId;
+  String? _expandedEntryGroupId;
 
   @override
   void initState() {
@@ -45,17 +74,124 @@ class _JournalEntryEditorRoutePageState
     super.dispose();
   }
 
+  bool _hasMeaningfulValue(Object? value) {
+    return switch (value) {
+      null => false,
+      final bool v => v,
+      final String v => v.trim().isNotEmpty,
+      _ => true,
+    };
+  }
+
+  Future<void> _openManageGroupMenu(
+    BuildContext context,
+    TrackerGroup group,
+    JournalManageLibraryBloc manageBloc,
+  ) async {
+    final l10n = context.l10n;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit_outlined),
+                title: Text(l10n.renameLabel),
+                onTap: () => Navigator.of(context).pop('rename'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title: Text(l10n.deleteLabel),
+                onTap: () => Navigator.of(context).pop('delete'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (action == null || !context.mounted) return;
+
+    if (action == 'rename') {
+      final name = await _showNameDialog(
+        context,
+        title: l10n.journalRenameGroupTitle,
+        initialValue: group.name,
+      );
+      if (name == null || name.trim().isEmpty || !context.mounted) return;
+      await manageBloc.renameGroup(group: group, name: name.trim());
+      return;
+    }
+
+    if (action == 'delete') {
+      await manageBloc.deleteGroup(group);
+    }
+  }
+
+  Future<String?> _showNameDialog(
+    BuildContext context, {
+    required String title,
+    String initialValue = '',
+  }) async {
+    final controller = TextEditingController(text: initialValue);
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(title),
+            content: TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: InputDecoration(labelText: context.l10n.nameLabel),
+              onSubmitted: (value) => Navigator.of(context).pop(value),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(context.l10n.cancelLabel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(controller.text),
+                child: Text(context.l10n.saveLabel),
+              ),
+            ],
+          );
+        },
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<JournalEntryEditorBloc>(
-      create: (context) => JournalEntryEditorBloc(
-        repository: context.read<JournalRepositoryContract>(),
-        errorReporter: context.read<AppErrorReporter>(),
-        entryId: widget.entryId,
-        preselectedTrackerIds: widget.preselectedTrackerIds,
-        nowUtc: context.read<NowService>().nowUtc,
-        selectedDayLocal: widget.selectedDayLocal,
-      )..add(const JournalEntryEditorStarted()),
+    final repository = context.read<JournalRepositoryContract>();
+    final errorReporter = context.read<AppErrorReporter>();
+    final nowService = context.read<NowService>();
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<JournalEntryEditorBloc>(
+          create: (context) => JournalEntryEditorBloc(
+            repository: repository,
+            errorReporter: errorReporter,
+            entryId: widget.entryId,
+            preselectedTrackerIds: widget.preselectedTrackerIds,
+            nowUtc: nowService.nowUtc,
+            selectedDayLocal: widget.selectedDayLocal,
+          )..add(const JournalEntryEditorStarted()),
+        ),
+        BlocProvider<JournalManageLibraryBloc>(
+          create: (context) => JournalManageLibraryBloc(
+            repository: repository,
+            errorReporter: errorReporter,
+            nowUtc: nowService.nowUtc,
+          ),
+        ),
+      ],
       child: BlocConsumer<JournalEntryEditorBloc, JournalEntryEditorState>(
         listenWhen: (prev, next) =>
             prev.status.runtimeType != next.status.runtimeType,
@@ -84,9 +220,11 @@ class _JournalEntryEditorRoutePageState
         builder: (context, state) {
           final theme = Theme.of(context);
           final l10n = context.l10n;
+          final tokens = TasklyTokens.of(context);
           final isSaving = state.status is JournalEntryEditorSaving;
           final isLoading = state.status is JournalEntryEditorLoading;
           final canSave = !isSaving && state.mood != null;
+          final manageBloc = context.read<JournalManageLibraryBloc>();
 
           if (_noteController.text != state.note && !isLoading) {
             _noteController.text = state.note;
@@ -113,6 +251,86 @@ class _JournalEntryEditorRoutePageState
               ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
           }
 
+          Map<String, Object?> effectiveDailyValues() {
+            final out = <String, Object?>{};
+            for (final d in state.dailyTrackers) {
+              if (state.dailyDraftValues.containsKey(d.id)) {
+                out[d.id] = state.dailyDraftValues[d.id];
+              } else {
+                out[d.id] = state.dayStateByTrackerId[d.id]?.value;
+              }
+            }
+            return out;
+          }
+
+          Widget boolInputRow({
+            required TrackerDefinition definition,
+            required bool value,
+            required ValueChanged<bool> onChanged,
+          }) {
+            return Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    definition.name,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                ToggleButtons(
+                  isSelected: [!value, value],
+                  constraints: const BoxConstraints(
+                    minHeight: 40,
+                    minWidth: 60,
+                  ),
+                  borderRadius: BorderRadius.circular(tokens.radiusPill),
+                  onPressed: isSaving ? null : (index) => onChanged(index == 1),
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
+                      child: Text(l10n.offLabel),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
+                      child: Text(l10n.onLabel),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+
+          Widget ratingInputRow({
+            required TrackerDefinition definition,
+            required Object? currentValue,
+            required ValueChanged<Object?> onChanged,
+          }) {
+            final min = definition.minInt ?? 1;
+            final max = definition.maxInt ?? 5;
+            final intValue = switch (currentValue) {
+              final int v => v,
+              final double v => v.round(),
+              _ => min,
+            };
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(definition.name, style: theme.textTheme.titleSmall),
+                SizedBox(height: tokens.spaceSm),
+                Wrap(
+                  spacing: tokens.spaceSm,
+                  children: [
+                    for (var i = min; i <= max; i++)
+                      ChoiceChip(
+                        label: Text('$i'),
+                        selected: intValue == i,
+                        onSelected: isSaving ? null : (_) => onChanged(i),
+                      ),
+                  ],
+                ),
+              ],
+            );
+          }
+
           Widget choiceInput({
             required TrackerDefinition definition,
             required Object? currentValue,
@@ -128,126 +346,85 @@ class _JournalEntryEditorRoutePageState
                 final selectedKey = currentValue is String
                     ? currentValue
                     : null;
-
+                if (choices.isEmpty) {
+                  return Text(
+                    l10n.journalNoOptions,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  );
+                }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(definition.name, style: theme.textTheme.titleSmall),
-                    SizedBox(height: TasklyTokens.of(context).spaceSm),
-                    if (choices.isEmpty)
-                      Text(
-                        l10n.journalNoOptions,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      )
-                    else
-                      TrackerChoiceInput(
-                        choices: choices,
-                        selectedKey: selectedKey,
-                        enabled: !isSaving,
-                        onSelected: onSelected,
-                      ),
+                    SizedBox(height: tokens.spaceSm),
+                    TrackerChoiceInput(
+                      choices: choices,
+                      selectedKey: selectedKey,
+                      enabled: !isSaving,
+                      onSelected: onSelected,
+                    ),
                   ],
                 );
               },
             );
           }
 
-          Widget entryTrackerInputRow({required TrackerDefinition d}) {
-            final currentValue = state.entryValues[d.id];
-
-            void setValue(Object? v) {
-              context.read<JournalEntryEditorBloc>().add(
-                JournalEntryEditorEntryValueChanged(
-                  trackerId: d.id,
-                  value: v,
-                ),
-              );
-            }
-
+          Widget trackerInputRow({
+            required TrackerDefinition d,
+            required Object? currentValue,
+            required ValueChanged<Object?> setValue,
+            required bool isDaily,
+          }) {
             final valueType = d.valueType.trim().toLowerCase();
             final valueKind = (d.valueKind ?? '').trim().toLowerCase();
-
             if (valueType == 'yes_no' || valueKind == 'boolean') {
               final boolValue = (currentValue is bool) && currentValue;
-              return SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(d.name),
+              return boolInputRow(
+                definition: d,
                 value: boolValue,
-                onChanged: isSaving ? null : setValue,
+                onChanged: (v) => setValue(v),
               );
             }
-
             if (valueType == 'rating') {
-              final min = d.minInt ?? 1;
-              final max = d.maxInt ?? 5;
-              final step = d.stepInt ?? 1;
-              final divisions = ((max - min) ~/ step).clamp(1, 50);
-
-              final intValue = switch (currentValue) {
-                final int v => v,
-                final double v => v.round(),
-                _ => min,
-              };
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(d.name, style: theme.textTheme.titleSmall),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Slider(
-                          value: intValue.toDouble().clamp(
-                            min.toDouble(),
-                            max.toDouble(),
-                          ),
-                          min: min.toDouble(),
-                          max: max.toDouble(),
-                          divisions: divisions,
-                          onChanged: isSaving
-                              ? null
-                              : (v) => setValue(v.round()),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 36,
-                        child: Text(
-                          '$intValue',
-                          textAlign: TextAlign.end,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+              return ratingInputRow(
+                definition: d,
+                currentValue: currentValue,
+                onChanged: setValue,
               );
             }
-
             if (valueType == 'quantity') {
-              final min = d.minInt;
-              final max = d.maxInt;
-              final step = d.stepInt ?? 1;
-
               final intValue = switch (currentValue) {
                 final int v => v,
                 final double v => v.round(),
                 _ => 0,
               };
-
               return TrackerQuantityInput(
                 label: d.name,
                 value: intValue,
-                min: min,
-                max: max,
-                step: step,
+                min: d.minInt,
+                max: d.maxInt,
+                step: d.stepInt ?? 1,
                 enabled: !isSaving,
-                onChanged: setValue,
-                onClear: () => setValue(null),
+                onChanged: (v) {
+                  if (!isDaily) {
+                    setValue(v);
+                    return;
+                  }
+                  final delta = v - intValue;
+                  if (delta != 0) {
+                    context.read<JournalEntryEditorBloc>().add(
+                      JournalEntryEditorDailyDeltaAdded(
+                        trackerId: d.id,
+                        delta: delta,
+                      ),
+                    );
+                  }
+                },
+                onClear: isDaily ? null : () => setValue(null),
               );
             }
-
             if (valueType == 'choice') {
               return choiceInput(
                 definition: d,
@@ -255,7 +432,6 @@ class _JournalEntryEditorRoutePageState
                 onSelected: setValue,
               );
             }
-
             return ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(d.name),
@@ -263,124 +439,321 @@ class _JournalEntryEditorRoutePageState
             );
           }
 
-          Object? effectiveDailyValue(String trackerId) {
-            if (state.dailyDraftValues.containsKey(trackerId)) {
-              return state.dailyDraftValues[trackerId];
-            }
-            return state.dayStateByTrackerId[trackerId]?.value;
-          }
+          Widget groupCards({
+            required String title,
+            required List<TrackerDefinition> source,
+            required Map<String, Object?> values,
+            required String? expandedGroupId,
+            required ValueChanged<String?> onExpandedGroupChanged,
+            required bool isDaily,
+          }) {
+            final groups = groupOptions();
+            final cards = <Widget>[];
+            for (var index = 0; index < groups.length; index++) {
+              final group = groups[index];
+              final trackers = trackersForGroup(source, group?.id);
+              if (trackers.isEmpty) continue;
+              final groupId = group?.id ?? '__ungrouped__';
+              final isExpanded = expandedGroupId == groupId;
+              final selectedCount = trackers
+                  .where((d) => _hasMeaningfulValue(values[d.id]))
+                  .length;
 
-          Widget dailyTrackerInputRow({required TrackerDefinition d}) {
-            final currentValue = effectiveDailyValue(d.id);
-
-            void setValue(Object? v) {
-              context.read<JournalEntryEditorBloc>().add(
-                JournalEntryEditorDailyValueChanged(
-                  trackerId: d.id,
-                  value: v,
-                ),
-              );
-            }
-
-            void addDelta(int delta) {
-              context.read<JournalEntryEditorBloc>().add(
-                JournalEntryEditorDailyDeltaAdded(
-                  trackerId: d.id,
-                  delta: delta,
-                ),
-              );
-            }
-
-            final valueType = d.valueType.trim().toLowerCase();
-            final valueKind = (d.valueKind ?? '').trim().toLowerCase();
-
-            if (valueType == 'yes_no' || valueKind == 'boolean') {
-              final boolValue = (currentValue is bool) && currentValue;
-              return SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(d.name),
-                value: boolValue,
-                onChanged: isSaving ? null : setValue,
-              );
-            }
-
-            if (valueType == 'rating') {
-              final min = d.minInt ?? 1;
-              final max = d.maxInt ?? 5;
-              final step = d.stepInt ?? 1;
-              final divisions = ((max - min) ~/ step).clamp(1, 50);
-
-              final intValue = switch (currentValue) {
-                final int v => v,
-                final double v => v.round(),
-                _ => min,
-              };
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(d.name, style: theme.textTheme.titleSmall),
-                  Row(
+              cards.add(
+                Card(
+                  child: ExpansionTile(
+                    key: ValueKey(
+                      'journal_group_${title}_${groupId}_$isExpanded',
+                    ),
+                    initiallyExpanded: isExpanded,
+                    onExpansionChanged: (open) {
+                      onExpandedGroupChanged(open ? groupId : null);
+                    },
+                    leading: const Icon(Icons.folder_open_outlined),
+                    title: Text(
+                      groupLabel(group),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '$selectedCount/${trackers.length}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    trailing: _manageMode && group != null
+                        ? Wrap(
+                            spacing: 2,
+                            children: [
+                              IconButton(
+                                tooltip: l10n.moveUpLabel,
+                                onPressed: isSaving || index == 0
+                                    ? null
+                                    : () => manageBloc.reorderGroups(
+                                        groupId: group.id,
+                                        direction: -1,
+                                      ),
+                                icon: const Icon(Icons.arrow_upward),
+                              ),
+                              IconButton(
+                                tooltip: l10n.moveDownLabel,
+                                onPressed:
+                                    isSaving || index == groups.length - 1
+                                    ? null
+                                    : () => manageBloc.reorderGroups(
+                                        groupId: group.id,
+                                        direction: 1,
+                                      ),
+                                icon: const Icon(Icons.arrow_downward),
+                              ),
+                              IconButton(
+                                tooltip: l10n.manageLabel,
+                                onPressed: isSaving
+                                    ? null
+                                    : () => _openManageGroupMenu(
+                                        context,
+                                        group,
+                                        manageBloc,
+                                      ),
+                                icon: const Icon(Icons.more_horiz),
+                              ),
+                            ],
+                          )
+                        : null,
+                    childrenPadding: EdgeInsets.fromLTRB(
+                      tokens.spaceMd,
+                      0,
+                      tokens.spaceMd,
+                      tokens.spaceMd,
+                    ),
                     children: [
-                      Expanded(
-                        child: Slider(
-                          value: intValue.toDouble().clamp(
-                            min.toDouble(),
-                            max.toDouble(),
-                          ),
-                          min: min.toDouble(),
-                          max: max.toDouble(),
-                          divisions: divisions,
-                          onChanged: isSaving
-                              ? null
-                              : (v) => setValue(v.round()),
+                      for (var i = 0; i < trackers.length; i++) ...[
+                        trackerInputRow(
+                          d: trackers[i],
+                          currentValue: values[trackers[i].id],
+                          setValue: (value) {
+                            if (isDaily) {
+                              context.read<JournalEntryEditorBloc>().add(
+                                JournalEntryEditorDailyValueChanged(
+                                  trackerId: trackers[i].id,
+                                  value: value,
+                                ),
+                              );
+                            } else {
+                              context.read<JournalEntryEditorBloc>().add(
+                                JournalEntryEditorEntryValueChanged(
+                                  trackerId: trackers[i].id,
+                                  value: value,
+                                ),
+                              );
+                            }
+                          },
+                          isDaily: isDaily,
                         ),
-                      ),
-                      SizedBox(
-                        width: 36,
-                        child: Text(
-                          '$intValue',
-                          textAlign: TextAlign.end,
-                          style: theme.textTheme.titleSmall,
-                        ),
-                      ),
+                        if (i != trackers.length - 1) const Divider(height: 1),
+                      ],
                     ],
                   ),
+                ),
+              );
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(title, style: theme.textTheme.titleMedium),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: () async {
+                        if (_manageMode) {
+                          setState(() => _manageMode = false);
+                          return;
+                        }
+                        final name = await _showNameDialog(
+                          context,
+                          title: l10n.journalNewGroupTitle,
+                        );
+                        if (name != null && name.trim().isNotEmpty) {
+                          await manageBloc.createGroup(name.trim());
+                        }
+                        setState(() => _manageMode = true);
+                      },
+                      icon: Icon(_manageMode ? Icons.check : Icons.tune),
+                      label: Text(
+                        _manageMode ? l10n.doneLabel : l10n.manageLabel,
+                      ),
+                    ),
+                  ],
+                ),
+                if (cards.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(tokens.spaceMd),
+                      child: Text(l10n.journalDailyNoTrackers),
+                    ),
+                  )
+                else
+                  ...cards,
+              ],
+            );
+          }
+
+          final body = isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spaceMd,
+                    tokens.spaceMd,
+                    tokens.spaceMd,
+                    tokens.spaceXxl * 3 + tokens.spaceXl,
+                  ),
+                  children: [
+                    Text(
+                      DateFormat.yMMMEd().format(
+                        DateTime(
+                          state.selectedDayLocal.year,
+                          state.selectedDayLocal.month,
+                          state.selectedDayLocal.day,
+                        ),
+                      ),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(height: tokens.spaceSm),
+                    Text(
+                      l10n.journalMoodLabel,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    SizedBox(height: tokens.spaceSm),
+                    _MoodScalePicker(
+                      value: state.mood,
+                      enabled: !isSaving,
+                      onChanged: (m) => context
+                          .read<JournalEntryEditorBloc>()
+                          .add(JournalEntryEditorMoodChanged(m)),
+                    ),
+                    SizedBox(height: tokens.spaceMd),
+                    groupCards(
+                      title: l10n.journalAllDayTitle,
+                      source: state.dailyTrackers,
+                      values: effectiveDailyValues(),
+                      expandedGroupId: _expandedDailyGroupId,
+                      onExpandedGroupChanged: (value) =>
+                          setState(() => _expandedDailyGroupId = value),
+                      isDaily: true,
+                    ),
+                    SizedBox(height: tokens.spaceMd),
+                    groupCards(
+                      title: l10n.journalRightNowTitle,
+                      source: state.trackers,
+                      values: state.entryValues,
+                      expandedGroupId: _expandedEntryGroupId,
+                      onExpandedGroupChanged: (value) =>
+                          setState(() => _expandedEntryGroupId = value),
+                      isDaily: false,
+                    ),
+                    SizedBox(height: tokens.spaceMd),
+                    ExpansionTile(
+                      title: Text(l10n.journalNoteOptionalLabel),
+                      initiallyExpanded: state.note.trim().isNotEmpty,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.only(bottom: tokens.spaceSm),
+                          child: TextField(
+                            controller: _noteController,
+                            onChanged: (v) => context
+                                .read<JournalEntryEditorBloc>()
+                                .add(JournalEntryEditorNoteChanged(v)),
+                            maxLines: 4,
+                            enabled: !isSaving,
+                            decoration: InputDecoration(
+                              hintText: l10n.journalRightNowSubtitle,
+                              border: const OutlineInputBorder(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+
+          final saveButton = FilledButton.icon(
+            onPressed: canSave
+                ? () => context.read<JournalEntryEditorBloc>().add(
+                    const JournalEntryEditorSaveRequested(),
+                  )
+                : null,
+            icon: isSaving
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  )
+                : const Icon(Icons.check),
+            label: Text(l10n.journalSaveLogButton),
+          );
+
+          if (widget.quickCapture) {
+            return SafeArea(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spaceMd,
+                      tokens.spaceSm,
+                      tokens.spaceMd,
+                      0,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          l10n.journalNewLogTitle,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          tooltip: l10n.closeLabel,
+                          onPressed: () => context.pop(false),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(child: body),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spaceMd,
+                      0,
+                      tokens.spaceMd,
+                      tokens.spaceMd,
+                    ),
+                    child: Row(
+                      children: [
+                        OutlinedButton(
+                          onPressed: () {
+                            context.pop(false);
+                            Routing.toJournalEntryNew(
+                              context,
+                              selectedDayLocal: state.selectedDayLocal,
+                            );
+                          },
+                          child: Text(l10n.editLabel),
+                        ),
+                        SizedBox(width: tokens.spaceSm),
+                        Expanded(child: saveButton),
+                      ],
+                    ),
+                  ),
                 ],
-              );
-            }
-
-            if (valueType == 'quantity') {
-              final intValue = switch (currentValue) {
-                final int v => v,
-                final double v => v.round(),
-                _ => 0,
-              };
-
-              return TrackerQuantityInput(
-                label: d.name,
-                value: intValue,
-                step: d.stepInt ?? 1,
-                enabled: !isSaving,
-                onChanged: (v) {
-                  final delta = v - intValue;
-                  if (delta != 0) addDelta(delta);
-                },
-              );
-            }
-
-            if (valueType == 'choice') {
-              return choiceInput(
-                definition: d,
-                currentValue: currentValue,
-                onSelected: setValue,
-              );
-            }
-
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(d.name),
-              subtitle: Text(l10n.journalUnsupportedValueType(d.valueType)),
+              ),
             );
           }
 
@@ -395,160 +768,15 @@ class _JournalEntryEditorRoutePageState
             bottomNavigationBar: SafeArea(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
-                  TasklyTokens.of(context).spaceLg,
-                  TasklyTokens.of(context).spaceSm2,
-                  TasklyTokens.of(context).spaceLg,
-                  TasklyTokens.of(context).spaceLg,
+                  tokens.spaceLg,
+                  tokens.spaceSm2,
+                  tokens.spaceLg,
+                  tokens.spaceLg,
                 ),
-                child: FilledButton.icon(
-                  onPressed: canSave
-                      ? () => context.read<JournalEntryEditorBloc>().add(
-                          const JournalEntryEditorSaveRequested(),
-                        )
-                      : null,
-                  icon: isSaving
-                      ? SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Icon(Icons.check),
-                  label: Text(l10n.journalSaveLogButton),
-                ),
+                child: saveButton,
               ),
             ),
-            body: SafeArea(
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView(
-                      padding: EdgeInsets.fromLTRB(
-                        TasklyTokens.of(context).spaceMd,
-                        TasklyTokens.of(context).spaceMd,
-                        TasklyTokens.of(context).spaceMd,
-                        TasklyTokens.of(context).spaceXxl * 3 +
-                            TasklyTokens.of(context).spaceXl,
-                      ),
-                      children: [
-                        Text(
-                          DateFormat.yMMMEd().format(
-                            DateTime(
-                              state.selectedDayLocal.year,
-                              state.selectedDayLocal.month,
-                              state.selectedDayLocal.day,
-                            ),
-                          ),
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        Text(
-                          l10n.journalMoodLabel,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        _MoodScalePicker(
-                          value: state.mood,
-                          enabled: !isSaving,
-                          onChanged: (m) => context
-                              .read<JournalEntryEditorBloc>()
-                              .add(JournalEntryEditorMoodChanged(m)),
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        TextField(
-                          controller: _noteController,
-                          onChanged: (v) => context
-                              .read<JournalEntryEditorBloc>()
-                              .add(JournalEntryEditorNoteChanged(v)),
-                          maxLines: 6,
-                          enabled: !isSaving,
-                          decoration: InputDecoration(
-                            labelText: l10n.journalNoteOptionalLabel,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        Text(
-                          l10n.journalAllDayTitle,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        for (final group in groupOptions())
-                          Builder(
-                            builder: (context) {
-                              final groupId = group?.id;
-                              final inGroup = trackersForGroup(
-                                state.dailyTrackers,
-                                groupId,
-                              );
-                              if (inGroup.isEmpty) {
-                                return SizedBox.shrink();
-                              }
-
-                              return ExpansionTile(
-                                initiallyExpanded: true,
-                                title: Text(groupLabel(group)),
-                                childrenPadding: EdgeInsets.only(
-                                  left: TasklyTokens.of(context).spaceLg,
-                                  right: TasklyTokens.of(context).spaceLg,
-                                  bottom: TasklyTokens.of(context).spaceSm,
-                                ),
-                                children: [
-                                  for (final d in inGroup) ...[
-                                    dailyTrackerInputRow(d: d),
-                                    const Divider(height: 1),
-                                  ],
-                                ],
-                              );
-                            },
-                          ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        Text(
-                          l10n.journalRightNowTitle,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        Text(
-                          l10n.journalRightNowSubtitle,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        SizedBox(height: TasklyTokens.of(context).spaceSm),
-                        for (final group in groupOptions())
-                          Builder(
-                            builder: (context) {
-                              final groupId = group?.id;
-                              final inGroup = trackersForGroup(
-                                state.trackers,
-                                groupId,
-                              );
-                              if (inGroup.isEmpty) {
-                                return SizedBox.shrink();
-                              }
-
-                              return ExpansionTile(
-                                initiallyExpanded: true,
-                                title: Text(groupLabel(group)),
-                                childrenPadding: EdgeInsets.only(
-                                  left: TasklyTokens.of(context).spaceLg,
-                                  right: TasklyTokens.of(context).spaceLg,
-                                  bottom: TasklyTokens.of(context).spaceSm,
-                                ),
-                                children: [
-                                  for (final d in inGroup) ...[
-                                    entryTrackerInputRow(d: d),
-                                    const Divider(height: 1),
-                                  ],
-                                ],
-                              );
-                            },
-                          ),
-                      ],
-                    ),
-            ),
+            body: SafeArea(child: body),
           );
         },
       ),
@@ -619,10 +847,12 @@ class _MoodOptionButton extends StatelessWidget {
       child: InkWell(
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
           width: 64,
           padding: EdgeInsets.symmetric(
             horizontal: TasklyTokens.of(context).spaceLg,
+            vertical: TasklyTokens.of(context).spaceXs,
           ),
           decoration: BoxDecoration(
             color: bg,

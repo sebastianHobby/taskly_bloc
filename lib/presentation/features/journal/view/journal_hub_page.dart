@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_today_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -97,7 +98,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
       floatingActionButton: EntityAddFab(
         tooltip: context.l10n.journalAddEntry,
         heroTag: 'journal_add_entry_fab',
-        onPressed: () => Routing.toJournalEntryNew(
+        onPressed: () => JournalEntryEditorRoutePage.showQuickCapture(
           context,
           selectedDayLocal: _selectedDay,
         ),

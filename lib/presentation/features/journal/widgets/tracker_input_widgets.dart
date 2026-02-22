@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
@@ -202,21 +204,21 @@ class TrackerQuantityInput extends StatelessWidget {
         SizedBox(height: tokens.spaceSm),
         Row(
           children: [
-            IconButton(
-              onPressed: !enabled
-                  ? null
-                  : () => onChanged(clamp(intValue - step)),
-              icon: const Icon(Icons.remove),
+            _StepperHoldButton(
+              icon: Icons.remove,
+              enabled: enabled,
+              onTap: () => onChanged(clamp(intValue - step)),
+              onRepeat: () => onChanged(clamp(intValue - step)),
             ),
             TextButton(
               onPressed: !enabled ? null : () => _showEditSheet(context),
               child: Text('$intValue'),
             ),
-            IconButton(
-              onPressed: !enabled
-                  ? null
-                  : () => onChanged(clamp(intValue + step)),
-              icon: const Icon(Icons.add),
+            _StepperHoldButton(
+              icon: Icons.add,
+              enabled: enabled,
+              onTap: () => onChanged(clamp(intValue + step)),
+              onRepeat: () => onChanged(clamp(intValue + step)),
             ),
             const Spacer(),
             TextButton.icon(
@@ -312,5 +314,64 @@ class TrackerQuantityInput extends StatelessWidget {
     } else {
       onClear?.call();
     }
+  }
+}
+
+class _StepperHoldButton extends StatefulWidget {
+  const _StepperHoldButton({
+    required this.icon,
+    required this.enabled,
+    required this.onTap,
+    required this.onRepeat,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback onTap;
+  final VoidCallback onRepeat;
+
+  @override
+  State<_StepperHoldButton> createState() => _StepperHoldButtonState();
+}
+
+class _StepperHoldButtonState extends State<_StepperHoldButton> {
+  Timer? _repeatTimer;
+  Timer? _startDelayTimer;
+
+  void _cancelTimers() {
+    _startDelayTimer?.cancel();
+    _repeatTimer?.cancel();
+    _startDelayTimer = null;
+    _repeatTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _cancelTimers();
+    super.dispose();
+  }
+
+  void _startRepeat() {
+    if (!widget.enabled) return;
+    _cancelTimers();
+    _startDelayTimer = Timer(const Duration(milliseconds: 350), () {
+      _repeatTimer = Timer.periodic(const Duration(milliseconds: 160), (_) {
+        if (!mounted || !widget.enabled) return;
+        widget.onRepeat();
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPressStart: (_) => _startRepeat(),
+      onLongPressEnd: (_) => _cancelTimers(),
+      onLongPressCancel: _cancelTimers,
+      child: IconButton(
+        onPressed: widget.enabled ? widget.onTap : null,
+        icon: Icon(widget.icon),
+      ),
+    );
   }
 }

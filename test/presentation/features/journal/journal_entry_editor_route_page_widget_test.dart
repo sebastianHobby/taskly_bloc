@@ -135,15 +135,15 @@ void main() {
 
   testWidgetsSafe('renders editor content when loaded', (tester) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
-    final tracker = _trackerDef('tracker-1', 'Energy');
+    final tracker = _trackerDef('tracker-1', 'Energy', groupId: 'group-1');
 
     defsSubject.add([moodDef, tracker]);
     groupsSubject.add([_group('group-1', 'Wellness')]);
 
     await pumpPage(tester);
     await tester.pumpForStream();
+    await _expandGroup(tester, 'Wellness');
 
-    expect(find.text('Mood'), findsOneWidget);
     expect(find.text('Save log'), findsOneWidget);
     expect(find.text('Energy'), findsOneWidget);
   });
@@ -314,13 +314,15 @@ void main() {
     tester,
   ) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
-    final trackerA = _trackerDef('tracker-1', 'Energy');
-    final trackerB = _trackerDef('tracker-2', 'Focus');
+    final trackerA = _trackerDef('tracker-1', 'Energy', groupId: 'group-1');
+    final trackerB = _trackerDef('tracker-2', 'Focus', groupId: 'group-1');
 
+    groupsSubject.add([_group('group-1', 'Wellness')]);
     defsSubject.add([moodDef, trackerA]);
 
     await pumpPage(tester);
     await tester.pumpForStream();
+    await _expandGroup(tester, 'Wellness');
 
     expect(find.text('Energy'), findsOneWidget);
 
@@ -372,6 +374,7 @@ void main() {
 
     await pumpPage(tester);
     await tester.pumpForStream();
+    await _expandGroup(tester, _l10n(tester).journalGroupUngrouped);
 
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Work'), findsOneWidget);
@@ -404,11 +407,10 @@ void main() {
 
     await pumpPage(tester);
     await tester.pumpForStream();
+    await _expandGroup(tester, _l10n(tester).journalGroupUngrouped);
 
-    final slider = tester.widget<Slider>(find.byType(Slider));
-    expect(slider.min, 2);
-    expect(slider.max, 8);
-    expect(slider.divisions, 3);
+    expect(find.widgetWithText(ChoiceChip, '2'), findsOneWidget);
+    expect(find.widgetWithText(ChoiceChip, '8'), findsOneWidget);
   });
 
   testWidgetsSafe('quantity input clamps values', (tester) async {
@@ -426,6 +428,7 @@ void main() {
 
     await pumpPage(tester);
     await tester.pumpForStream();
+    await _expandGroup(tester, _l10n(tester).journalGroupUngrouped);
 
     expect(find.text('0'), findsOneWidget);
 
@@ -495,6 +498,7 @@ void main() {
 
     await pumpPage(tester);
     await tester.pumpForStream();
+    await _expandGroup(tester, _l10n(tester).journalGroupUngrouped);
 
     final l10n = _l10n(tester);
     await _tapTextButton(tester, l10n.journalChooseOptionLabel);
@@ -561,6 +565,17 @@ Future<void> _tapTextButton(WidgetTester tester, String text) async {
   await tester.tap(finder.first, warnIfMissed: false);
 }
 
+Future<void> _expandGroup(WidgetTester tester, String groupTitle) async {
+  final tileFinder = find.widgetWithText(ExpansionTile, groupTitle);
+  if (tileFinder.evaluate().isEmpty) return;
+  await tester.ensureVisible(tileFinder.first);
+  await tester.pumpUntilCondition(
+    () => tileFinder.first.hitTestable().evaluate().isNotEmpty,
+  );
+  await tester.tap(tileFinder.first, warnIfMissed: false);
+  await tester.pumpForStream();
+}
+
 JournalEntry _entry(String id, String note) {
   final when = DateTime(2025, 1, 15, 9);
   return JournalEntry(
@@ -592,6 +607,7 @@ TrackerDefinition _trackerDef(
   String id,
   String name, {
   String? systemKey,
+  String? groupId,
   String valueType = 'rating',
   String? valueKind,
   int? minInt,
@@ -609,6 +625,7 @@ TrackerDefinition _trackerDef(
     systemKey: systemKey,
     isActive: true,
     sortOrder: 0,
+    groupId: groupId,
     valueKind: valueKind,
     minInt: minInt,
     maxInt: maxInt,

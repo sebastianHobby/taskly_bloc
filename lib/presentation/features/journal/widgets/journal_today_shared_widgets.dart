@@ -5,60 +5,6 @@ import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
-class JournalTodayEntriesSection extends StatelessWidget {
-  const JournalTodayEntriesSection({
-    required this.entries,
-    required this.eventsByEntryId,
-    required this.definitionById,
-    required this.moodTrackerId,
-    required this.onAddLog,
-    required this.onEntryTap,
-    super.key,
-  });
-
-  final List<JournalEntry> entries;
-  final Map<String, List<TrackerEvent>> eventsByEntryId;
-  final Map<String, TrackerDefinition> definitionById;
-  final String? moodTrackerId;
-  final VoidCallback onAddLog;
-  final ValueChanged<JournalEntry> onEntryTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = TasklyTokens.of(context);
-    final l10n = context.l10n;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.journalLogsTitle,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(height: TasklyTokens.of(context).spaceSm),
-        if (entries.isEmpty)
-          JournalTodayEmptyState(onAddLog: onAddLog)
-        else
-          ...entries.map(
-            (entry) => Padding(
-              padding: EdgeInsets.only(bottom: tokens.spaceSm),
-              child: JournalLogCard(
-                entry: entry,
-                events: eventsByEntryId[entry.id] ?? const <TrackerEvent>[],
-                definitionById: definitionById,
-                moodTrackerId: moodTrackerId,
-                onTap: () => onEntryTap(entry),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class JournalTodayEmptyState extends StatelessWidget {
   const JournalTodayEmptyState({required this.onAddLog, super.key});
 
@@ -73,8 +19,16 @@ class JournalTodayEmptyState extends StatelessWidget {
       width: double.infinity,
       padding: EdgeInsets.all(tokens.spaceLg),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.surface,
+            theme.colorScheme.surfaceContainerHighest,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(tokens.radiusMd),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -135,7 +89,21 @@ class JournalLogCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: surface,
+        gradient: LinearGradient(
+          colors: [
+            surface,
+            if (mood == null) theme.colorScheme.surfaceContainerHighest,
+            if (mood != null)
+              Color.lerp(
+                    theme.colorScheme.surfaceContainerHighest,
+                    _moodTint(theme.colorScheme, mood),
+                    0.1,
+                  ) ??
+                  theme.colorScheme.surfaceContainerHighest,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(tokens.radiusMd),
         border: Border.all(color: border),
       ),
@@ -306,4 +274,14 @@ class JournalLogCard extends StatelessWidget {
       l10n.journalTrackerMoreLabel(remaining),
     ];
   }
+}
+
+Color _moodTint(ColorScheme scheme, MoodRating mood) {
+  return switch (mood) {
+    MoodRating.veryLow => scheme.error,
+    MoodRating.low => scheme.secondary,
+    MoodRating.neutral => scheme.onSurfaceVariant,
+    MoodRating.good => scheme.tertiary,
+    MoodRating.excellent => scheme.primary,
+  };
 }
