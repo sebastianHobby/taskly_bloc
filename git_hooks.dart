@@ -19,6 +19,11 @@ Future<bool> preCommit() async {
 Future<bool> prePush() async {
   print('Running pre-push checks...\n');
 
+  if (!await _runDependencyResolutionChecks()) {
+    _printFailure();
+    return false;
+  }
+
   if (!await _runFormat()) {
     _printFailure();
     return false;
@@ -40,6 +45,46 @@ Future<bool> prePush() async {
   }
 
   print('\nAll pre-push checks passed!');
+  return true;
+}
+
+Future<bool> _runDependencyResolutionChecks() async {
+  print('Running dependency resolution checks (flutter pub get)...');
+
+  final checks = <({String label, String? workingDirectory})>[
+    (label: 'root', workingDirectory: null),
+    (label: 'packages/taskly_core', workingDirectory: 'packages/taskly_core'),
+    (
+      label: 'packages/taskly_domain',
+      workingDirectory: 'packages/taskly_domain',
+    ),
+    (label: 'packages/taskly_data', workingDirectory: 'packages/taskly_data'),
+    (label: 'packages/taskly_ui', workingDirectory: 'packages/taskly_ui'),
+  ];
+
+  for (final check in checks) {
+    print(' - ${check.label}');
+    try {
+      final result = await Process.run(
+        'flutter',
+        ['pub', 'get'],
+        runInShell: true,
+        workingDirectory: check.workingDirectory,
+      );
+
+      stdout.write(result.stdout);
+      stderr.write(result.stderr);
+
+      if (result.exitCode != 0) {
+        print('   flutter pub get failed for ${check.label}');
+        return false;
+      }
+    } catch (e) {
+      print('   Could not run flutter pub get for ${check.label}: $e');
+      return false;
+    }
+  }
+
   return true;
 }
 

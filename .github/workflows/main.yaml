@@ -50,8 +50,16 @@ jobs:
         working-directory: packages/taskly_domain
         run: flutter pub get
 
+      - name: Get dependencies (taskly_core)
+        working-directory: packages/taskly_core
+        run: flutter pub get
+
       - name: Get dependencies (taskly_data)
         working-directory: packages/taskly_data
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_ui)
+        working-directory: packages/taskly_ui
         run: flutter pub get
 
       - name: Generate code
@@ -106,8 +114,16 @@ jobs:
         working-directory: packages/taskly_domain
         run: flutter pub get
 
+      - name: Get dependencies (taskly_core)
+        working-directory: packages/taskly_core
+        run: flutter pub get
+
       - name: Get dependencies (taskly_data)
         working-directory: packages/taskly_data
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_ui)
+        working-directory: packages/taskly_ui
         run: flutter pub get
 
       - name: Generate code
@@ -156,8 +172,16 @@ jobs:
         working-directory: packages/taskly_domain
         run: flutter pub get
 
+      - name: Get dependencies (taskly_core)
+        working-directory: packages/taskly_core
+        run: flutter pub get
+
       - name: Get dependencies (taskly_data)
         working-directory: packages/taskly_data
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_ui)
+        working-directory: packages/taskly_ui
         run: flutter pub get
 
       - name: Generate code

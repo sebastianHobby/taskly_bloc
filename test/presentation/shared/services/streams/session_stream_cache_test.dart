@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/presentation/shared/services/streams/session_stream_cache.dart';
 import 'package:taskly_domain/services.dart';
-import 'package:test/test.dart';
 
 import '../../../../helpers/test_helpers.dart';
 
