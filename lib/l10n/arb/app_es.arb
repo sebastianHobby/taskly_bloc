@@ -1710,7 +1710,7 @@
     "@projectsValueProjectCountLabel": {
         "description": "Project count label shown in Projects value headers"
     },
-    "projectsValueHeaderSeparator": " Â· ",
+    "projectsValueHeaderSeparator": " · ",
     "@projectsValueHeaderSeparator": {
         "description": "Separator string used between stats in Projects value headers"
     },
