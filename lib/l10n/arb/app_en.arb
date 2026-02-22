@@ -3665,6 +3665,7 @@
     "valuesEmptyTitle": "No values yet",
     "journalAllDayEmpty": "No all-day items.",
     "journalAllDayTitle": "All day",
+    "journalDailyCheckInsTitle": "Daily check-ins",
     "journalEditLogTitle": "Edit log",
     "journalMeasurementChoiceSubtitle": "Pick one option",
     "journalMeasurementChoiceTitle": "Choice",

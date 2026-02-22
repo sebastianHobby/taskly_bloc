@@ -60,8 +60,7 @@ class _JournalEntryEditorRoutePageState
     extends State<JournalEntryEditorRoutePage> {
   late final TextEditingController _noteController;
   bool _manageMode = false;
-  String? _expandedDailyGroupId;
-  String? _expandedEntryGroupId;
+  String? _expandedGroupId;
 
   @override
   void initState() {
@@ -420,165 +419,130 @@ class _JournalEntryEditorRoutePageState
 
           Widget groupCards({
             required String title,
-            required List<TrackerDefinition> source,
+            required List<TrackerDefinition> trackers,
             required Map<String, Object?> values,
-            required String? expandedGroupId,
-            required ValueChanged<String?> onExpandedGroupChanged,
             required bool isDaily,
+            required bool isSpecial,
+            required TrackerGroup? group,
+            required int index,
+            required int groupCount,
           }) {
-            final groups = groupOptions();
-            final cards = <Widget>[];
-            for (var index = 0; index < groups.length; index++) {
-              final group = groups[index];
-              final trackers = trackersForGroup(source, group?.id);
-              if (trackers.isEmpty) continue;
-              final groupId = group?.id ?? '__ungrouped__';
-              final isExpanded = expandedGroupId == groupId;
-              final selectedCount = trackers
-                  .where((d) => _hasMeaningfulValue(values[d.id]))
-                  .length;
+            if (trackers.isEmpty) return const SizedBox.shrink();
 
-              cards.add(
-                Card(
-                  child: ExpansionTile(
-                    key: ValueKey(
-                      'journal_group_${title}_${groupId}_$isExpanded',
-                    ),
-                    initiallyExpanded: isExpanded,
-                    onExpansionChanged: (open) {
-                      onExpandedGroupChanged(open ? groupId : null);
-                    },
-                    leading: const Icon(Icons.folder_open_outlined),
-                    title: Text(
-                      groupLabel(group),
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '$selectedCount/${trackers.length}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    trailing: _manageMode && group != null
-                        ? Wrap(
-                            spacing: 2,
-                            children: [
-                              IconButton(
-                                tooltip: l10n.moveUpLabel,
-                                onPressed: isSaving || index == 0
-                                    ? null
-                                    : () => manageBloc.reorderGroups(
-                                        groupId: group.id,
-                                        direction: -1,
-                                      ),
-                                icon: const Icon(Icons.arrow_upward),
-                              ),
-                              IconButton(
-                                tooltip: l10n.moveDownLabel,
-                                onPressed:
-                                    isSaving || index == groups.length - 1
-                                    ? null
-                                    : () => manageBloc.reorderGroups(
-                                        groupId: group.id,
-                                        direction: 1,
-                                      ),
-                                icon: const Icon(Icons.arrow_downward),
-                              ),
-                              IconButton(
-                                tooltip: l10n.manageLabel,
-                                onPressed: isSaving
-                                    ? null
-                                    : () => _openManageGroupMenu(
-                                        context,
-                                        group,
-                                        manageBloc,
-                                      ),
-                                icon: const Icon(Icons.more_horiz),
-                              ),
-                            ],
-                          )
-                        : null,
-                    childrenPadding: EdgeInsets.fromLTRB(
-                      tokens.spaceMd,
-                      0,
-                      tokens.spaceMd,
-                      tokens.spaceMd,
-                    ),
-                    children: [
-                      for (var i = 0; i < trackers.length; i++) ...[
-                        trackerInputRow(
-                          d: trackers[i],
-                          currentValue: values[trackers[i].id],
-                          setValue: (value) {
-                            if (isDaily) {
-                              context.read<JournalEntryEditorBloc>().add(
-                                JournalEntryEditorDailyValueChanged(
-                                  trackerId: trackers[i].id,
-                                  value: value,
-                                ),
-                              );
-                            } else {
-                              context.read<JournalEntryEditorBloc>().add(
-                                JournalEntryEditorEntryValueChanged(
-                                  trackerId: trackers[i].id,
-                                  value: value,
-                                ),
-                              );
-                            }
-                          },
-                          isDaily: isDaily,
-                        ),
-                        if (i != trackers.length - 1) const Divider(height: 1),
-                      ],
-                    ],
+            final groupId = isSpecial
+                ? '__daily_checkins__'
+                : (group?.id ?? '');
+            final isExpanded = _expandedGroupId == groupId;
+            final selectedCount = trackers
+                .where((d) => _hasMeaningfulValue(values[d.id]))
+                .length;
+
+            return Card(
+              child: ExpansionTile(
+                key: ValueKey('journal_group_${groupId}_$isExpanded'),
+                initiallyExpanded: isExpanded,
+                onExpansionChanged: (open) {
+                  setState(() => _expandedGroupId = open ? groupId : null);
+                },
+                leading: Icon(
+                  isSpecial
+                      ? Icons.calendar_today_outlined
+                      : Icons.folder_open_outlined,
+                ),
+                title: Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-              );
-            }
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(title, style: theme.textTheme.titleMedium),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: () async {
-                        if (_manageMode) {
-                          setState(() => _manageMode = false);
-                          return;
-                        }
-                        final name = await _showNameDialog(
-                          context,
-                          title: l10n.journalNewGroupTitle,
-                        );
-                        if (!mounted) return;
-                        if (name != null && name.trim().isNotEmpty) {
-                          await manageBloc.createGroup(name.trim());
-                          if (!mounted) return;
-                        }
-                        setState(() => _manageMode = true);
-                      },
-                      icon: Icon(_manageMode ? Icons.check : Icons.tune),
-                      label: Text(
-                        _manageMode ? l10n.doneLabel : l10n.manageLabel,
-                      ),
-                    ),
-                  ],
+                subtitle: Text(
+                  '$selectedCount/${trackers.length}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                if (cards.isEmpty)
-                  Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(tokens.spaceMd),
-                      child: Text(l10n.journalDailyNoTrackers),
+                trailing: _manageMode && group != null
+                    ? Wrap(
+                        spacing: 2,
+                        children: [
+                          IconButton(
+                            tooltip: l10n.moveUpLabel,
+                            onPressed: isSaving || index == 0
+                                ? null
+                                : () => manageBloc.reorderGroups(
+                                    groupId: group.id,
+                                    direction: -1,
+                                  ),
+                            icon: const Icon(Icons.arrow_upward),
+                          ),
+                          IconButton(
+                            tooltip: l10n.moveDownLabel,
+                            onPressed: isSaving || index == groupCount - 1
+                                ? null
+                                : () => manageBloc.reorderGroups(
+                                    groupId: group.id,
+                                    direction: 1,
+                                  ),
+                            icon: const Icon(Icons.arrow_downward),
+                          ),
+                          IconButton(
+                            tooltip: l10n.manageLabel,
+                            onPressed: isSaving
+                                ? null
+                                : () => _openManageGroupMenu(
+                                    context,
+                                    group,
+                                    manageBloc,
+                                  ),
+                            icon: const Icon(Icons.more_horiz),
+                          ),
+                        ],
+                      )
+                    : null,
+                childrenPadding: EdgeInsets.fromLTRB(
+                  tokens.spaceMd,
+                  0,
+                  tokens.spaceMd,
+                  tokens.spaceMd,
+                ),
+                children: [
+                  for (var i = 0; i < trackers.length; i++) ...[
+                    trackerInputRow(
+                      d: trackers[i],
+                      currentValue: values[trackers[i].id],
+                      setValue: (value) {
+                        if (isDaily) {
+                          context.read<JournalEntryEditorBloc>().add(
+                            JournalEntryEditorDailyValueChanged(
+                              trackerId: trackers[i].id,
+                              value: value,
+                            ),
+                          );
+                        } else {
+                          context.read<JournalEntryEditorBloc>().add(
+                            JournalEntryEditorEntryValueChanged(
+                              trackerId: trackers[i].id,
+                              value: value,
+                            ),
+                          );
+                        }
+                      },
+                      isDaily: isDaily,
                     ),
-                  )
-                else
-                  ...cards,
-              ],
+                    if (i != trackers.length - 1) const Divider(height: 1),
+                  ],
+                ],
+              ),
             );
+          }
+
+          final entryGroups = groupOptions();
+          final visibleEntryGroups =
+              <({TrackerGroup? group, List<TrackerDefinition> trackers})>[];
+          for (final group in entryGroups) {
+            final trackers = trackersForGroup(state.trackers, group?.id);
+            if (trackers.isEmpty) continue;
+            visibleEntryGroups.add((group: group, trackers: trackers));
           }
 
           final body = isLoading
@@ -617,25 +581,77 @@ class _JournalEntryEditorRoutePageState
                           .add(JournalEntryEditorMoodChanged(m)),
                     ),
                     SizedBox(height: tokens.spaceMd),
+                    Row(
+                      children: [
+                        Text(
+                          l10n.journalTrackersTitle,
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: () async {
+                            if (_manageMode) {
+                              setState(() => _manageMode = false);
+                              return;
+                            }
+                            final name = await _showNameDialog(
+                              context,
+                              title: l10n.journalNewGroupTitle,
+                            );
+                            if (!mounted) return;
+                            if (name != null && name.trim().isNotEmpty) {
+                              await manageBloc.createGroup(name.trim());
+                              if (!mounted) return;
+                            }
+                            setState(() => _manageMode = true);
+                          },
+                          icon: Icon(_manageMode ? Icons.check : Icons.tune),
+                          label: Text(
+                            _manageMode ? l10n.doneLabel : l10n.manageLabel,
+                          ),
+                        ),
+                      ],
+                    ),
                     groupCards(
-                      title: l10n.journalAllDayTitle,
-                      source: state.dailyTrackers,
+                      title: l10n.journalDailyCheckInsTitle,
+                      trackers: state.dailyTrackers,
                       values: effectiveDailyValues(),
-                      expandedGroupId: _expandedDailyGroupId,
-                      onExpandedGroupChanged: (value) =>
-                          setState(() => _expandedDailyGroupId = value),
                       isDaily: true,
+                      isSpecial: true,
+                      group: null,
+                      index: 0,
+                      groupCount: 0,
                     ),
-                    SizedBox(height: tokens.spaceMd),
-                    groupCards(
-                      title: l10n.journalRightNowTitle,
-                      source: state.trackers,
-                      values: state.entryValues,
-                      expandedGroupId: _expandedEntryGroupId,
-                      onExpandedGroupChanged: (value) =>
-                          setState(() => _expandedEntryGroupId = value),
-                      isDaily: false,
-                    ),
+                    if (state.dailyTrackers.isNotEmpty)
+                      SizedBox(height: tokens.spaceSm),
+                    for (
+                      var index = 0;
+                      index < visibleEntryGroups.length;
+                      index++
+                    ) ...[
+                      groupCards(
+                        title: groupLabel(visibleEntryGroups[index].group),
+                        trackers: visibleEntryGroups[index].trackers,
+                        values: state.entryValues,
+                        isDaily: false,
+                        isSpecial: false,
+                        group: visibleEntryGroups[index].group,
+                        index: entryGroups.indexOf(
+                          visibleEntryGroups[index].group,
+                        ),
+                        groupCount: entryGroups.length,
+                      ),
+                      if (index != visibleEntryGroups.length - 1)
+                        SizedBox(height: tokens.spaceSm),
+                    ],
+                    if (state.dailyTrackers.isEmpty &&
+                        visibleEntryGroups.isEmpty)
+                      Card(
+                        child: Padding(
+                          padding: EdgeInsets.all(tokens.spaceMd),
+                          child: Text(l10n.journalDailyNoTrackers),
+                        ),
+                      ),
                     SizedBox(height: tokens.spaceMd),
                     ExpansionTile(
                       title: Text(l10n.journalNoteOptionalLabel),

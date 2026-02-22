@@ -25,12 +25,13 @@ Defines support signals, weekly review cards, journal integration, and stats con
 - Journal home does not render a daily summary section.
 - Tracker writes for a selected day must be anchored to that selected day (not
   the device's current day) for both entry writes and day-scoped factor writes.
-- The editor renders factor inputs as two explicit sections with group
-  accordions:
-  - day-scoped factors ("All day")
-  - entry-scoped factors ("Right now")
-- Grouped factor input uses a strict single-open accordion policy per section
-  to keep entry flow focused on one group at a time.
+- The editor renders one grouped tracker accordion list.
+- Day-scoped factors are shown in a special first category:
+  "Daily check-ins".
+- Entry-scoped factors are shown in the regular user groups (including
+  "Ungrouped").
+- Grouped factor input uses a strict single-open accordion policy across the
+  full tracker list to keep entry flow focused on one group at a time.
 - Group ordering and tracker ordering are user-controlled and available from
   in-editor manage actions.
 - Timeline factor summaries should be deduplicated per tracker so repeated
