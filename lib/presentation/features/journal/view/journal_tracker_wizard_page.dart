@@ -252,6 +252,40 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                             },
                     ),
                     SizedBox(height: tokens.spaceSm),
+                    if (widget.mode == JournalTrackerWizardMode.tracker) ...[
+                      DropdownButtonFormField<String>(
+                        value: state.groupId,
+                        decoration: InputDecoration(
+                          labelText: context.l10n.groupLabel,
+                        ),
+                        items: [
+                          for (final group in state.groups)
+                            DropdownMenuItem<String>(
+                              value: group.id,
+                              child: Text(group.name),
+                            ),
+                        ],
+                        onChanged: isSaving
+                            ? null
+                            : (value) =>
+                                  context.read<JournalTrackerWizardBloc>().add(
+                                    JournalTrackerWizardGroupChanged(value),
+                                  ),
+                      ),
+                      if (state.groups.isEmpty) ...[
+                        SizedBox(height: tokens.spaceXs),
+                        Text(
+                          context.l10n.journalNoGroupsYet,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                      SizedBox(height: tokens.spaceSm),
+                    ],
                     Text(
                       widget.mode == JournalTrackerWizardMode.dailyCheckin
                           ? context.l10n.journalDailyAppliesTodaySubtitle

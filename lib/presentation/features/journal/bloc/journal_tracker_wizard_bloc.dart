@@ -336,9 +336,16 @@ class JournalTrackerWizardBloc
       onData: (groups) {
         final active = groups.where((g) => g.isActive).toList(growable: false)
           ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+        final defaultGroupId =
+            forcedScope == JournalTrackerScopeOption.entry &&
+                (state.groupId == null || state.groupId!.trim().isEmpty) &&
+                active.isNotEmpty
+            ? active.first.id
+            : state.groupId;
         return state.copyWith(
           status: const JournalTrackerWizardIdle(),
           groups: active,
+          groupId: defaultGroupId,
           scope: forcedScope,
         );
       },
@@ -544,6 +551,16 @@ class JournalTrackerWizardBloc
       emit(
         state.copyWith(
           status: const JournalTrackerWizardError('Choose a measurement type.'),
+        ),
+      );
+      return;
+    }
+
+    if (scope == JournalTrackerScopeOption.entry &&
+        (state.groupId == null || state.groupId!.trim().isEmpty)) {
+      emit(
+        state.copyWith(
+          status: const JournalTrackerWizardError('Choose a group.'),
         ),
       );
       return;

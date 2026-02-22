@@ -484,10 +484,7 @@ void main() {
 
     expect(find.text('0'), findsOneWidget);
 
-    final quantityInput = find.ancestor(
-      of: find.text('Water'),
-      matching: find.byType(TrackerQuantityInput),
-    );
+    final quantityInput = find.byType(TrackerQuantityInput);
     final addButton = find
         .descendant(
           of: quantityInput,

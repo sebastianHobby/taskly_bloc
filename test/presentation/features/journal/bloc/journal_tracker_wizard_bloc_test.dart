@@ -78,12 +78,31 @@ void main() {
 
   blocTestSafe<JournalTrackerWizardBloc, JournalTrackerWizardState>(
     'saves tracker with forced entry scope',
-    build: () => JournalTrackerWizardBloc(
-      repository: repository,
-      errorReporter: errorReporter,
-      nowUtc: () => DateTime.utc(2026, 1, 1),
-      forcedScope: JournalTrackerScopeOption.entry,
-    ),
+    build: () {
+      when(
+        () => repository.watchTrackerGroups(),
+      ).thenAnswer(
+        (_) => Stream.value(
+          [
+            TrackerGroup(
+              id: 'group-1',
+              name: 'Health',
+              createdAt: DateTime.utc(2026, 1, 1),
+              updatedAt: DateTime.utc(2026, 1, 1),
+              isActive: true,
+              sortOrder: 0,
+              userId: null,
+            ),
+          ],
+        ),
+      );
+      return JournalTrackerWizardBloc(
+        repository: repository,
+        errorReporter: errorReporter,
+        nowUtc: () => DateTime.utc(2026, 1, 1),
+        forcedScope: JournalTrackerScopeOption.entry,
+      );
+    },
     act: (bloc) {
       bloc.add(const JournalTrackerWizardStarted());
       bloc.add(const JournalTrackerWizardNameChanged('Mood'));

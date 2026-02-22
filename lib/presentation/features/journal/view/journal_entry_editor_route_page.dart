@@ -153,33 +153,25 @@ class _JournalEntryEditorRoutePageState
           }
 
           Widget boolInputRow({
-            required TrackerDefinition definition,
             required bool value,
             required ValueChanged<bool> onChanged,
           }) {
-            return Row(
+            return ToggleButtons(
+              isSelected: [!value, value],
+              constraints: const BoxConstraints(
+                minHeight: 44,
+                minWidth: 68,
+              ),
+              borderRadius: BorderRadius.circular(tokens.radiusPill),
+              onPressed: isSaving ? null : (index) => onChanged(index == 1),
               children: [
-                Expanded(
-                  child: _TrackerTitle(definition: definition),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
+                  child: Text(l10n.offLabel),
                 ),
-                ToggleButtons(
-                  isSelected: [!value, value],
-                  constraints: const BoxConstraints(
-                    minHeight: 40,
-                    minWidth: 60,
-                  ),
-                  borderRadius: BorderRadius.circular(tokens.radiusPill),
-                  onPressed: isSaving ? null : (index) => onChanged(index == 1),
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
-                      child: Text(l10n.offLabel),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
-                      child: Text(l10n.onLabel),
-                    ),
-                  ],
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
+                  child: Text(l10n.onLabel),
                 ),
               ],
             );
@@ -197,22 +189,16 @@ class _JournalEntryEditorRoutePageState
               final double v => v.round(),
               _ => min,
             };
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            return Wrap(
+              spacing: tokens.spaceXs,
               children: [
-                _TrackerTitle(definition: definition),
-                SizedBox(height: tokens.spaceSm),
-                Wrap(
-                  spacing: tokens.spaceSm,
-                  children: [
-                    for (var i = min; i <= max; i++)
-                      ChoiceChip(
-                        label: Text('$i'),
-                        selected: intValue == i,
-                        onSelected: isSaving ? null : (_) => onChanged(i),
-                      ),
-                  ],
-                ),
+                for (var i = min; i <= max; i++)
+                  ChoiceChip(
+                    label: Text('$i'),
+                    selected: intValue == i,
+                    visualDensity: VisualDensity.compact,
+                    onSelected: isSaving ? null : (_) => onChanged(i),
+                  ),
               ],
             );
           }
@@ -240,18 +226,11 @@ class _JournalEntryEditorRoutePageState
                     ),
                   );
                 }
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _TrackerTitle(definition: definition),
-                    SizedBox(height: tokens.spaceSm),
-                    TrackerChoiceInput(
-                      choices: choices,
-                      selectedKey: selectedKey,
-                      enabled: !isSaving,
-                      onSelected: onSelected,
-                    ),
-                  ],
+                return TrackerChoiceInput(
+                  choices: choices,
+                  selectedKey: selectedKey,
+                  enabled: !isSaving,
+                  onSelected: onSelected,
                 );
               },
             );
@@ -268,7 +247,6 @@ class _JournalEntryEditorRoutePageState
             if (valueType == 'yes_no' || valueKind == 'boolean') {
               final boolValue = (currentValue is bool) && currentValue;
               return boolInputRow(
-                definition: d,
                 value: boolValue,
                 onChanged: (v) => setValue(v),
               );
@@ -287,7 +265,7 @@ class _JournalEntryEditorRoutePageState
                 _ => 0,
               };
               return TrackerQuantityInput(
-                label: d.name,
+                label: null,
                 value: intValue,
                 min: d.minInt,
                 max: d.maxInt,
@@ -445,7 +423,7 @@ class _JournalEntryEditorRoutePageState
                       color: theme.colorScheme.outlineVariant,
                     ),
                     Padding(
-                      padding: EdgeInsets.all(tokens.spaceMd),
+                      padding: EdgeInsets.all(tokens.spaceSm),
                       child: trackerInputRow(
                         d: definition,
                         currentValue: value,
@@ -578,13 +556,7 @@ class _JournalEntryEditorRoutePageState
                   .toList(growable: false)
                 ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-          final entryGroups =
-              <({String title, List<TrackerDefinition> trackers})>[];
-          if (ungrouped.isNotEmpty) {
-            entryGroups.add(
-              (title: l10n.journalGroupUngrouped, trackers: ungrouped),
-            );
-          }
+          final groupedTrackersByName = <String, List<TrackerDefinition>>{};
           for (final group in state.groups) {
             final inGroup =
                 entryTrackers
@@ -592,9 +564,25 @@ class _JournalEntryEditorRoutePageState
                     .toList(growable: false)
                   ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
             if (inGroup.isNotEmpty) {
-              entryGroups.add((title: group.name, trackers: inGroup));
+              groupedTrackersByName[group.name] = inGroup;
             }
           }
+
+          if (ungrouped.isNotEmpty) {
+            if (groupedTrackersByName.isNotEmpty) {
+              final firstKey = groupedTrackersByName.keys.first;
+              groupedTrackersByName[firstKey] = [
+                ...ungrouped,
+                ...groupedTrackersByName[firstKey]!,
+              ];
+            } else {
+              groupedTrackersByName[l10n.groupsTitle] = [...ungrouped];
+            }
+          }
+
+          final entryGroups = groupedTrackersByName.entries
+              .map((entry) => (title: entry.key, trackers: entry.value))
+              .toList(growable: false);
 
           final body = isLoading
               ? const Center(child: CircularProgressIndicator())
@@ -744,21 +732,9 @@ class _JournalEntryEditorRoutePageState
                       tokens.spaceMd,
                       tokens.spaceMd,
                     ),
-                    child: Row(
-                      children: [
-                        OutlinedButton(
-                          onPressed: () {
-                            context.pop(false);
-                            Routing.toJournalEntryNew(
-                              context,
-                              selectedDayLocal: state.selectedDayLocal,
-                            );
-                          },
-                          child: Text(l10n.editLabel),
-                        ),
-                        SizedBox(width: tokens.spaceSm),
-                        Expanded(child: saveButton),
-                      ],
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: saveButton,
                     ),
                   ),
                 ],
@@ -897,32 +873,6 @@ class _MoodOptionButton extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _TrackerTitle extends StatelessWidget {
-  const _TrackerTitle({required this.definition});
-
-  final TrackerDefinition definition;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          trackerIconData(definition),
-          size: 16,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        SizedBox(width: TasklyTokens.of(context).spaceXs),
-        Expanded(
-          child: Text(
-            definition.name,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-        ),
-      ],
     );
   }
 }

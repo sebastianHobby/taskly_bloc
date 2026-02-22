@@ -84,7 +84,6 @@ class TrackerChoiceInput extends StatelessWidget {
 
 class TrackerQuantityInput extends StatelessWidget {
   const TrackerQuantityInput({
-    required this.label,
     required this.value,
     required this.enabled,
     required this.onChanged,
@@ -92,10 +91,11 @@ class TrackerQuantityInput extends StatelessWidget {
     this.max,
     this.step = 1,
     this.onClear,
+    this.label,
     super.key,
   });
 
-  final String label;
+  final String? label;
   final int? value;
   final int? min;
   final int? max;
@@ -108,7 +108,6 @@ class TrackerQuantityInput extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final intValue = value ?? 0;
-    final showEditHint = (max ?? 0) > 10 || intValue >= 10;
 
     int clamp(int v) {
       var out = v;
@@ -120,8 +119,10 @@ class TrackerQuantityInput extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.titleSmall),
-        SizedBox(height: tokens.spaceSm),
+        if (label != null && label!.trim().isNotEmpty) ...[
+          Text(label!, style: Theme.of(context).textTheme.titleSmall),
+          SizedBox(height: tokens.spaceSm),
+        ],
         Row(
           children: [
             _StepperHoldButton(
@@ -140,21 +141,8 @@ class TrackerQuantityInput extends StatelessWidget {
               onTap: () => onChanged(clamp(intValue + step)),
               onRepeat: () => onChanged(clamp(intValue + step)),
             ),
-            const Spacer(),
-            TextButton.icon(
-              onPressed: !enabled ? null : () => _showEditSheet(context),
-              icon: const Icon(Icons.edit),
-              label: Text(context.l10n.editLabel),
-            ),
           ],
         ),
-        if (showEditHint)
-          Text(
-            context.l10n.journalEditLargeNumberHint,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
       ],
     );
   }
