@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
-import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_daily_checkins_page.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -74,80 +74,31 @@ void main() {
             value: FakeNowService(DateTime(2025, 1, 15, 9)),
           ),
         ],
-        child: const JournalTrackersPage(),
+        child: const JournalDailyCheckinsPage(),
       ),
     );
   }
 
-  testWidgetsSafe('shows error state when streams fail', (tester) async {
-    final errorSubject = BehaviorSubject<List<TrackerGroup>>.seeded(
-      const <TrackerGroup>[],
-    );
-    addTearDown(errorSubject.close);
-
-    when(
-      () => repository.watchTrackerGroups(),
-    ).thenAnswer((_) => errorSubject);
-
-    await pumpPage(tester);
-    errorSubject.addError('boom');
-    await tester.pumpForStream();
-    final found = await tester.pumpUntilFound(
-      find.textContaining('Failed to load trackers'),
-    );
-    expect(found, isTrue);
-  });
-
-  testWidgetsSafe('renders entry trackers and hides daily trackers', (
+  testWidgetsSafe('shows daily check-ins and hides entry trackers', (
     tester,
   ) async {
-    final group = _group('group-1', 'Health');
-    final entryTracker = _tracker(
-      'tracker-1',
-      'Mood',
-      scope: 'entry',
-      groupId: group.id,
-    );
-    final dailyTracker = _tracker('tracker-2', 'Water', scope: 'day');
-
-    groupsSubject.add([group]);
-    defsSubject.add([entryTracker, dailyTracker]);
+    defsSubject.add([
+      _tracker('tracker-1', 'Water', scope: 'day'),
+      _tracker('tracker-2', 'Mood', scope: 'entry'),
+    ]);
 
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.text('Mood'), findsOneWidget);
-    expect(find.text('Water'), findsNothing);
+    expect(find.text('Water'), findsOneWidget);
+    expect(find.text('Mood'), findsNothing);
   });
-
-  testWidgetsSafe('shows empty label when no entry trackers', (tester) async {
-    defsSubject.add([_tracker('tracker-2', 'Water', scope: 'day')]);
-
-    await pumpPage(tester);
-    await tester.pumpForStream();
-
-    expect(find.text('No trackers yet'), findsOneWidget);
-  });
-}
-
-TrackerGroup _group(String id, String name) {
-  final now = DateTime(2025, 1, 15);
-  return TrackerGroup(
-    id: id,
-    name: name,
-    createdAt: now,
-    updatedAt: now,
-    isActive: true,
-    sortOrder: 0,
-    userId: null,
-  );
 }
 
 TrackerDefinition _tracker(
   String id,
   String name, {
   required String scope,
-  String? groupId,
 }) {
   final now = DateTime(2025, 1, 15);
   return TrackerDefinition(
@@ -157,7 +108,6 @@ TrackerDefinition _tracker(
     valueType: 'rating',
     createdAt: now,
     updatedAt: now,
-    groupId: groupId,
     isActive: true,
     sortOrder: 0,
   );

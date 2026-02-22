@@ -308,6 +308,40 @@ class _JournalHubPageState extends State<JournalHubPage> {
     }
   }
 
+  Future<void> _showManageSheet(BuildContext context) async {
+    final l10n = context.l10n;
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.calendar_today_outlined),
+                title: Text(l10n.journalDailyCheckInsTitle),
+                subtitle: Text(l10n.journalDailyAppliesTodaySubtitle),
+                onTap: () => Navigator.of(sheetContext).pop('daily'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.tune),
+                title: Text(l10n.journalTrackersTitle),
+                subtitle: Text(l10n.journalTrackerPerLogSubtitle),
+                onTap: () => Navigator.of(sheetContext).pop('trackers'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!context.mounted || selected == null) return;
+    final routeKey = selected == 'daily'
+        ? 'journal_manage_daily_checkins'
+        : 'journal_manage_trackers';
+    Routing.pushScreenKey(context, routeKey);
+  }
+
   void _onSearchChanged(String value, JournalHistoryFilters filters) {
     context.read<JournalHistoryBloc>().add(
       JournalHistoryFiltersChanged(
@@ -394,10 +428,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
                   ),
                   IconButton(
                     tooltip: context.l10n.journalManageTrackersTitle,
-                    onPressed: () => Routing.pushScreenKey(
-                      context,
-                      'journal_manage_trackers',
-                    ),
+                    onPressed: () => _showManageSheet(context),
                     icon: const Icon(Icons.monitor_heart_outlined),
                   ),
                 ],
@@ -447,6 +478,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
       definitionById: const <String, TrackerDefinition>{},
       moodTrackerId: null,
       moodAverage: null,
+      dayQuantityTotalsByTrackerId: const <String, double>{},
       dailySummaryItems: const <JournalDailySummaryItem>[],
       dailyCompletedCount: 0,
       dailySummaryTotalCount: 0,
@@ -753,6 +785,8 @@ class _DayTimelineSection extends StatelessWidget {
                     summary.eventsByEntryId[entry.id] ?? const <TrackerEvent>[],
                 definitionById: summary.definitionById,
                 moodTrackerId: summary.moodTrackerId,
+                dayQuantityTotalsByTrackerId:
+                    summary.dayQuantityTotalsByTrackerId,
                 onTap: () => Routing.toJournalEntryEdit(context, entry.id),
               ),
             ),

@@ -640,9 +640,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         child: Builder(
                           builder: (chipContext) => TasklyFormValueCard(
                             title: title,
-                            helperText: primary == null
-                                ? l10n.projectValueHelper
-                                : null,
+                            helperText: null,
                             icon: iconData,
                             iconColor: iconColor,
                             hasValue: primary != null,

@@ -3581,6 +3581,22 @@
     "journalTrackerValueLabel": "{name}: {value}",
     "journalTrackerNameHint": "Nombre del tracker",
     "journalTrackersTitle": "Trackers",
+    "journalTrackerPerLogSubtitle": "Para este registro",
+    "journalDailyAppliesTodaySubtitle": "Aplica a hoy",
+    "journalNoEntryTrackers": "Aún no hay trackers",
+    "journalNoDailyCheckIns": "Aún no hay check-ins diarios",
+    "journalNewDailyCheckInTitle": "Nuevo check-in diario",
+    "journalNewDailyCheckInTooltip": "Nuevo check-in diario",
+    "journalDailyCheckInNameHint": "Nombre del check-in diario",
+    "journalDailyCheckinsLockedHint": "Los check-ins diarios se usan para estadísticas diarias. Crea un tracker para registrar por entrada.",
+    "journalTrackerInGroupLabel": "{valueType} · {group}",
+    "@journalTrackerInGroupLabel": {
+        "placeholders": {
+            "valueType": {},
+            "group": {}
+        }
+    },
+    "journalArchiveLabel": "Archivar",
     "journalUnsupportedValueType": "Tipo de valor no compatible: {valueType}",
     "@journalUnsupportedValueType": {
         "description": "Se muestra cuando un tipo de valor no es compatible",

@@ -20,6 +20,7 @@ import 'package:taskly_bloc/presentation/features/projects/view/project_editor_r
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_daily_checkins_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_editor_route_page.dart';
@@ -493,8 +494,20 @@ GoRouter createRouter({
             builder: (_, __) => const JournalTrackersPage(),
           ),
           GoRoute(
+            path: Routing.screenPath('journal_manage_daily_checkins'),
+            builder: (_, __) => const JournalDailyCheckinsPage(),
+          ),
+          GoRoute(
             path: '/journal/trackers/new',
-            builder: (_, __) => const JournalTrackerWizardPage(),
+            builder: (_, __) => const JournalTrackerWizardPage(
+              mode: JournalTrackerWizardMode.tracker,
+            ),
+          ),
+          GoRoute(
+            path: '/journal/daily-checkins/new',
+            builder: (_, __) => const JournalTrackerWizardPage(
+              mode: JournalTrackerWizardMode.dailyCheckin,
+            ),
           ),
           GoRoute(
             path: '/debug/tiles',

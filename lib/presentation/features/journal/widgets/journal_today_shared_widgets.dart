@@ -62,6 +62,7 @@ class JournalLogCard extends StatelessWidget {
     required this.events,
     required this.definitionById,
     required this.moodTrackerId,
+    required this.dayQuantityTotalsByTrackerId,
     required this.onTap,
     super.key,
   });
@@ -70,6 +71,7 @@ class JournalLogCard extends StatelessWidget {
   final List<TrackerEvent> events;
   final Map<String, TrackerDefinition> definitionById;
   final String? moodTrackerId;
+  final Map<String, double> dayQuantityTotalsByTrackerId;
   final VoidCallback onTap;
 
   @override
@@ -252,12 +254,28 @@ class JournalLogCard extends StatelessWidget {
       final icon = definition == null
           ? Icons.track_changes_outlined
           : trackerIconData(definition);
+      final quantity = definition != null && _isQuantity(definition);
+      final unit = (definition?.unitKind ?? '').trim();
+
+      if (quantity) {
+        final total = dayQuantityTotalsByTrackerId[e.trackerId];
+        if (total == null) continue;
+        final rendered = _formatNumber(total);
+        final valueText = unit.isEmpty ? rendered : '$rendered $unit';
+        candidates.add(
+          _TrackerSummaryChip(
+            text: l10n.journalTrackerValueLabel(name, valueText),
+            icon: icon,
+          ),
+        );
+        continue;
+      }
 
       if (value is bool) {
         if (!value) continue;
         candidates.add(
           _TrackerSummaryChip(
-            text: l10n.journalTrackerValueLabel(name, l10n.doneLabel),
+            text: name,
             icon: icon,
           ),
         );
@@ -314,6 +332,19 @@ class JournalLogCard extends StatelessWidget {
         icon: Icons.more_horiz,
       ),
     ];
+  }
+
+  bool _isQuantity(TrackerDefinition definition) {
+    final type = definition.valueType.trim().toLowerCase();
+    final kind = (definition.valueKind ?? '').trim().toLowerCase();
+    return type == 'quantity' || kind == 'number';
+  }
+
+  String _formatNumber(double value) {
+    if (value == value.roundToDouble()) {
+      return value.toStringAsFixed(0);
+    }
+    return value.toStringAsFixed(1);
   }
 }
 

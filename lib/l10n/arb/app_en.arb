@@ -3637,6 +3637,22 @@
     "journalTrackerValueLabel": "{name}: {value}",
     "journalTrackerNameHint": "Tracker name",
     "journalTrackersTitle": "Trackers",
+    "journalTrackerPerLogSubtitle": "For this log",
+    "journalDailyAppliesTodaySubtitle": "Applies to today",
+    "journalNoEntryTrackers": "No trackers yet",
+    "journalNoDailyCheckIns": "No daily check-ins yet",
+    "journalNewDailyCheckInTitle": "New daily check-in",
+    "journalNewDailyCheckInTooltip": "New daily check-in",
+    "journalDailyCheckInNameHint": "Daily check-in name",
+    "journalDailyCheckinsLockedHint": "Daily check-ins are used for daily stats. Create a tracker for per-log tracking.",
+    "journalTrackerInGroupLabel": "{valueType} · {group}",
+    "@journalTrackerInGroupLabel": {
+        "placeholders": {
+            "valueType": {},
+            "group": {}
+        }
+    },
+    "journalArchiveLabel": "Archive",
     "journalUnsupportedValueType": "Unsupported value type: {valueType}",
     "@journalUnsupportedValueType": {
         "description": "Shown when a tracker value type is not supported",

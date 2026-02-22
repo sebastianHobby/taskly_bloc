@@ -11,24 +11,37 @@ import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_icons.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
+enum JournalTrackerWizardMode { tracker, dailyCheckin }
+
 class JournalTrackerWizardPage extends StatelessWidget {
-  const JournalTrackerWizardPage({super.key});
+  const JournalTrackerWizardPage({
+    this.mode = JournalTrackerWizardMode.tracker,
+    super.key,
+  });
+
+  final JournalTrackerWizardMode mode;
 
   @override
   Widget build(BuildContext context) {
+    final forcedScope = mode == JournalTrackerWizardMode.dailyCheckin
+        ? JournalTrackerScopeOption.day
+        : JournalTrackerScopeOption.entry;
     return BlocProvider<JournalTrackerWizardBloc>(
       create: (context) => JournalTrackerWizardBloc(
         repository: context.read<JournalRepositoryContract>(),
         errorReporter: context.read<AppErrorReporter>(),
         nowUtc: context.read<NowService>().nowUtc,
+        forcedScope: forcedScope,
       )..add(const JournalTrackerWizardStarted()),
-      child: const _JournalTrackerWizardView(),
+      child: _JournalTrackerWizardView(mode: mode),
     );
   }
 }
 
 class _JournalTrackerWizardView extends StatefulWidget {
-  const _JournalTrackerWizardView();
+  const _JournalTrackerWizardView({required this.mode});
+
+  final JournalTrackerWizardMode mode;
 
   @override
   State<_JournalTrackerWizardView> createState() =>
@@ -66,7 +79,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
         final theme = Theme.of(context);
         final tokens = TasklyTokens.of(context);
         final isSaving = state.status is JournalTrackerWizardSaving;
-        final step = state.step;
+        final isNameStep = state.step == 0;
 
         if (_nameController.text != state.name) {
           _nameController.text = state.name;
@@ -76,40 +89,42 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
         }
 
         bool canContinue() {
-          if (step == 0) return state.name.trim().isNotEmpty;
-          if (step == 1) return state.scope != null;
-          if (step == 2) {
-            if (state.measurement == null) return false;
-            if (state.measurement == JournalTrackerMeasurementType.choice) {
-              return state.choiceLabels.any((label) => label.trim().isNotEmpty);
-            }
-            return true;
+          if (isNameStep) return state.name.trim().isNotEmpty;
+          if (state.measurement == null) return false;
+          if (state.measurement == JournalTrackerMeasurementType.choice) {
+            return state.choiceLabels.any((label) => label.trim().isNotEmpty);
           }
-          return false;
+          return true;
         }
 
         return Scaffold(
-          appBar: AppBar(title: Text(context.l10n.journalNewTrackerTitle)),
+          appBar: AppBar(
+            title: Text(
+              widget.mode == JournalTrackerWizardMode.dailyCheckin
+                  ? context.l10n.journalNewDailyCheckInTitle
+                  : context.l10n.journalNewTrackerTitle,
+            ),
+          ),
           body: Stepper(
-            currentStep: step,
+            currentStep: isNameStep ? 0 : 1,
             onStepCancel: isSaving
                 ? null
                 : () {
-                    if (step == 0) {
+                    if (isNameStep) {
                       Navigator.of(context).pop();
                       return;
                     }
                     context.read<JournalTrackerWizardBloc>().add(
-                      JournalTrackerWizardStepChanged(step - 1),
+                      const JournalTrackerWizardStepChanged(0),
                     );
                   },
             onStepContinue: isSaving
                 ? null
                 : () {
                     if (!canContinue()) return;
-                    if (step < 2) {
+                    if (isNameStep) {
                       context.read<JournalTrackerWizardBloc>().add(
-                        JournalTrackerWizardStepChanged(step + 1),
+                        const JournalTrackerWizardStepChanged(2),
                       );
                     } else {
                       context.read<JournalTrackerWizardBloc>().add(
@@ -118,17 +133,17 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                     }
                   },
             controlsBuilder: (context, details) {
-              if (!details.isActive) {
-                return const SizedBox.shrink();
-              }
+              if (!details.isActive) return const SizedBox.shrink();
               return Padding(
                 padding: EdgeInsets.only(top: tokens.spaceSm),
                 child: Row(
                   children: [
                     FilledButton(
-                      key: ValueKey('journal_tracker_wizard_next_step_$step'),
+                      key: ValueKey(
+                        'journal_tracker_wizard_next_step_${isNameStep ? 0 : 2}',
+                      ),
                       onPressed: canContinue() ? details.onStepContinue : null,
-                      child: isSaving && step == 2
+                      child: isSaving && !isNameStep
                           ? SizedBox(
                               width: 18,
                               height: 18,
@@ -138,16 +153,16 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                               ),
                             )
                           : Text(
-                              step == 2
-                                  ? context.l10n.createLabel
-                                  : context.l10n.nextLabel,
+                              isNameStep
+                                  ? context.l10n.nextLabel
+                                  : context.l10n.createLabel,
                             ),
                     ),
                     SizedBox(width: tokens.spaceSm),
                     TextButton(
                       onPressed: details.onStepCancel,
                       child: Text(
-                        step == 0
+                        isNameStep
                             ? context.l10n.cancelLabel
                             : context.l10n.backLabel,
                       ),
@@ -159,7 +174,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
             steps: [
               Step(
                 title: Text(context.l10n.nameLabel),
-                isActive: step >= 0,
+                isActive: true,
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -168,35 +183,15 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                       enabled: !isSaving,
                       decoration: InputDecoration(
                         labelText: context.l10n.nameLabel,
-                        hintText: context.l10n.journalTrackerNameHint,
+                        hintText:
+                            widget.mode == JournalTrackerWizardMode.dailyCheckin
+                            ? context.l10n.journalDailyCheckInNameHint
+                            : context.l10n.journalTrackerNameHint,
                       ),
                       textInputAction: TextInputAction.next,
                       onChanged: (value) => context
                           .read<JournalTrackerWizardBloc>()
                           .add(JournalTrackerWizardNameChanged(value)),
-                    ),
-                    SizedBox(height: tokens.spaceSm),
-                    DropdownButtonFormField<String?>(
-                      value: state.groupId,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.groupLabel,
-                      ),
-                      items: [
-                        DropdownMenuItem<String?>(
-                          value: null,
-                          child: Text(context.l10n.journalGroupUngrouped),
-                        ),
-                        for (final g in state.groups)
-                          DropdownMenuItem<String?>(
-                            value: g.id,
-                            child: Text(g.name),
-                          ),
-                      ],
-                      onChanged: isSaving
-                          ? null
-                          : (value) => context
-                                .read<JournalTrackerWizardBloc>()
-                                .add(JournalTrackerWizardGroupChanged(value)),
                     ),
                     SizedBox(height: tokens.spaceSm),
                     ListTile(
@@ -256,54 +251,13 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                               );
                             },
                     ),
-                  ],
-                ),
-              ),
-              Step(
-                title: Text(context.l10n.journalScopeTitle),
-                isActive: step >= 1,
-                content: Column(
-                  children: [
-                    RadioListTile<JournalTrackerScopeOption>(
-                      value: JournalTrackerScopeOption.day,
-                      groupValue: state.scope,
-                      onChanged: isSaving
-                          ? null
-                          : (value) =>
-                                context.read<JournalTrackerWizardBloc>().add(
-                                  JournalTrackerWizardScopeChanged(value!),
-                                ),
-                      title: Text(context.l10n.journalScopeDailyTotal),
-                      subtitle: Text(
-                        context.l10n.journalScopeDailyTotalSubtitle,
-                      ),
-                    ),
-                    RadioListTile<JournalTrackerScopeOption>(
-                      value: JournalTrackerScopeOption.entry,
-                      groupValue: state.scope,
-                      onChanged: isSaving
-                          ? null
-                          : (value) =>
-                                context.read<JournalTrackerWizardBloc>().add(
-                                  JournalTrackerWizardScopeChanged(value!),
-                                ),
-                      title: Text(context.l10n.journalScopeMomentary),
-                      subtitle: Text(
-                        context.l10n.journalScopeMomentarySubtitle,
-                      ),
-                    ),
-                    RadioListTile<JournalTrackerScopeOption>(
-                      value: JournalTrackerScopeOption.sleepNight,
-                      groupValue: state.scope,
-                      onChanged: isSaving
-                          ? null
-                          : (value) =>
-                                context.read<JournalTrackerWizardBloc>().add(
-                                  JournalTrackerWizardScopeChanged(value!),
-                                ),
-                      title: Text(context.l10n.journalScopeSleepNight),
-                      subtitle: Text(
-                        context.l10n.journalScopeSleepNightSubtitle,
+                    SizedBox(height: tokens.spaceSm),
+                    Text(
+                      widget.mode == JournalTrackerWizardMode.dailyCheckin
+                          ? context.l10n.journalDailyAppliesTodaySubtitle
+                          : context.l10n.journalTrackerPerLogSubtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -311,7 +265,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
               ),
               Step(
                 title: Text(context.l10n.journalMeasurementTitle),
-                isActive: step >= 2,
+                isActive: !isNameStep,
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -345,9 +299,12 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                     ),
                     _MeasurementOption(
                       title: context.l10n.journalMeasurementQuantityTitle,
-                      subtitle: state.scope == JournalTrackerScopeOption.entry
-                          ? context.l10n.journalMeasurementQuantityEntrySubtitle
-                          : context.l10n.journalMeasurementQuantityDaySubtitle,
+                      subtitle:
+                          widget.mode == JournalTrackerWizardMode.dailyCheckin
+                          ? context.l10n.journalMeasurementQuantityDaySubtitle
+                          : context
+                                .l10n
+                                .journalMeasurementQuantityEntrySubtitle,
                       selected:
                           state.measurement ==
                           JournalTrackerMeasurementType.quantity,

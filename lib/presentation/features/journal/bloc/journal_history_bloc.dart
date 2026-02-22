@@ -600,15 +600,31 @@ class JournalHistoryBloc
 
     final eventsByEntryId = <String, List<TrackerEvent>>{};
     final moodValuesByDay = <DateTime, List<int>>{};
+    final quantityTotalsByDayTracker = <DateTime, Map<String, double>>{};
     for (final event in events) {
       final entryId = event.entryId;
       if (entryId != null) {
         (eventsByEntryId[entryId] ??= <TrackerEvent>[]).add(event);
       }
 
+      final day = dateOnly(event.occurredAt.toUtc());
+      final def = definitionById[event.trackerId];
+      if (def != null && _isQuantityDefinition(def)) {
+        final amount = switch (event.value) {
+          final int v => v.toDouble(),
+          final double v => v,
+          _ => null,
+        };
+        if (amount != null) {
+          final totalsByTracker = quantityTotalsByDayTracker[day] ??=
+              <String, double>{};
+          totalsByTracker[event.trackerId] =
+              (totalsByTracker[event.trackerId] ?? 0) + amount;
+        }
+      }
+
       if (moodTrackerId == null || event.trackerId != moodTrackerId) continue;
       if (event.value is! int) continue;
-      final day = dateOnly(event.occurredAt.toUtc());
       (moodValuesByDay[day] ??= <int>[]).add(event.value! as int);
     }
 
@@ -637,6 +653,8 @@ class JournalHistoryBloc
           definitionById: definitionById,
           moodTrackerId: moodTrackerId,
           moodAverage: _average(moodValuesByDay[day]),
+          dayQuantityTotalsByTrackerId:
+              quantityTotalsByDayTracker[day] ?? const <String, double>{},
           dailySummaryItems: _buildDailySummaryItems(
             defs: dailyDefs,
             dayStates:
@@ -664,6 +682,12 @@ class JournalHistoryBloc
   bool _isDailyScope(TrackerDefinition d) {
     final scope = d.scope.trim().toLowerCase();
     return scope == 'day' || scope == 'daily' || scope == 'sleep_night';
+  }
+
+  bool _isQuantityDefinition(TrackerDefinition d) {
+    final valueType = d.valueType.trim().toLowerCase();
+    final valueKind = (d.valueKind ?? '').trim().toLowerCase();
+    return valueType == 'quantity' || valueKind == 'number';
   }
 
   List<JournalDailySummaryItem> _buildDailySummaryItems({
@@ -707,6 +731,7 @@ final class JournalHistoryDaySummary {
     required this.definitionById,
     required this.moodTrackerId,
     required this.moodAverage,
+    required this.dayQuantityTotalsByTrackerId,
     required this.dailySummaryItems,
     required this.dailyCompletedCount,
     required this.dailySummaryTotalCount,
@@ -718,6 +743,7 @@ final class JournalHistoryDaySummary {
   final Map<String, TrackerDefinition> definitionById;
   final String? moodTrackerId;
   final double? moodAverage;
+  final Map<String, double> dayQuantityTotalsByTrackerId;
   final List<JournalDailySummaryItem> dailySummaryItems;
   final int dailyCompletedCount;
   final int dailySummaryTotalCount;

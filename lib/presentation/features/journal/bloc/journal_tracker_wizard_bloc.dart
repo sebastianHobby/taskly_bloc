@@ -247,6 +247,7 @@ class JournalTrackerWizardBloc
     required JournalRepositoryContract repository,
     required AppErrorReporter errorReporter,
     required DateTime Function() nowUtc,
+    this.forcedScope,
   }) : _repository = repository,
        _errorReporter = errorReporter,
        _nowUtc = nowUtc,
@@ -272,6 +273,7 @@ class JournalTrackerWizardBloc
   final JournalRepositoryContract _repository;
   final AppErrorReporter _errorReporter;
   final DateTime Function() _nowUtc;
+  final JournalTrackerScopeOption? forcedScope;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -337,6 +339,7 @@ class JournalTrackerWizardBloc
         return state.copyWith(
           status: const JournalTrackerWizardIdle(),
           groups: active,
+          scope: forcedScope,
         );
       },
       onError: (e, st) {
@@ -419,7 +422,7 @@ class JournalTrackerWizardBloc
   ) {
     emit(
       state.copyWith(
-        scope: event.scope,
+        scope: forcedScope ?? event.scope,
         measurement: null,
         status: const JournalTrackerWizardIdle(),
       ),
@@ -526,7 +529,7 @@ class JournalTrackerWizardBloc
       return;
     }
 
-    final scope = state.scope;
+    final scope = forcedScope ?? state.scope;
     if (scope == null) {
       emit(
         state.copyWith(

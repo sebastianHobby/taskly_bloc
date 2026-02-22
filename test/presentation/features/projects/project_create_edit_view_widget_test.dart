@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fleather/fleather.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 
 import '../../../helpers/test_imports.dart';
 import '../../../mocks/presentation_mocks.dart';
@@ -67,6 +68,24 @@ void main() {
 
     expect(find.byType(ProjectForm), findsOneWidget);
   });
+
+  testWidgetsSafe(
+    'shows core value prompt once without duplicate helper copy',
+    (tester) async {
+      final state = const ProjectDetailState.initialDataLoadSuccess(
+        availableValues: <Value>[],
+      );
+      when(() => bloc.state).thenReturn(state);
+      whenListen(bloc, Stream.value(state), initialState: state);
+
+      await pumpView(tester, const ProjectEditSheetView());
+      await tester.pumpForStream();
+
+      final l10n = tester.element(find.byType(ProjectForm)).l10n;
+      expect(find.text(l10n.projectValuePlaceholder), findsOneWidget);
+      expect(find.text(l10n.projectValueHelper), findsNothing);
+    },
+  );
 
   testWidgetsSafe('renders project form for edit flow', (tester) async {
     final project = TestData.project(name: 'Project X');

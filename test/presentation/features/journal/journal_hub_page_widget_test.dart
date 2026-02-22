@@ -152,6 +152,53 @@ void main() {
     expect(find.text('Morning note'), findsOneWidget);
     expect(find.byTooltip('Add entry'), findsOneWidget);
   });
+
+  testWidgetsSafe(
+    'renders signal chips without done and with quantity day total',
+    (tester) async {
+      final day = DateTime(2025, 1, 15);
+      final entry1 = _entry(day, id: 'entry-1', text: 'Morning note');
+      final entry2 = _entry(day, id: 'entry-2', text: 'Later note');
+
+      final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
+      final waterDef = TrackerDefinition(
+        id: 'water',
+        name: 'Water',
+        scope: 'entry',
+        valueType: 'quantity',
+        valueKind: 'number',
+        unitKind: 'ml',
+        createdAt: day,
+        updatedAt: day,
+      );
+      final exerciseDef = TrackerDefinition(
+        id: 'exercise',
+        name: 'Exercise',
+        scope: 'entry',
+        valueType: 'yes_no',
+        valueKind: 'boolean',
+        createdAt: day,
+        updatedAt: day,
+      );
+
+      defsSubject.add([moodDef, waterDef, exerciseDef]);
+      entriesSubject.add([entry1, entry2]);
+      eventsSubject.add([
+        _event('mood-1', 'mood', 'entry-1', 4, day),
+        _event('water-1', 'water', 'entry-1', 100, day),
+        _event('water-2', 'water', 'entry-2', 200, day),
+        _event('exercise-1', 'exercise', 'entry-1', true, day),
+      ]);
+      dayStatesSubject.add(const []);
+
+      await pumpPage(tester);
+      await tester.pumpForStream();
+
+      expect(find.text('Exercise'), findsOneWidget);
+      expect(find.textContaining('Done'), findsNothing);
+      expect(find.text('Water: 300 ml'), findsWidgets);
+    },
+  );
 }
 
 JournalEntry _entry(DateTime day, {String? id, String? text}) {

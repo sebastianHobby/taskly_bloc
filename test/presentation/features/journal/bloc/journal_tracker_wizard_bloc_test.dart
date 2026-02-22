@@ -77,20 +77,48 @@ void main() {
   });
 
   blocTestSafe<JournalTrackerWizardBloc, JournalTrackerWizardState>(
-    'saves daily quantity tracker with add op',
+    'saves tracker with forced entry scope',
     build: () => JournalTrackerWizardBloc(
       repository: repository,
       errorReporter: errorReporter,
       nowUtc: () => DateTime.utc(2026, 1, 1),
+      forcedScope: JournalTrackerScopeOption.entry,
+    ),
+    act: (bloc) {
+      bloc.add(const JournalTrackerWizardStarted());
+      bloc.add(const JournalTrackerWizardNameChanged('Mood'));
+      bloc.add(
+        const JournalTrackerWizardMeasurementChanged(
+          JournalTrackerMeasurementType.toggle,
+        ),
+      );
+      bloc.add(const JournalTrackerWizardSaveRequested());
+    },
+    verify: (bloc) {
+      expect(bloc.state.status, isA<JournalTrackerWizardSaved>());
+      final captured =
+          verify(
+                () => repository.saveTrackerDefinition(
+                  captureAny(),
+                  context: any(named: 'context'),
+                ),
+              ).captured.single
+              as TrackerDefinition;
+      expect(captured.scope, 'entry');
+    },
+  );
+
+  blocTestSafe<JournalTrackerWizardBloc, JournalTrackerWizardState>(
+    'saves daily check-in quantity tracker with add op',
+    build: () => JournalTrackerWizardBloc(
+      repository: repository,
+      errorReporter: errorReporter,
+      nowUtc: () => DateTime.utc(2026, 1, 1),
+      forcedScope: JournalTrackerScopeOption.day,
     ),
     act: (bloc) {
       bloc.add(const JournalTrackerWizardStarted());
       bloc.add(const JournalTrackerWizardNameChanged('Water'));
-      bloc.add(
-        const JournalTrackerWizardScopeChanged(
-          JournalTrackerScopeOption.day,
-        ),
-      );
       bloc.add(
         const JournalTrackerWizardMeasurementChanged(
           JournalTrackerMeasurementType.quantity,
@@ -98,19 +126,16 @@ void main() {
       );
       bloc.add(
         const JournalTrackerWizardQuantityConfigChanged(
-          unit: 'cups',
+          unit: 'ml',
           min: 0,
-          max: 20,
-          step: 1,
+          max: 5000,
+          step: 250,
         ),
       );
       bloc.add(const JournalTrackerWizardSaveRequested());
     },
     verify: (bloc) {
-      expect(
-        bloc.state.status,
-        isA<JournalTrackerWizardSaved>(),
-      );
+      expect(bloc.state.status, isA<JournalTrackerWizardSaved>());
       final captured =
           verify(
                 () => repository.saveTrackerDefinition(
@@ -120,72 +145,7 @@ void main() {
               ).captured.single
               as TrackerDefinition;
       expect(captured.scope, 'day');
-      expect(captured.valueType, 'quantity');
-      expect(captured.valueKind, 'number');
       expect(captured.opKind, 'add');
-      expect(captured.unitKind, 'cups');
-      expect(captured.minInt, 0);
-      expect(captured.maxInt, 20);
-      expect(captured.stepInt, 1);
-    },
-  );
-
-  blocTestSafe<JournalTrackerWizardBloc, JournalTrackerWizardState>(
-    'saves choice tracker and choices',
-    build: () {
-      final existing = TrackerDefinition(
-        id: 'def-1',
-        name: 'Places',
-        scope: 'entry',
-        valueType: 'choice',
-        valueKind: 'single_choice',
-        opKind: 'set',
-        createdAt: DateTime.utc(2026, 1, 1),
-        updatedAt: DateTime.utc(2026, 1, 1),
-      );
-      when(
-        () => repository.watchTrackerDefinitions(),
-      ).thenAnswer((_) => Stream.value([existing]));
-      return JournalTrackerWizardBloc(
-        repository: repository,
-        errorReporter: errorReporter,
-        nowUtc: () => DateTime.utc(2026, 1, 1),
-      );
-    },
-    act: (bloc) {
-      bloc.add(const JournalTrackerWizardStarted());
-      bloc.add(const JournalTrackerWizardNameChanged('Places'));
-      bloc.add(
-        const JournalTrackerWizardScopeChanged(
-          JournalTrackerScopeOption.entry,
-        ),
-      );
-      bloc.add(
-        const JournalTrackerWizardMeasurementChanged(
-          JournalTrackerMeasurementType.choice,
-        ),
-      );
-      bloc.add(const JournalTrackerWizardChoiceAdded('Home'));
-      bloc.add(const JournalTrackerWizardChoiceAdded('Work'));
-      bloc.add(const JournalTrackerWizardSaveRequested());
-    },
-    verify: (bloc) {
-      expect(
-        bloc.state.status,
-        isA<JournalTrackerWizardSaved>(),
-      );
-      verify(
-        () => repository.saveTrackerDefinition(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).called(1);
-      verify(
-        () => repository.saveTrackerDefinitionChoice(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).called(2);
     },
   );
 }

@@ -36,6 +36,17 @@ Defines support signals, weekly review cards, journal integration, and stats con
   in-editor manage actions.
 - Timeline factor summaries should be deduplicated per tracker so repeated
   edits do not produce duplicate chips for the same tracker.
+- Daily check-ins are a distinct user concept from trackers:
+  - Daily check-ins are managed on a dedicated management surface.
+  - Trackers are managed on a separate management surface.
+  - Both daily check-ins and trackers appear in the entry editor.
+- The entry editor renders daily check-ins in a pinned first card with
+  "applies to today" semantics, and renders trackers in separate "for this
+  log" sections.
+- Timeline boolean chips do not use "Done"; they render only the tracker label
+  when logged/true.
+- Timeline quantity chips render day totals (aggregated across the day) rather
+  than per-entry deltas.
 
 ## Testing minimums
 

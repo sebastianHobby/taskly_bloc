@@ -13,8 +13,8 @@ import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_icons.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
-class JournalTrackersPage extends StatelessWidget {
-  const JournalTrackersPage({super.key});
+class JournalDailyCheckinsPage extends StatelessWidget {
+  const JournalDailyCheckinsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +47,8 @@ class JournalTrackersPage extends StatelessWidget {
             JournalManageLibraryError(:final message) => Scaffold(
               body: Center(child: Text(message)),
             ),
-            JournalManageLibraryLoaded(
-              :final trackers,
-              :final status,
-              :final groups,
-            ) =>
-              _TrackersView(trackers: trackers, groups: groups, status: status),
+            JournalManageLibraryLoaded(:final trackers, :final status) =>
+              _DailyCheckinsView(trackers: trackers, status: status),
           };
         },
       ),
@@ -60,15 +56,13 @@ class JournalTrackersPage extends StatelessWidget {
   }
 }
 
-class _TrackersView extends StatelessWidget {
-  const _TrackersView({
+class _DailyCheckinsView extends StatelessWidget {
+  const _DailyCheckinsView({
     required this.trackers,
-    required this.groups,
     required this.status,
   });
 
   final List<TrackerDefinition> trackers;
-  final List<TrackerGroup> groups;
   final JournalManageLibraryStatus status;
 
   @override
@@ -77,132 +71,143 @@ class _TrackersView extends StatelessWidget {
     final tokens = TasklyTokens.of(context);
     final isSaving = status is JournalManageLibrarySaving;
 
-    final entryTrackers =
+    final dailyTrackers =
         trackers
-            .where((d) => !_isDailyScope(d) && d.systemKey != 'mood')
+            .where((d) => _isDailyScope(d) && d.systemKey != 'mood')
             .toList(growable: false)
           ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-    final groupById = {for (final g in groups) g.id: g};
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.journalManageTrackersTitle),
+        title: Text(l10n.journalDailyCheckInsTitle),
         actions: [
           IconButton(
-            tooltip: l10n.journalNewTrackerTooltip,
+            tooltip: l10n.journalNewDailyCheckInTooltip,
             onPressed: isSaving
                 ? null
-                : () => Routing.toJournalTrackerWizard(context),
+                : () => Routing.toJournalDailyCheckinWizard(context),
             icon: const Icon(Icons.add),
           ),
         ],
       ),
-      body: entryTrackers.isEmpty
-          ? Center(child: Text(l10n.journalNoEntryTrackers))
-          : ListView.separated(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spaceMd,
-                tokens.spaceMd,
-                tokens.spaceMd,
-                tokens.spaceXl,
-              ),
-              itemCount: entryTrackers.length,
-              separatorBuilder: (_, __) => SizedBox(height: tokens.spaceSm),
-              itemBuilder: (context, index) {
-                final d = entryTrackers[index];
-                final groupName = d.groupId == null
-                    ? null
-                    : groupById[d.groupId!]?.name;
-                return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(child: Icon(trackerIconData(d))),
-                    title: Text(d.name),
-                    subtitle: Text(
-                      _subtitleForTracker(
-                        context,
-                        tracker: d,
-                        groupName: groupName,
-                      ),
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (value) async {
-                        if (value == 'rename') {
-                          final renamed = await _showRenameSheet(
-                            context,
-                            title: l10n.journalRenameTrackerTitle,
-                            initialValue: d.name,
-                          );
-                          if (renamed == null || renamed.trim().isEmpty) {
-                            return;
-                          }
-                          if (!context.mounted) return;
-                          await context
-                              .read<JournalManageLibraryBloc>()
-                              .renameTracker(
-                                def: d,
-                                name: renamed.trim(),
-                              );
-                          return;
-                        }
-                        if (value == 'icon') {
-                          final selected = await _showIconSheet(
-                            context,
-                            selectedIconName: effectiveTrackerIconName(d),
-                          );
-                          if (selected == null || !context.mounted) return;
-                          await context
-                              .read<JournalManageLibraryBloc>()
-                              .setTrackerIcon(
-                                def: d,
-                                iconName: selected,
-                              );
-                          return;
-                        }
-                        if (value == 'archive') {
-                          await context
-                              .read<JournalManageLibraryBloc>()
-                              .setTrackerActive(
-                                def: d,
-                                isActive: false,
-                              );
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem<String>(
-                          value: 'rename',
-                          child: Text(l10n.renameLabel),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'icon',
-                          child: Text(l10n.valueFormIconLabel),
-                        ),
-                        PopupMenuItem<String>(
-                          value: 'archive',
-                          child: Text(l10n.journalArchiveLabel),
-                        ),
-                      ],
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spaceLg,
+              tokens.spaceMd,
+              tokens.spaceLg,
+              tokens.spaceSm,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.lock_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                SizedBox(width: tokens.spaceXs),
+                Expanded(
+                  child: Text(
+                    l10n.journalDailyCheckinsLockedHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-                );
-              },
+                ),
+              ],
             ),
+          ),
+          Expanded(
+            child: dailyTrackers.isEmpty
+                ? Center(child: Text(l10n.journalNoDailyCheckIns))
+                : ListView.separated(
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spaceMd,
+                      0,
+                      tokens.spaceMd,
+                      tokens.spaceXl,
+                    ),
+                    itemCount: dailyTrackers.length,
+                    separatorBuilder: (_, __) =>
+                        SizedBox(height: tokens.spaceSm),
+                    itemBuilder: (context, index) {
+                      final d = dailyTrackers[index];
+                      return Card(
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            child: Icon(trackerIconData(d)),
+                          ),
+                          title: Text(d.name),
+                          subtitle: Text(
+                            '${d.valueType} - ${l10n.journalDailyAppliesTodaySubtitle}',
+                          ),
+                          trailing: PopupMenuButton<String>(
+                            onSelected: (value) async {
+                              if (value == 'rename') {
+                                final renamed = await _showRenameSheet(
+                                  context,
+                                  title: l10n.journalRenameTrackerTitle,
+                                  initialValue: d.name,
+                                );
+                                if (renamed == null || renamed.trim().isEmpty) {
+                                  return;
+                                }
+                                if (!context.mounted) return;
+                                await context
+                                    .read<JournalManageLibraryBloc>()
+                                    .renameTracker(
+                                      def: d,
+                                      name: renamed.trim(),
+                                    );
+                                return;
+                              }
+                              if (value == 'icon') {
+                                final selected = await _showIconSheet(
+                                  context,
+                                  selectedIconName: effectiveTrackerIconName(d),
+                                );
+                                if (selected == null || !context.mounted) {
+                                  return;
+                                }
+                                await context
+                                    .read<JournalManageLibraryBloc>()
+                                    .setTrackerIcon(def: d, iconName: selected);
+                                return;
+                              }
+                              if (value == 'archive') {
+                                await context
+                                    .read<JournalManageLibraryBloc>()
+                                    .setTrackerActive(def: d, isActive: false);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              PopupMenuItem<String>(
+                                value: 'rename',
+                                child: Text(l10n.renameLabel),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'icon',
+                                child: Text(l10n.valueFormIconLabel),
+                              ),
+                              PopupMenuItem<String>(
+                                value: 'archive',
+                                child: Text(l10n.journalArchiveLabel),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
   bool _isDailyScope(TrackerDefinition d) {
     final scope = d.scope.trim().toLowerCase();
     return scope == 'day' || scope == 'daily' || scope == 'sleep_night';
-  }
-
-  String _subtitleForTracker(
-    BuildContext context, {
-    required TrackerDefinition tracker,
-    required String? groupName,
-  }) {
-    final l10n = context.l10n;
-    final type = tracker.valueType.trim();
-    if (groupName == null || groupName.trim().isEmpty) return type;
-    return l10n.journalTrackerInGroupLabel(type, groupName);
   }
 
   Future<String?> _showRenameSheet(
