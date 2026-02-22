@@ -384,6 +384,8 @@ class _MyDayLoadedBody extends StatelessWidget {
                         dayKeyUtc: dayKeyUtc,
                         plannedItems: plannedItems,
                         tasks: state.tasks,
+                        availableTaskCount: state.availableTaskCount,
+                        availableRoutineCount: state.availableRoutineCount,
                         showCompleted: showCompleted,
                         onOpenPlan: onOpenPlan,
                         density: density,
@@ -529,6 +531,8 @@ class _MyDayTaskList extends StatefulWidget {
     required this.dayKeyUtc,
     required this.plannedItems,
     required this.tasks,
+    required this.availableTaskCount,
+    required this.availableRoutineCount,
     required this.showCompleted,
     required this.onOpenPlan,
     required this.density,
@@ -541,6 +545,8 @@ class _MyDayTaskList extends StatefulWidget {
   final DateTime dayKeyUtc;
   final List<MyDayPlannedItem> plannedItems;
   final List<Task> tasks;
+  final int availableTaskCount;
+  final int availableRoutineCount;
   final bool showCompleted;
   final VoidCallback onOpenPlan;
   final DisplayDensity density;
@@ -635,7 +641,8 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
 
     final taskRows = [...activeTaskRows, ...completedTaskRows];
     if (routineRows.isEmpty && taskRows.isEmpty) {
-      final hasTasks = widget.tasks.isNotEmpty;
+      final hasItems =
+          widget.availableTaskCount > 0 || widget.availableRoutineCount > 0;
       final hasPlan = widget.hasPlan;
 
       final (title, description) = hasPlan
@@ -643,7 +650,7 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
               l10n.myDayAllClearTitle,
               l10n.myDayAllClearSubtitle,
             )
-          : hasTasks
+          : hasItems
           ? (
               l10n.myDayNoPlanTitle,
               l10n.myDayNoPlanSubtitle,
@@ -658,11 +665,11 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
       if (hasPlan) {
         actionLabel = l10n.myDayUpdatePlanTitle;
         onAction = widget.onOpenPlan;
-      } else if (hasTasks) {
+      } else if (hasItems) {
         actionLabel = l10n.myDayPlanMyDayTitle;
         onAction = widget.onOpenPlan;
       } else {
-        actionLabel = l10n.projectsTitle;
+        actionLabel = l10n.myDayAddTasksOrRoutinesAction;
         onAction = () => Routing.toScreenKey(context, 'projects');
       }
 
@@ -672,7 +679,7 @@ class _MyDayTaskListState extends State<_MyDayTaskList> {
         description: description,
         actionLabel: actionLabel,
         onAction: onAction,
-        showPlanAnchor: !hasPlan && hasTasks,
+        showPlanAnchor: !hasPlan && hasItems,
       );
     }
 

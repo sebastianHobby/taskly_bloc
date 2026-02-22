@@ -6,6 +6,7 @@ import '../../helpers/test_imports.dart';
 import 'package:taskly_domain/src/allocation/engine/allocation_strategy.dart';
 import 'package:taskly_domain/src/allocation/engine/suggested_picks_engine.dart';
 import 'package:taskly_domain/src/allocation/model/allocation_result.dart';
+import 'package:taskly_domain/src/core/model/project.dart';
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/core/model/value.dart';
 import 'package:taskly_domain/core/model/value_priority.dart';
@@ -61,11 +62,18 @@ void main() {
           nowUtc: now,
           todayDayKeyUtc: DateTime(2025, 1, 15),
           tasks: const [],
+          projects: const [],
+          projectAnchorStates: const [],
           categories: const {},
+          anchorCount: 0,
+          tasksPerAnchorMin: 0,
+          tasksPerAnchorMax: 0,
+          freeSlots: 0,
+          rotationPressureDays: 7,
+          readinessFilter: false,
           maxTasks: 0,
           taskUrgencyThresholdDays: 3,
-          keepValuesInBalance: false,
-          completionsByValue: const {},
+          routineSelectionsByValue: const {},
         ),
       );
 
@@ -91,11 +99,21 @@ void main() {
             nowUtc: now,
             todayDayKeyUtc: DateTime(2025, 1, 15),
             tasks: tasks,
+            projects: tasks
+                .map((t) => t.project)
+                .whereType<Project>()
+                .toList(growable: false),
+            projectAnchorStates: const [],
             categories: const {'v1': 2.0, 'v2': 1.0},
+            anchorCount: 2,
+            tasksPerAnchorMin: 0,
+            tasksPerAnchorMax: 2,
+            freeSlots: 0,
+            rotationPressureDays: 7,
+            readinessFilter: false,
             maxTasks: 2,
             taskUrgencyThresholdDays: 3,
-            keepValuesInBalance: false,
-            completionsByValue: const {},
+            routineSelectionsByValue: const {},
           ),
         );
 
@@ -109,7 +127,7 @@ void main() {
       },
     );
 
-    testSafe('applies bounded quota repair when enabled', () async {
+    testSafe('respects anchor and max-task limits', () async {
       final now = DateTime(2025, 1, 15, 12);
       final tasks = [
         _task(id: 't1', now: now, valueId: 'v1'),
@@ -123,15 +141,26 @@ void main() {
           nowUtc: now,
           todayDayKeyUtc: DateTime(2025, 1, 15),
           tasks: tasks,
+          projects: tasks
+              .map((t) => t.project)
+              .whereType<Project>()
+              .toList(growable: false),
+          projectAnchorStates: const [],
           categories: const {'v1': 1.0, 'v2': 1.0},
+          anchorCount: 2,
+          tasksPerAnchorMin: 0,
+          tasksPerAnchorMax: 1,
+          freeSlots: 0,
+          rotationPressureDays: 7,
+          readinessFilter: false,
           maxTasks: 2,
           taskUrgencyThresholdDays: 3,
-          keepValuesInBalance: true,
-          completionsByValue: const {'v1': 10, 'v2': 1},
+          routineSelectionsByValue: const {},
         ),
       );
 
-      expect(result.reasoning.explanation, contains('balancing'));
+      expect(result.allocatedTasks.length, lessThanOrEqualTo(2));
+      expect(result.anchorProjectIds.length, lessThanOrEqualTo(2));
     });
   });
 }

@@ -255,7 +255,7 @@ void main() {
         });
 
         final observer = DebugFileLogObserver(
-          dedupeWindow: const Duration(milliseconds: 50),
+          dedupeWindow: const Duration(milliseconds: 400),
           supportDirectoryProvider: () async => tempDir,
         );
         await observer.ensureInitializedForTest();
@@ -265,7 +265,7 @@ void main() {
         t.handle(StateError('boom'), StackTrace.empty, 'Oops');
 
         // Ensure we cross the dedupe window.
-        await Future<void>.delayed(const Duration(milliseconds: 75));
+        await Future<void>.delayed(const Duration(milliseconds: 550));
         t.handle(StateError('boom'), StackTrace.empty, 'Oops');
 
         final file = File(observer.logFilePath!);

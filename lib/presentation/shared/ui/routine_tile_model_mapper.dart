@@ -65,7 +65,7 @@ TasklyRoutineRowLabels buildRoutineExecutionLabels(
 }) {
   return TasklyRoutineRowLabels(
     primaryActionLabel: completed
-        ? context.l10n.doneLabel
+        ? context.l10n.routineUnlogLabel
         : context.l10n.routineLogLabel,
   );
 }

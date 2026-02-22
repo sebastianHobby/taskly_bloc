@@ -4,6 +4,7 @@ library;
 import '../../helpers/test_imports.dart';
 
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/feature_flags.dart';
 import 'package:taskly_domain/src/filtering/evaluation_context.dart';
 import 'package:taskly_domain/task_rules.dart';
 
@@ -304,7 +305,7 @@ void main() {
       expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isTrue);
     });
 
-    testSafe('hasAll requires all ids present', () async {
+    testSafe('hasAll requires all effective ids present', () async {
       final v1 = value('a');
       final v2 = value('b');
       final project = Project(
@@ -326,7 +327,11 @@ void main() {
         valueIds: const ['a', 'b'],
       );
 
-      expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isTrue);
+      if (TasklyFeatureFlags.taskSecondaryValuesEnabled) {
+        expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isTrue);
+      } else {
+        expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isFalse);
+      }
     });
 
     testSafe('hasAny matches when any id present', () async {

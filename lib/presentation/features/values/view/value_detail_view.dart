@@ -82,10 +82,17 @@ class ValueDetailSheetView extends StatefulWidget {
 }
 
 class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
-    with FormSubmissionMixin {
+    with FormSubmissionMixin, LocalSubmitGuardMixin {
   GlobalKey<FormBuilderState> _formKey = GlobalKey<FormBuilderState>();
   String? _formValueId;
   ValueDraft _draft = ValueDraft.empty();
+
+  bool _isUnchangedValueDraft(ValueDraft initial, ValueDraft next) {
+    return initial.name == next.name &&
+        initial.color == next.color &&
+        initial.priority == next.priority &&
+        initial.iconName == next.iconName;
+  }
 
   Future<void> _scrollToFirstInvalidField() async {
     final formState = _formKey.currentState;
@@ -128,6 +135,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
   }
 
   void _onSubmit(String? id) {
+    if (isSubmitting) return;
     final formValues = validateAndGetFormValues(_formKey);
     if (formValues == null) {
       unawaited(_scrollToFirstInvalidField());
@@ -135,6 +143,18 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
     }
 
     _syncDraftFromFormValues(formValues);
+    if (id != null) {
+      final loadState = context.read<ValueDetailBloc>().state;
+      final initialDraft = loadState.maybeMap(
+        loadSuccess: (success) => ValueDraft.fromValue(success.value),
+        orElse: () => null,
+      );
+      if (initialDraft != null &&
+          _isUnchangedValueDraft(initialDraft, _draft)) {
+        unawaited(closeEditor(context));
+        return;
+      }
+    }
 
     AppLog.routineStructured(
       'values.editor',
@@ -148,6 +168,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
     );
 
     final bloc = context.read<ValueDetailBloc>();
+    setSubmitting(true);
     if (id == null) {
       bloc.add(
         ValueDetailEvent.create(
@@ -209,6 +230,11 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
           current is ValueDetailValidationFailure ||
           current is ValueDetailOperationFailure,
       listener: (context, state) {
+        if (state is ValueDetailOperationSuccess ||
+            state is ValueDetailValidationFailure ||
+            state is ValueDetailOperationFailure) {
+          setSubmitting(false);
+        }
         state.mapOrNull(
           operationSuccess: (success) {
             unawaited(
@@ -247,6 +273,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
               initialData: success.value,
               onChanged: _syncDraftFromFormValues,
               onSubmit: () => _onSubmit(success.value.id),
+              isSubmitting: isSubmitting,
               onDelete: () => _onDelete(
                 id: success.value.id,
                 itemName: success.value.name,
@@ -268,6 +295,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
                 initialDraft: _draft,
                 onChanged: _syncDraftFromFormValues,
                 onSubmit: () => _onSubmit(null),
+                isSubmitting: isSubmitting,
                 submitTooltip: context.l10n.actionCreate,
                 onClose: () => unawaited(closeEditor(context)),
               );

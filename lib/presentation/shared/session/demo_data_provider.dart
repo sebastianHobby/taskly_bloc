@@ -484,6 +484,8 @@ final class DemoDataProvider {
       selectedTotalCount: plannedItems.length,
       todaySelectedTaskIds: selectedTaskIds,
       todaySelectedRoutineIds: selectedRoutineIds,
+      availableTaskCount: tasks.length,
+      availableRoutineCount: routines.length,
     );
   }
 

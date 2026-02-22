@@ -368,7 +368,7 @@ void main() {
     },
   );
 
-  testWidgetsSafe('plan my day shows due and yesterday shelves', (
+  testWidgetsSafe('plan my day shows due and planned shelves', (
     tester,
   ) async {
     final dueTask = TestData.task(
@@ -409,7 +409,7 @@ void main() {
 
     final l10n = l10nFor(tester);
     expect(find.text(l10n.planMyDayDueTodayTitle), findsWidgets);
-    expect(find.text(l10n.planMyDayYesterdayTitle), findsWidgets);
+    expect(find.text(l10n.myDayPlannedSectionTitle), findsWidgets);
     expect(find.text('Pay rent'), findsOneWidget);
     expect(find.text('Prep meeting notes'), findsOneWidget);
   });
@@ -587,7 +587,7 @@ void main() {
   );
 
   testWidgetsSafe(
-    'plan my day reschedules all yesterday tasks on quick pick',
+    'plan my day reschedules all planned tasks on quick pick',
     (tester) async {
       setTestSurfaceSize(tester, const Size(800, 1800));
       final plannedTask = TestData.task(

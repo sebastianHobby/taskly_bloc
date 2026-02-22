@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -74,10 +75,26 @@ class RoutineDetailSheetView extends StatefulWidget {
 }
 
 class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
-    with FormSubmissionMixin {
+    with FormSubmissionMixin, LocalSubmitGuardMixin {
   GlobalKey<FormBuilderState> _formKey = GlobalKey<FormBuilderState>();
   String? _formRoutineId;
   RoutineDraft _draft = RoutineDraft.empty();
+
+  bool _isUnchangedRoutineDraft(RoutineDraft initial, RoutineDraft next) {
+    return initial.name == next.name &&
+        initial.projectId == next.projectId &&
+        initial.periodType == next.periodType &&
+        initial.scheduleMode == next.scheduleMode &&
+        initial.targetCount == next.targetCount &&
+        listEquals(initial.scheduleDays, next.scheduleDays) &&
+        listEquals(initial.scheduleMonthDays, next.scheduleMonthDays) &&
+        initial.scheduleTimeMinutes == next.scheduleTimeMinutes &&
+        initial.minSpacingDays == next.minSpacingDays &&
+        initial.restDayBuffer == next.restDayBuffer &&
+        initial.isActive == next.isActive &&
+        initial.pausedUntilUtc == next.pausedUntilUtc &&
+        listEquals(initial.checklistTitles, next.checklistTitles);
+  }
 
   void _ensureFreshFormKeyFor(String? routineId) {
     if (_formRoutineId == routineId) return;
@@ -178,6 +195,7 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
   }
 
   void _onSubmit(String? routineId) {
+    if (isSubmitting) return;
     final formValues = validateAndGetFormValues(_formKey);
     if (formValues == null) {
       unawaited(_scrollToFirstInvalidField());
@@ -185,8 +203,23 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
     }
 
     _syncDraftFromFormValues(formValues);
+    if (routineId != null) {
+      final loadState = context.read<RoutineDetailBloc>().state;
+      final initialDraft = loadState.maybeMap(
+        loadSuccess: (success) => RoutineDraft.fromRoutine(
+          success.routine,
+        ).copyWith(checklistTitles: success.checklistTitles),
+        orElse: () => null,
+      );
+      if (initialDraft != null &&
+          _isUnchangedRoutineDraft(initialDraft, _draft)) {
+        unawaited(closeEditor(context));
+        return;
+      }
+    }
 
     final bloc = context.read<RoutineDetailBloc>();
+    setSubmitting(true);
     if (routineId == null) {
       bloc.add(
         RoutineDetailEvent.create(
@@ -266,6 +299,11 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
           current is RoutineDetailValidationFailure ||
           current is RoutineDetailOperationFailure,
       listener: (context, state) {
+        if (state is RoutineDetailOperationSuccess ||
+            state is RoutineDetailValidationFailure ||
+            state is RoutineDetailOperationFailure) {
+          setSubmitting(false);
+        }
         state.mapOrNull(
           operationSuccess: (success) {
             unawaited(
@@ -304,6 +342,7 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
               initialChecklistTitles: _draft.checklistTitles,
               onChanged: _syncDraftFromFormValues,
               onSubmit: () => _onSubmit(null),
+              isSubmitting: isSubmitting,
               submitTooltip: context.l10n.routineCreateCta,
               onClose: () => unawaited(closeEditor(context)),
               defaultProjectId: widget.defaultProjectId,
@@ -322,6 +361,7 @@ class _RoutineDetailSheetViewState extends State<RoutineDetailSheetView>
               initialChecklistTitles: success.checklistTitles,
               onChanged: _syncDraftFromFormValues,
               onSubmit: () => _onSubmit(success.routine.id),
+              isSubmitting: isSubmitting,
               onDelete: () => _onDelete(
                 id: success.routine.id,
                 name: success.routine.name,

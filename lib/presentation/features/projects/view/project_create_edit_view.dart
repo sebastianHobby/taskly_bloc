@@ -1,6 +1,7 @@
 // drift types are provided by the generated database import below
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -80,11 +81,24 @@ class ProjectEditSheetView extends StatefulWidget {
 }
 
 class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
-    with FormSubmissionMixin {
+    with FormSubmissionMixin, LocalSubmitGuardMixin {
   // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
 
   ProjectDraft _draft = ProjectDraft.empty();
+
+  bool _isUnchangedProjectDraft(ProjectDraft initial, ProjectDraft next) {
+    return initial.name == next.name &&
+        initial.description == next.description &&
+        initial.completed == next.completed &&
+        initial.startDate == next.startDate &&
+        initial.deadlineDate == next.deadlineDate &&
+        initial.priority == next.priority &&
+        initial.repeatIcalRrule == next.repeatIcalRrule &&
+        initial.repeatFromCompletion == next.repeatFromCompletion &&
+        initial.seriesEnded == next.seriesEnded &&
+        listEquals(initial.valueIds, next.valueIds);
+  }
 
   Future<void> _scrollToFirstInvalidField() async {
     final formState = _formKey.currentState;
@@ -125,6 +139,12 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
             current is ProjectDetailLoadSuccess;
       },
       listener: (context, state) {
+        if (state is ProjectDetailOperationSuccess ||
+            state is ProjectDetailValidationFailure ||
+            state is ProjectDetailOperationFailure ||
+            state is ProjectDetailInlineActionSuccess) {
+          setSubmitting(false);
+        }
         state.mapOrNull(
           operationSuccess: (success) {
             unawaited(
@@ -227,6 +247,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               onChanged: syncDraft,
               openToValues: widget.openToValues,
               onSubmit: () {
+                if (isSubmitting) return;
                 final formValues = validateAndGetFormValues(_formKey);
                 if (formValues == null) {
                   unawaited(_scrollToFirstInvalidField());
@@ -235,6 +256,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
 
                 syncDraft(formValues);
 
+                setSubmitting(true);
                 context.read<ProjectDetailBloc>().add(
                   ProjectDetailEvent.create(
                     command: CreateProjectCommand(
@@ -253,6 +275,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 );
               },
               submitTooltip: context.l10n.actionCreate,
+              isSubmitting: isSubmitting,
               onClose: () => unawaited(closeEditor(context)),
             );
           },
@@ -320,6 +343,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               onChanged: syncDraft,
               openToValues: widget.openToValues,
               onSubmit: () {
+                if (isSubmitting) return;
                 final formValues = validateAndGetFormValues(_formKey);
                 if (formValues == null) {
                   unawaited(_scrollToFirstInvalidField());
@@ -327,7 +351,13 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 }
 
                 syncDraft(formValues);
+                final initialDraft = ProjectDraft.fromProject(project);
+                if (_isUnchangedProjectDraft(initialDraft, _draft)) {
+                  unawaited(closeEditor(context));
+                  return;
+                }
 
+                setSubmitting(true);
                 context.read<ProjectDetailBloc>().add(
                   ProjectDetailEvent.update(
                     command: UpdateProjectCommand(
@@ -347,6 +377,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 );
               },
               submitTooltip: context.l10n.actionUpdate,
+              isSubmitting: isSubmitting,
               trailingActions: _buildDetailActions(
                 context,
                 projectId: project.id,

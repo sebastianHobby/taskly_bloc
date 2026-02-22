@@ -32,6 +32,7 @@ class RoutineForm extends StatefulWidget {
     this.initialChecklistTitles = const <String>[],
     this.initialDraft,
     this.onChanged,
+    this.isSubmitting = false,
     this.onDelete,
     this.onClose,
     super.key,
@@ -47,6 +48,7 @@ class RoutineForm extends StatefulWidget {
   final List<String> initialChecklistTitles;
   final RoutineDraft? initialDraft;
   final ValueChanged<Map<String, dynamic>>? onChanged;
+  final bool isSubmitting;
   final VoidCallback? onDelete;
   final VoidCallback? onClose;
 
@@ -281,11 +283,7 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
   }
 
   void _refreshSubmitEnabled() {
-    final isCreating = widget.initialData == null;
-    final formValid = widget.formKey.currentState?.isValid ?? false;
-    final next = isCreating && !isDirty
-        ? _hasValidCreateDefaults()
-        : (isDirty && formValid);
+    final next = _hasRequiredFields() && !widget.isSubmitting;
     if (next == _submitEnabled || !mounted) return;
     if (SchedulerBinding.instance.schedulerPhase ==
         SchedulerPhase.persistentCallbacks) {
@@ -301,30 +299,30 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
   bool _isCompact(BuildContext context) =>
       MediaQuery.sizeOf(context).width < 600;
 
-  bool _hasValidCreateDefaults() {
-    if (widget.initialData != null) return false;
-    final draft = widget.initialDraft ?? RoutineDraft.empty();
-    final periodType = _currentPeriodType;
-    final scheduleMode = _currentScheduleMode;
-    final projectId = _resolveInitialProjectId(draft);
+  bool _hasRequiredFields() {
+    final name =
+        (widget.formKey.currentState?.fields[RoutineFieldKeys.name.id]?.value
+            as String?) ??
+        widget.initialData?.name ??
+        widget.initialDraft?.name ??
+        '';
+    final projectId =
+        (widget
+                .formKey
+                .currentState
+                ?.fields[RoutineFieldKeys.projectId.id]
+                ?.value
+            as String?) ??
+        _resolveInitialProjectId(widget.initialDraft);
+    return name.trim().isNotEmpty && projectId.trim().isNotEmpty;
+  }
 
-    return RoutineValidators.name(draft.name).isEmpty &&
-        RoutineValidators.projectId(projectId).isEmpty &&
-        RoutineValidators.targetCount(
-          draft.targetCount,
-          periodType: periodType,
-          scheduleMode: scheduleMode,
-        ).isEmpty &&
-        RoutineValidators.scheduleDays(
-          draft.scheduleDays,
-          periodType: periodType,
-          scheduleMode: scheduleMode,
-        ).isEmpty &&
-        RoutineValidators.scheduleMonthDays(
-          draft.scheduleMonthDays,
-          periodType: periodType,
-          scheduleMode: scheduleMode,
-        ).isEmpty;
+  @override
+  void didUpdateWidget(covariant RoutineForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isSubmitting != widget.isSubmitting) {
+      _refreshSubmitEnabled();
+    }
   }
 
   Future<void> _focusFrequencySection() async {

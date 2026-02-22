@@ -204,10 +204,9 @@ void main() {
   String? swapToId;
 
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
-    'auto-includes due and yesterday tasks in selection',
+    'auto-includes due and planned (start <= today) tasks in selection',
     build: () {
       final value = TestData.value(id: 'value-1', name: 'Health');
-      final yesterdayKey = dayKey.subtract(const Duration(days: 1));
       dueTask = TestData.task(
         id: 'task-due',
         name: 'Due Today',
@@ -216,7 +215,8 @@ void main() {
       );
       plannedTask = TestData.task(
         id: 'task-planned',
-        name: 'From Yesterday',
+        name: 'Planned For Today',
+        startDate: dayKey,
         values: [value],
       );
       final suggestedTask = TestData.task(
@@ -232,21 +232,6 @@ void main() {
           picks: const <my_day.MyDayPick>[],
         ),
       );
-      when(() => myDayRepository.loadDay(yesterdayKey)).thenAnswer(
-        (_) async => my_day.MyDayDayPicks(
-          dayKeyUtc: yesterdayKey,
-          ritualCompletedAtUtc: yesterdayKey,
-          picks: [
-            my_day.MyDayPick.task(
-              taskId: plannedTask.id,
-              bucket: my_day.MyDayPickBucket.manual,
-              sortIndex: 0,
-              pickedAtUtc: yesterdayKey,
-            ),
-          ],
-        ),
-      );
-
       when(() => taskRepository.getAll(any())).thenAnswer(
         (_) async => [dueTask, plannedTask, suggestedTask],
       );

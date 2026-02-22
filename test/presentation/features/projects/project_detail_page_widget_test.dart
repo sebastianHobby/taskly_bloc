@@ -14,6 +14,7 @@ import '../../../mocks/presentation_mocks.dart';
 import '../../../mocks/fake_repositories.dart';
 import '../../../mocks/repository_mocks.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
@@ -400,10 +401,11 @@ void main() {
       routinesSubject.add(const <Routine>[]);
       await tester.pumpForStream();
 
-      expect(find.text('No tasks or routines yet'), findsOneWidget);
-      expect(find.text('Add task'), findsOneWidget);
-      expect(find.text('Tasks'), findsNothing);
-      expect(find.text('Routines'), findsNothing);
+      final l10n = tester.element(find.byType(ProjectDetailPage)).l10n;
+      expect(find.text(l10n.projectDetailEmptyTitle), findsOneWidget);
+      expect(find.text(l10n.addTaskAction), findsOneWidget);
+      expect(find.text(l10n.tasksTitle), findsNothing);
+      expect(find.text(l10n.routinesTitle), findsNothing);
     },
   );
 
@@ -424,10 +426,41 @@ void main() {
     routinesSubject.add([routine]);
     await tester.pumpForStream();
 
+    final l10n = tester.element(find.byType(ProjectDetailPage)).l10n;
     expect(find.text('Tasks'), findsNothing);
-    expect(find.text('Routines'), findsOneWidget);
+    expect(find.text(l10n.routinesTitle), findsOneWidget);
     expect(find.text('Morning Flow'), findsOneWidget);
-    expect(find.text('Log'), findsOneWidget);
+    expect(find.text(l10n.routineLogLabel), findsOneWidget);
+  });
+
+  testWidgetsSafe('shows routine unlog action when completed today', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+
+    final project = TestData.project(id: 'project-1', name: 'Routine Project');
+    final routine = buildRoutine(
+      id: 'routine-1',
+      name: 'Morning Flow',
+      projectId: project.id,
+    );
+    final completion = RoutineCompletion(
+      id: 'completion-1',
+      routineId: routine.id,
+      completedAtUtc: DateTime.utc(2025, 1, 15, 9),
+      createdAtUtc: DateTime.utc(2025, 1, 15, 9),
+      completedDayLocal: DateTime(2025, 1, 15),
+      completedTimeLocalMinutes: 9 * 60,
+    );
+
+    projectSubject.add(project);
+    tasksSubject.add(const <Task>[]);
+    routinesSubject.add([routine]);
+    routineCompletionsSubject.add([completion]);
+    await tester.pumpForStream();
+
+    final l10n = tester.element(find.byType(ProjectDetailPage)).l10n;
+    expect(find.text(l10n.routineUnlogLabel), findsOneWidget);
   });
 
   testWidgetsSafe(

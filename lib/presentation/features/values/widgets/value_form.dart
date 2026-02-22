@@ -25,6 +25,7 @@ class ValueForm extends StatefulWidget {
     required this.submitTooltip,
     this.initialDraft,
     this.onChanged,
+    this.isSubmitting = false,
     this.onDelete,
     this.onClose,
     super.key,
@@ -40,6 +41,7 @@ class ValueForm extends StatefulWidget {
   /// When [initialData] is null (creating), these values seed the form.
   final ValueDraft? initialDraft;
   final ValueChanged<Map<String, dynamic>>? onChanged;
+  final bool isSubmitting;
   final VoidCallback? onDelete;
 
   /// Called when the user wants to close the form.
@@ -82,11 +84,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
   }
 
   void _refreshSubmitEnabled() {
-    final isCreating = widget.initialData == null;
-    final formValid = widget.formKey.currentState?.isValid ?? false;
-    final next = isCreating && !isDirty
-        ? _hasValidCreateDefaults()
-        : (isDirty && formValid);
+    final next = _hasRequiredFields() && !widget.isSubmitting;
     if (next == _submitEnabled || !mounted) return;
     setState(() => _submitEnabled = next);
   }
@@ -107,15 +105,22 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
     super.dispose();
   }
 
-  bool _hasValidCreateDefaults() {
-    if (widget.initialData != null) return false;
-    final form = widget.formKey.currentState;
-    final name = (form?.fields[ValueFieldKeys.name.id]?.value as String?) ?? '';
-    final color = form?.fields[ValueFieldKeys.colour.id]?.value as Color?;
-    return ValueValidators.name(name).isEmpty &&
-        ValueValidators.color(
-          color == null ? null : ColorUtils.toHex(color),
-        ).isEmpty;
+  @override
+  void didUpdateWidget(covariant ValueForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isSubmitting != widget.isSubmitting) {
+      _refreshSubmitEnabled();
+    }
+  }
+
+  bool _hasRequiredFields() {
+    final name =
+        (widget.formKey.currentState?.fields[ValueFieldKeys.name.id]?.value
+            as String?) ??
+        widget.initialData?.name ??
+        widget.initialDraft?.name ??
+        '';
+    return name.trim().isNotEmpty;
   }
 
   @override

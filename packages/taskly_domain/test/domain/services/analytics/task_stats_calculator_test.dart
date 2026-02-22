@@ -23,6 +23,7 @@ void main() {
     bool completed = false,
     DateTime? deadlineDate,
     String? projectId,
+    Project? project,
     List<Value> values = const <Value>[],
     DateTime? completedAt,
   }) {
@@ -34,6 +35,7 @@ void main() {
       completed: completed,
       deadlineDate: deadlineDate,
       projectId: projectId,
+      project: project,
       values: values,
       occurrence: completedAt == null
           ? null
@@ -289,6 +291,24 @@ void main() {
         start: DateTime.utc(2026, 1, 1),
         end: DateTime.utc(2026, 1, 31),
       );
+      final p1 = Project(
+        id: 'p1',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        name: 'Project p1',
+        completed: false,
+        values: [value('v1')],
+        primaryValueId: 'v1',
+      );
+      final p2 = Project(
+        id: 'p2',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        name: 'Project p2',
+        completed: false,
+        values: [value('v2')],
+        primaryValueId: 'v2',
+      );
 
       final tasks = <Task>[
         task(
@@ -298,6 +318,7 @@ void main() {
           completed: true,
           completedAt: DateTime.utc(2026, 1, 10, 8),
           projectId: 'p1',
+          project: p1,
           values: [value('v1')],
         ),
         // Same completion day (different time) should dedupe.
@@ -308,6 +329,7 @@ void main() {
           completed: true,
           completedAt: DateTime.utc(2026, 1, 10, 18),
           projectId: 'p1',
+          project: p1,
           values: [value('v1')],
         ),
         // Different completion day.
@@ -318,6 +340,7 @@ void main() {
           completed: true,
           completedAt: DateTime.utc(2026, 1, 11, 12),
           projectId: 'p2',
+          project: p2,
           values: [value('v2')],
         ),
         // Not completed -> ignored.
@@ -327,6 +350,7 @@ void main() {
           updatedAt: DateTime.utc(2026, 1, 4),
           completed: false,
           projectId: 'p1',
+          project: p1,
           values: [value('v1')],
         ),
       ];

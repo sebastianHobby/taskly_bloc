@@ -67,6 +67,8 @@ final class MyDayViewModel {
     required this.selectedTotalCount,
     required this.todaySelectedTaskIds,
     required this.todaySelectedRoutineIds,
+    required this.availableTaskCount,
+    required this.availableRoutineCount,
   });
 
   final List<Task> tasks;
@@ -81,6 +83,11 @@ final class MyDayViewModel {
 
   final Set<String> todaySelectedTaskIds;
   final Set<String> todaySelectedRoutineIds;
+  final int availableTaskCount;
+  final int availableRoutineCount;
+
+  bool get hasAvailableItems =>
+      availableTaskCount > 0 || availableRoutineCount > 0;
 }
 
 final class MyDayMixVm {

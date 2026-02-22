@@ -145,9 +145,13 @@ class WeeklyRatingWheel extends StatelessWidget {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) / 2;
     final tokens = TasklyTokens.of(context);
-    final iconRadius = radius + tokens.spaceSm;
     final sliceAngle = (math.pi * 2) / entries.length;
     const startAngle = -math.pi / 2;
+    final layout = _resolveIconLayout(
+      radius: radius,
+      sliceAngle: sliceAngle,
+      tokens: tokens,
+    );
 
     final scheme = Theme.of(context).colorScheme;
     final overlays = <Widget>[];
@@ -156,8 +160,8 @@ class WeeklyRatingWheel extends StatelessWidget {
       final entry = entries[i];
       final angle = startAngle + i * sliceAngle + sliceAngle / 2;
       final iconOffset = Offset(
-        center.dx + math.cos(angle) * iconRadius,
-        center.dy + math.sin(angle) * iconRadius,
+        center.dx + math.cos(angle) * layout.orbitRadius,
+        center.dy + math.sin(angle) * layout.orbitRadius,
       );
       final iconData = getIconDataFromName(entry.value.iconName) ?? Icons.star;
       final color = colors[i];
@@ -172,8 +176,8 @@ class WeeklyRatingWheel extends StatelessWidget {
       final iconColor = isSelected
           ? color
           : scheme.onSurfaceVariant.withValues(alpha: 0.7);
-      final iconSize = tokens.spaceMd2;
-      final targetSize = tokens.minTapTargetSize;
+      final iconSize = layout.iconSize;
+      final targetSize = layout.targetSize;
 
       overlays.add(
         Positioned(
@@ -215,6 +219,45 @@ class WeeklyRatingWheel extends StatelessWidget {
 
     return overlays;
   }
+
+  _IconLayout _resolveIconLayout({
+    required double radius,
+    required double sliceAngle,
+    required TasklyTokens tokens,
+  }) {
+    final targetSize = tokens.minTapTargetSize.clamp(40.0, 48.0);
+    final minArcGap = targetSize + tokens.spaceXs;
+    final baseOrbitGap = (radius * 0.10).clamp(tokens.spaceXs, tokens.spaceSm);
+    final baseOrbitRadius = radius + baseOrbitGap;
+    final baseArcLength = baseOrbitRadius * sliceAngle;
+    final hasPotentialCrowding = baseArcLength < minArcGap;
+
+    final collisionSafeOrbitRadius = minArcGap / sliceAngle;
+    final orbitRadius = hasPotentialCrowding
+        ? math.max(baseOrbitRadius, collisionSafeOrbitRadius)
+        : baseOrbitRadius;
+    final iconSize = hasPotentialCrowding
+        ? math.max(tokens.spaceMd, tokens.spaceMd2 - tokens.spaceXs)
+        : tokens.spaceMd2;
+
+    return _IconLayout(
+      orbitRadius: orbitRadius,
+      targetSize: targetSize,
+      iconSize: iconSize,
+    );
+  }
+}
+
+class _IconLayout {
+  const _IconLayout({
+    required this.orbitRadius,
+    required this.targetSize,
+    required this.iconSize,
+  });
+
+  final double orbitRadius;
+  final double targetSize;
+  final double iconSize;
 }
 
 class _WeeklyRatingWheelPainter extends CustomPainter {

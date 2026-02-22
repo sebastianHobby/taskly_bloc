@@ -312,9 +312,9 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
       SizedBox(height: tokens.spaceLg),
       if (data.plannedTasks.isNotEmpty)
         _TaskShelf(
-          title: l10n.planMyDayYesterdayTitle,
+          title: l10n.myDayPlannedSectionTitle,
           actionLabel: l10n.planMyDayRescheduleAllAction,
-          rowKeyPrefix: 'plan-yesterday',
+          rowKeyPrefix: 'plan-planned',
           limitItems: isCompact,
           maxVisibleItems: maxVisibleItems,
           onAction: () async {
@@ -387,8 +387,8 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
         )
       else
         _EmptyShelf(
-          title: l10n.planMyDayYesterdayTitle,
-          body: l10n.planMyDayYesterdayEmptyBody,
+          title: l10n.myDayPlannedSectionTitle,
+          body: l10n.myDayPlanPlannedEmptyBody,
         ),
       SizedBox(height: tokens.spaceLg),
       if (data.scheduledRoutines.isNotEmpty || data.flexibleRoutines.isNotEmpty)

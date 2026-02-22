@@ -291,7 +291,7 @@ class _PrimaryActionButton extends StatelessWidget {
         : scheme.outlineVariant.withValues(alpha: 0.8);
 
     return TextButton(
-      onPressed: isDone ? null : onPressed,
+      onPressed: onPressed,
       style: TextButton.styleFrom(
         backgroundColor: bg,
         foregroundColor: fg,

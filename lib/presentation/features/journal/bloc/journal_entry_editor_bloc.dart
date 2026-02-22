@@ -656,6 +656,11 @@ class JournalEntryEditorBloc
     JournalEntryEditorSaveRequested event,
     Emitter<JournalEntryEditorState> emit,
   ) async {
+    if (state.isEditingExisting && !state.isDirty) {
+      emit(state.copyWith(status: const JournalEntryEditorSaved()));
+      return;
+    }
+
     final mood = state.mood;
     if (mood == null) {
       emit(

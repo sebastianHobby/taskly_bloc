@@ -65,8 +65,8 @@ against value quotas (see [../../product/SPEC_ROUTINES.md](../../product/SPEC_RO
 Carryover policy:
 
 - Plan My Day auto-includes **urgent tasks** (overdue + due today).
-- It also carries forward **unfinished picks from yesterday** so the user can
-  decide whether to reschedule or include them again.
+- It also auto-includes **planned tasks** whose start date is today or earlier
+  (`start <= today`), excluding tasks already captured by due/overdue.
 
 ### 3.3 Suggested picks explainability
 

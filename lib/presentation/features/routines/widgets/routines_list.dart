@@ -17,6 +17,7 @@ class RoutinesListView extends StatelessWidget {
     required this.sortOrder,
     required this.onEditRoutine,
     required this.onLogRoutine,
+    required this.onUnlogRoutine,
     this.embedded = false,
     this.showSectionHeaders = true,
     this.entityRowPadding,
@@ -27,6 +28,7 @@ class RoutinesListView extends StatelessWidget {
   final RoutineSortOrder sortOrder;
   final ValueChanged<String> onEditRoutine;
   final ValueChanged<String> onLogRoutine;
+  final ValueChanged<String> onUnlogRoutine;
   final bool embedded;
   final bool showSectionHeaders;
   final EdgeInsetsGeometry? entityRowPadding;
@@ -49,6 +51,7 @@ class RoutinesListView extends StatelessWidget {
           flexible: split.flexible,
           onEditRoutine: onEditRoutine,
           onLogRoutine: onLogRoutine,
+          onUnlogRoutine: onUnlogRoutine,
           selection: selection,
         );
       } else {
@@ -57,6 +60,7 @@ class RoutinesListView extends StatelessWidget {
           visibleItems,
           onEditRoutine: onEditRoutine,
           onLogRoutine: onLogRoutine,
+          onUnlogRoutine: onUnlogRoutine,
           selection: selection,
         );
       }
@@ -69,6 +73,7 @@ class RoutinesListView extends StatelessWidget {
               sorted,
               onEditRoutine: onEditRoutine,
               onLogRoutine: onLogRoutine,
+              onUnlogRoutine: onUnlogRoutine,
               selection: selection,
             )
           : _buildFlatRowsSection(
@@ -76,6 +81,7 @@ class RoutinesListView extends StatelessWidget {
               sorted,
               onEditRoutine: onEditRoutine,
               onLogRoutine: onLogRoutine,
+              onUnlogRoutine: onUnlogRoutine,
               selection: selection,
             );
     }
@@ -179,6 +185,7 @@ List<TasklySectionSpec> _buildScheduledSections(
   required List<RoutineListItem> flexible,
   required ValueChanged<String> onEditRoutine,
   required ValueChanged<String> onLogRoutine,
+  required ValueChanged<String> onUnlogRoutine,
   required RoutineSelectionBloc selection,
 }) {
   return <TasklySectionSpec>[
@@ -197,6 +204,7 @@ List<TasklySectionSpec> _buildScheduledSections(
               item,
               onEditRoutine: onEditRoutine,
               onLogRoutine: onLogRoutine,
+              onUnlogRoutine: onUnlogRoutine,
               selection: selection,
             ),
         ],
@@ -216,6 +224,7 @@ List<TasklySectionSpec> _buildScheduledSections(
               item,
               onEditRoutine: onEditRoutine,
               onLogRoutine: onLogRoutine,
+              onUnlogRoutine: onUnlogRoutine,
               selection: selection,
             ),
         ],
@@ -228,6 +237,7 @@ List<TasklySectionSpec> _buildFlatSection(
   List<RoutineListItem> items, {
   required ValueChanged<String> onEditRoutine,
   required ValueChanged<String> onLogRoutine,
+  required ValueChanged<String> onUnlogRoutine,
   required RoutineSelectionBloc selection,
 }) {
   if (items.isEmpty) return const <TasklySectionSpec>[];
@@ -246,6 +256,7 @@ List<TasklySectionSpec> _buildFlatSection(
             item,
             onEditRoutine: onEditRoutine,
             onLogRoutine: onLogRoutine,
+            onUnlogRoutine: onUnlogRoutine,
             selection: selection,
           ),
       ],
@@ -258,6 +269,7 @@ List<TasklySectionSpec> _buildFlatRowsSection(
   List<RoutineListItem> items, {
   required ValueChanged<String> onEditRoutine,
   required ValueChanged<String> onLogRoutine,
+  required ValueChanged<String> onUnlogRoutine,
   required RoutineSelectionBloc selection,
 }) {
   if (items.isEmpty) return const <TasklySectionSpec>[];
@@ -271,6 +283,7 @@ List<TasklySectionSpec> _buildFlatRowsSection(
             item,
             onEditRoutine: onEditRoutine,
             onLogRoutine: onLogRoutine,
+            onUnlogRoutine: onUnlogRoutine,
             selection: selection,
           ),
       ],
@@ -283,11 +296,13 @@ TasklyRowSpec _buildRow(
   RoutineListItem item, {
   required ValueChanged<String> onEditRoutine,
   required ValueChanged<String> onLogRoutine,
+  required ValueChanged<String> onUnlogRoutine,
   required RoutineSelectionBloc selection,
 }) {
   final key = RoutineSelectionKey(item.routine.id);
   final selectionMode = selection.isSelectionMode;
   final isSelected = selection.isSelected(key);
+  final isCompleted = _isRoutineComplete(item);
 
   void handleTap() {
     if (selection.shouldInterceptTapAsSelection()) {
@@ -304,7 +319,7 @@ TasklyRowSpec _buildRow(
       routine: item.routine,
       snapshot: item.snapshot,
       selected: isSelected,
-      completed: _isRoutineComplete(item),
+      completed: isCompleted,
       showScheduleRow:
           item.routine.periodType == RoutinePeriodType.week &&
           item.routine.scheduleMode == RoutineScheduleMode.scheduled,
@@ -315,7 +330,7 @@ TasklyRowSpec _buildRow(
           ? null
           : buildRoutineExecutionLabels(
               context,
-              completed: _isRoutineComplete(item),
+              completed: isCompleted,
             ),
     ),
     style: selectionMode
@@ -325,7 +340,13 @@ TasklyRowSpec _buildRow(
       onTap: handleTap,
       onPrimaryAction: selectionMode
           ? null
-          : () => onLogRoutine(item.routine.id),
+          : () {
+              if (isCompleted) {
+                onUnlogRoutine(item.routine.id);
+                return;
+              }
+              onLogRoutine(item.routine.id);
+            },
       onLongPress: () => selection.enterSelectionMode(initialSelection: key),
       onToggleSelected: selectionMode
           ? () => selection.toggleSelection(key, extendRange: false)

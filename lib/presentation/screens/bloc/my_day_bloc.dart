@@ -51,6 +51,8 @@ final class MyDayLoaded extends MyDayState {
     required this.todaySelectedTaskIds,
     required this.todaySelectedRoutineIds,
     required this.ritualStatus,
+    required this.availableTaskCount,
+    required this.availableRoutineCount,
   });
 
   final MyDaySummary summary;
@@ -70,6 +72,8 @@ final class MyDayLoaded extends MyDayState {
   final Set<String> todaySelectedRoutineIds;
 
   final MyDayRitualStatus ritualStatus;
+  final int availableTaskCount;
+  final int availableRoutineCount;
 }
 
 final class MyDayError extends MyDayState {
@@ -126,6 +130,8 @@ final class MyDayBloc extends Bloc<MyDayEvent, MyDayState> {
         todaySelectedTaskIds: vm.todaySelectedTaskIds,
         todaySelectedRoutineIds: vm.todaySelectedRoutineIds,
         ritualStatus: vm.ritualStatus,
+        availableTaskCount: vm.availableTaskCount,
+        availableRoutineCount: vm.availableRoutineCount,
       ),
     );
   }

@@ -118,6 +118,7 @@ void main() {
 }
 
 final class _RecordingValueRepository implements ValueRepositoryContract {
+  int count = 0;
   int createCalls = 0;
   int updateCalls = 0;
 
@@ -133,6 +134,9 @@ final class _RecordingValueRepository implements ValueRepositoryContract {
   String? lastUpdatedIconName;
   ValuePriority? lastUpdatedPriority;
   OperationContext? lastUpdatedContext;
+
+  @override
+  Future<int> getCount() async => count;
 
   @override
   Future<void> create({

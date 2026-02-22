@@ -134,15 +134,34 @@ final class MyDayQueryService {
       }
 
       final allocation$ = _allocationCacheService.watchAllocationSnapshot();
+      final tasks$ = Rx.concat([
+        Stream.fromFuture(_taskRepository.getAll(TaskQuery.all())),
+        _taskRepository.watchAll(TaskQuery.all()),
+      ]);
+      final routines$ = Rx.concat([
+        Stream.fromFuture(_routineRepository.getAll(includeInactive: true)),
+        _routineRepository.watchAll(includeInactive: true),
+      ]);
 
-      return Rx.combineLatest2<AllocationResult, List<Value>, MyDayViewModel>(
+      return Rx.combineLatest4<
+        AllocationResult,
+        List<Value>,
+        List<Task>,
+        List<Routine>,
+        MyDayViewModel
+      >(
         allocation$,
         values$,
-        (allocation, values) => _viewModelBuilder.fromAllocation(
-          allocation: allocation,
-          values: values,
-          ritualStatus: ritualStatus,
-        ),
+        tasks$,
+        routines$,
+        (allocation, values, tasks, routines) =>
+            _viewModelBuilder.fromAllocation(
+              allocation: allocation,
+              values: values,
+              ritualStatus: ritualStatus,
+              availableTaskCount: tasks.length,
+              availableRoutineCount: routines.length,
+            ),
       );
     });
   }

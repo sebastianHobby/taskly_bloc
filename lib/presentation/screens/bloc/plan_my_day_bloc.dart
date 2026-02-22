@@ -474,7 +474,6 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   List<RoutineCompletion> _routineCompletions = const <RoutineCompletion>[];
   List<RoutineSkip> _routineSkips = const <RoutineSkip>[];
   late my_day.MyDayDayPicks _dayPicks;
-  my_day.MyDayDayPicks? _yesterdayDayPicks;
 
   int _suggestionBatchCount = 1;
   int _dailyLimit = 8;
@@ -1240,15 +1239,11 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     }
 
     try {
-      final yesterdayDayKeyUtc = dateOnly(
-        _dayKeyUtc.subtract(const Duration(days: 1)),
-      );
       final results = await Future.wait([
         _settingsRepository.load<settings.GlobalSettings>(SettingsKey.global),
         _settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
         _valueRatingsRepository.getAll(weeks: _ratingsHistoryWeeks),
         _myDayRepository.loadDay(_dayKeyUtc),
-        _myDayRepository.loadDay(yesterdayDayKeyUtc),
         _taskRepository.getAll(TaskQuery.incomplete()),
         _routineRepository.getAll(includeInactive: true),
         _routineRepository.getCompletions(),
@@ -1261,15 +1256,14 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
 
       final picks = results[3] as my_day.MyDayDayPicks;
       _dayPicks = picks;
-      _yesterdayDayPicks = results[4] as my_day.MyDayDayPicks;
 
-      final incompleteTasks = results[5] as List<Task>;
+      final incompleteTasks = results[4] as List<Task>;
       _incompleteTasks = incompleteTasks;
       _taskRevisionStamp = _buildTaskRevision(incompleteTasks);
 
-      final routines = results[6] as List<Routine>;
-      final completions = results[7] as List<RoutineCompletion>;
-      final skips = results[8] as List<RoutineSkip>;
+      final routines = results[5] as List<Routine>;
+      final completions = results[6] as List<RoutineCompletion>;
+      final skips = results[7] as List<RoutineSkip>;
 
       _routines = routines;
       _routineCompletions = completions;
@@ -1398,10 +1392,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         .where((task) => _isDueTodayOrOverdue(task, today))
         .toList(growable: false);
     final dueIds = dueTodayTasks.map((task) => task.id).toSet();
-    final yesterdayTaskIds =
-        _yesterdayDayPicks?.selectedTaskIds ?? const <String>{};
     final plannedTasks = activeTasks
-        .where((task) => yesterdayTaskIds.contains(task.id))
+        .where((task) => _isPlannedForTodayOrEarlier(task, today))
         .where((task) => !dueIds.contains(task.id))
         .toList(growable: false);
 
@@ -1973,9 +1965,19 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     return dateOnlyOrNull(raw);
   }
 
+  DateTime? _startDateOnly(Task task) {
+    final raw = task.occurrence?.date ?? task.startDate;
+    return dateOnlyOrNull(raw);
+  }
+
   bool _isDueTodayOrOverdue(Task task, DateTime today) {
     final deadline = _deadlineDateOnly(task);
     return deadline != null && !deadline.isAfter(today);
+  }
+
+  bool _isPlannedForTodayOrEarlier(Task task, DateTime today) {
+    final start = _startDateOnly(task);
+    return start != null && !start.isAfter(today);
   }
 
   bool _isSameDayUtc(DateTime a, DateTime b) {

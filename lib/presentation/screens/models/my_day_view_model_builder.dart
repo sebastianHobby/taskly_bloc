@@ -16,6 +16,8 @@ final class MyDayViewModelBuilder {
     required AllocationResult allocation,
     required List<Value> values,
     required MyDayRitualStatus ritualStatus,
+    required int availableTaskCount,
+    required int availableRoutineCount,
   }) {
     final tasks = allocation.allocatedTasks
         .map((entry) => entry.task)
@@ -32,6 +34,8 @@ final class MyDayViewModelBuilder {
       values: values,
       qualifyingByTaskId: qualifyingByTaskId,
       ritualStatus: ritualStatus,
+      availableTaskCount: availableTaskCount,
+      availableRoutineCount: availableRoutineCount,
     );
   }
 
@@ -153,6 +157,8 @@ final class MyDayViewModelBuilder {
       values: values,
       qualifyingByTaskId: qualifyingByTaskId,
       ritualStatus: ritualStatus,
+      availableTaskCount: tasks.length,
+      availableRoutineCount: routines.length,
       completedPicks: completedPicks,
       selectedTotalCount: plannedItems.length,
       todaySelectedTaskIds: todaySelectedTaskIds,
@@ -185,6 +191,8 @@ final class MyDayViewModelBuilder {
     required List<Value> values,
     required Map<String, String?> qualifyingByTaskId,
     required MyDayRitualStatus ritualStatus,
+    required int availableTaskCount,
+    required int availableRoutineCount,
     List<Task> completedPicks = const <Task>[],
     int selectedTotalCount = 0,
     Set<String> todaySelectedTaskIds = const <String>{},
@@ -218,6 +226,8 @@ final class MyDayViewModelBuilder {
       selectedTotalCount: selectedTotalCount,
       todaySelectedTaskIds: todaySelectedTaskIds,
       todaySelectedRoutineIds: todaySelectedRoutineIds,
+      availableTaskCount: availableTaskCount,
+      availableRoutineCount: availableRoutineCount,
     );
   }
 

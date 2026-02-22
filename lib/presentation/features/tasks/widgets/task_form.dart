@@ -46,6 +46,7 @@ class TaskForm extends StatefulWidget {
     this.openToProjectPicker = false,
     this.includeInMyDayDefault = false,
     this.showMyDayToggle = false,
+    this.isSubmitting = false,
     this.onClose,
     this.trailingActions = const <Widget>[],
     super.key,
@@ -75,6 +76,7 @@ class TaskForm extends StatefulWidget {
 
   /// When true, shows the include-in-My-Day toggle.
   final bool showMyDayToggle;
+  final bool isSubmitting;
 
   /// Called when the user wants to close the form.
   /// If null, no close button is shown.
@@ -166,11 +168,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
   }
 
   void _refreshSubmitEnabled() {
-    final isCreating = widget.initialData == null;
-    final formValid = widget.formKey.currentState?.isValid ?? false;
-    final next = isCreating && !isDirty
-        ? _hasValidCreateDefaults()
-        : (isDirty && formValid);
+    final next = _hasRequiredFields() && !widget.isSubmitting;
     if (next == _submitEnabled || !mounted) return;
     setState(() => _submitEnabled = next);
   }
@@ -254,6 +252,9 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     if (oldWidget.initialData?.repeatIcalRrule !=
         widget.initialData?.repeatIcalRrule) {
       _updateRecurrenceLabel(widget.initialData?.repeatIcalRrule);
+    }
+    if (oldWidget.isSubmitting != widget.isSubmitting) {
+      _refreshSubmitEnabled();
     }
   }
 
@@ -627,13 +628,13 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     );
   }
 
-  bool _hasValidCreateDefaults() {
-    if (widget.initialData != null) return false;
+  bool _hasRequiredFields() {
     final name =
         (widget.formKey.currentState?.fields[TaskFieldKeys.name.id]?.value
             as String?) ??
+        widget.initialData?.name ??
         '';
-    return TaskValidators.name(name).isEmpty;
+    return name.trim().isNotEmpty;
   }
 
   @override

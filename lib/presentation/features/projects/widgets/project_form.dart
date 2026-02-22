@@ -37,6 +37,7 @@ class ProjectForm extends StatefulWidget {
     this.onChanged,
     this.availableValues = const <Value>[],
     this.openToValues = false,
+    this.isSubmitting = false,
     this.onClose,
     this.trailingActions = const <Widget>[],
     super.key,
@@ -52,6 +53,7 @@ class ProjectForm extends StatefulWidget {
   /// When true, scrolls to the values section and opens the values alignment
   /// sheet on first build.
   final bool openToValues;
+  final bool isSubmitting;
 
   /// Called when the user wants to close the form.
   /// If null, no close button is shown.
@@ -125,11 +127,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
   }
 
   void _refreshSubmitEnabled() {
-    final isCreating = widget.initialData == null;
-    final formValid = widget.formKey.currentState?.isValid ?? false;
-    final next = isCreating && !isDirty
-        ? _hasValidCreateDefaults()
-        : (isDirty && formValid);
+    final next = _hasRequiredFields() && !widget.isSubmitting;
     if (next == _submitEnabled || !mounted) return;
     setState(() => _submitEnabled = next);
   }
@@ -201,6 +199,9 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
     if (oldWidget.initialData?.repeatIcalRrule !=
         widget.initialData?.repeatIcalRrule) {
       _updateRecurrenceLabel(widget.initialData?.repeatIcalRrule);
+    }
+    if (oldWidget.isSubmitting != widget.isSubmitting) {
+      _refreshSubmitEnabled();
     }
   }
 
@@ -428,18 +429,23 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
     return _PrioritySelectionResult(priority: selected == -1 ? null : selected);
   }
 
-  bool _hasValidCreateDefaults() {
-    if (widget.initialData != null) return false;
+  bool _hasRequiredFields() {
     final form = widget.formKey.currentState;
     final name =
-        (form?.fields[ProjectFieldKeys.name.id]?.value as String?) ?? '';
+        ((form?.fields[ProjectFieldKeys.name.id]?.value as String?) ??
+                widget.initialData?.name ??
+                '')
+            .trim();
     final valueIds =
         (form?.fields[ProjectFieldKeys.valueIds.id]?.value as List<dynamic>?)
             ?.whereType<String>()
+            .where((id) => id.trim().isNotEmpty)
+            .toList(growable: false) ??
+        widget.initialData?.values
+            .map((value) => value.id)
             .toList(growable: false) ??
         const <String>[];
-    return ProjectValidators.name(name).isEmpty &&
-        ProjectValidators.valueIds(valueIds).isEmpty;
+    return name.isNotEmpty && valueIds.isNotEmpty;
   }
 
   @override

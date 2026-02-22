@@ -4,6 +4,7 @@ library;
 import '../../helpers/test_imports.dart';
 
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/feature_flags.dart';
 import 'package:taskly_domain/src/filtering/evaluation_context.dart';
 import 'package:taskly_domain/src/queries/query_filter.dart';
 import 'package:taskly_domain/src/queries/task_filter_evaluator.dart';
@@ -28,6 +29,8 @@ void main() {
     String? projectId,
     Project? project,
     List<Value> values = const <Value>[],
+    String? overridePrimaryValueId,
+    String? overrideSecondaryValueId,
     OccurrenceData? occurrence,
     String? repeatIcalRrule,
   }) {
@@ -42,6 +45,8 @@ void main() {
       projectId: projectId,
       project: project,
       values: values,
+      overridePrimaryValueId: overridePrimaryValueId,
+      overrideSecondaryValueId: overrideSecondaryValueId,
       occurrence: occurrence,
       repeatIcalRrule: repeatIcalRrule,
     );
@@ -131,7 +136,7 @@ void main() {
   });
 
   testSafe(
-    'value includeInherited uses project values when task has no overrides',
+    'value includeInherited uses effective inherited project values',
     () async {
       final p = Project(
         id: 'p1',
@@ -140,6 +145,7 @@ void main() {
         name: 'Project',
         completed: false,
         values: [value('v1')],
+        primaryValueId: 'v1',
       );
 
       final t = task(projectId: 'p1', project: p, values: const <Value>[]);
@@ -159,7 +165,7 @@ void main() {
   );
 
   testSafe(
-    'value includeInherited treats project values and task tags as a union',
+    'value includeInherited uses effective primary and optional secondary',
     () async {
       final v1 = value('v1');
       final v2 = value('v2');
@@ -177,6 +183,7 @@ void main() {
         projectId: 'p1',
         project: p,
         values: [v2],
+        overridePrimaryValueId: 'v2',
       );
 
       final filter = QueryFilter<TaskPredicate>(
@@ -189,7 +196,11 @@ void main() {
         ],
       );
 
-      expect(evaluator.matches(t, filter, ctx), isTrue);
+      if (TasklyFeatureFlags.taskSecondaryValuesEnabled) {
+        expect(evaluator.matches(t, filter, ctx), isTrue);
+      } else {
+        expect(evaluator.matches(t, filter, ctx), isFalse);
+      }
     },
   );
 }

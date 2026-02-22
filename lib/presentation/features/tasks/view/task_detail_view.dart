@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -43,12 +44,36 @@ class TaskDetailSheet extends StatefulWidget {
 }
 
 class _TaskDetailSheetState extends State<TaskDetailSheet>
-    with FormSubmissionMixin {
+    with FormSubmissionMixin, LocalSubmitGuardMixin {
   // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
 
   TaskDraft _draft = TaskDraft.empty();
   bool _includeInMyDay = false;
+
+  bool _isUnchangedTaskDraft(
+    TaskDraft initial,
+    TaskDraft next, {
+    required bool initialIncludeInMyDay,
+    required bool nextIncludeInMyDay,
+  }) {
+    return initial.name == next.name &&
+        initial.description == next.description &&
+        initial.completed == next.completed &&
+        initial.startDate == next.startDate &&
+        initial.deadlineDate == next.deadlineDate &&
+        initial.projectId == next.projectId &&
+        initial.priority == next.priority &&
+        initial.reminderKind == next.reminderKind &&
+        initial.reminderAtUtc == next.reminderAtUtc &&
+        initial.reminderMinutesBeforeDue == next.reminderMinutesBeforeDue &&
+        initial.repeatIcalRrule == next.repeatIcalRrule &&
+        initial.repeatFromCompletion == next.repeatFromCompletion &&
+        initial.seriesEnded == next.seriesEnded &&
+        listEquals(initial.valueIds, next.valueIds) &&
+        listEquals(initial.checklistTitles, next.checklistTitles) &&
+        initialIncludeInMyDay == nextIncludeInMyDay;
+  }
 
   void _syncDraftFromFormValues(Map<String, dynamic> formValues) {
     final name = extractStringValue(formValues, TaskFieldKeys.name.id);
@@ -156,6 +181,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
           current is TaskDetailValidationFailure ||
           current is TaskDetailOperationFailure,
       listener: (context, state) {
+        if (state is TaskDetailOperationSuccess ||
+            state is TaskDetailValidationFailure ||
+            state is TaskDetailOperationFailure ||
+            state is TaskDetailInlineActionSuccess) {
+          setSubmitting(false);
+        }
         state.maybeWhen(
           operationSuccess: (operation) {
             unawaited(
@@ -196,6 +227,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 formKey: _formKey,
                 onChanged: _syncDraftFromFormValues,
                 onSubmit: () {
+                  if (isSubmitting) return;
                   final formValues = validateAndGetFormValues(_formKey);
                   if (formValues == null) {
                     unawaited(_scrollToFirstInvalidField());
@@ -204,6 +236,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
 
                   _syncDraftFromFormValues(formValues);
 
+                  setSubmitting(true);
                   context.read<TaskDetailBloc>().add(
                     TaskDetailEvent.create(
                       command: CreateTaskCommand(
@@ -236,6 +269,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 defaultDeadlineDate: widget.defaultDeadlineDate,
                 includeInMyDayDefault: widget.includeInMyDayDefault,
                 showMyDayToggle: true,
+                isSubmitting: isSubmitting,
                 initialChecklistTitles: _draft.checklistTitles,
                 openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),
@@ -252,6 +286,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 formKey: _formKey,
                 onChanged: _syncDraftFromFormValues,
                 onSubmit: () {
+                  if (isSubmitting) return;
                   final formValues = validateAndGetFormValues(_formKey);
                   if (formValues == null) {
                     unawaited(_scrollToFirstInvalidField());
@@ -259,7 +294,20 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                   }
 
                   _syncDraftFromFormValues(formValues);
+                  final initialDraft = TaskDraft.fromTask(
+                    task,
+                  ).copyWith(checklistTitles: checklistTitles);
+                  if (_isUnchangedTaskDraft(
+                    initialDraft,
+                    _draft,
+                    initialIncludeInMyDay: widget.includeInMyDayDefault,
+                    nextIncludeInMyDay: _includeInMyDay,
+                  )) {
+                    unawaited(closeEditor(context));
+                    return;
+                  }
 
+                  setSubmitting(true);
                   context.read<TaskDetailBloc>().add(
                     TaskDetailEvent.update(
                       command: UpdateTaskCommand(
@@ -298,6 +346,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 defaultProjectId: widget.defaultProjectId,
                 includeInMyDayDefault: widget.includeInMyDayDefault,
                 showMyDayToggle: false,
+                isSubmitting: isSubmitting,
                 openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),
               ),

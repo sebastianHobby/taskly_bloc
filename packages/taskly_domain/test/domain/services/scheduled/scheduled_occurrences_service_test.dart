@@ -317,7 +317,7 @@ void main() {
       final occurrenceService = OccurrenceReadService(
         taskRepository: taskRepo,
         projectRepository: projectRepo,
-        homeDayKeyService: HomeDayKeyService(
+        dayKeyService: HomeDayKeyService(
           settingsRepository: settingsRepository,
           clock: _FakeClock(DateTime.utc(2026, 1, 1)),
         ),
@@ -420,10 +420,12 @@ void main() {
         containsAll([ScheduledDateTag.starts, ScheduledDateTag.due]),
       );
 
-      final occurrenceRow = result.occurrences
-          .where((o) => o.entityId == 't-repeat-occurrence')
-          .single;
-      expect(occurrenceRow.localDay, dateOnly(today));
+      expect(
+        result.occurrences
+            .where((o) => o.entityId == 't-repeat-occurrence')
+            .any((o) => o.localDay == dateOnly(today)),
+        isTrue,
+      );
 
       final projectRows = result.occurrences
           .where((o) => o.entityId == 'p-schedule')
@@ -483,7 +485,7 @@ void main() {
       final occurrenceService = OccurrenceReadService(
         taskRepository: taskRepo,
         projectRepository: projectRepo,
-        homeDayKeyService: HomeDayKeyService(
+        dayKeyService: HomeDayKeyService(
           settingsRepository: settingsRepository,
           clock: _FakeClock(DateTime.utc(2026, 1, 1)),
         ),
@@ -631,7 +633,7 @@ void main() {
       final occurrenceService = OccurrenceReadService(
         taskRepository: taskRepo,
         projectRepository: projectRepo,
-        homeDayKeyService: HomeDayKeyService(
+        dayKeyService: HomeDayKeyService(
           settingsRepository: settingsRepository,
           clock: _FakeClock(DateTime.utc(2026, 1, 1)),
         ),

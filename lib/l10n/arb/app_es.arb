@@ -4000,13 +4000,17 @@
     "@myDayNoPlanSubtitle": {
         "description": "Subtitulo cuando no hay plan en Mi dÃ­a"
     },
-    "myDayNoTasksTitle": "AÃºn no hay tareas",
+    "myDayNoTasksTitle": "Planifica lo que tu día necesita",
     "@myDayNoTasksTitle": {
-        "description": "Titulo cuando no hay tareas en Mi dÃ­a"
+        "description": "Titulo cuando no hay tareas en Mi día"
     },
-    "myDayNoTasksSubtitle": "Agrega tareas para comenzar.",
+    "myDayNoTasksSubtitle": "Agrega tareas o rutinas para comenzar, luego crea el plan de hoy.",
     "@myDayNoTasksSubtitle": {
-        "description": "Subtitulo cuando no hay tareas en Mi dÃ­a"
+        "description": "Subtitulo cuando no hay tareas en Mi día"
+    },
+    "myDayAddTasksOrRoutinesAction": "Agregar tareas o rutinas",
+    "@myDayAddTasksOrRoutinesAction": {
+        "description": "Etiqueta CTA para agregar tareas o rutinas cuando Mi Día no tiene elementos."
     },
     "myDayLoadFailedTitle": "No se pudo cargar Mi dÃ­a",
     "@myDayLoadFailedTitle": {
@@ -4092,17 +4096,9 @@
     "@planMyDayDueTodayEmptyBody": {
         "description": "Texto cuando no hay tareas que vencen hoy en Planificar mi dÃ­a"
     },
-    "planMyDayYesterdayTitle": "Ayer",
-    "@planMyDayYesterdayTitle": {
-        "description": "Titulo para la secciÃ³n de ayer en Planificar mi dÃ­a"
-    },
     "planMyDayRescheduleAllAction": "Reprogramar todo",
     "@planMyDayRescheduleAllAction": {
-        "description": "Etiqueta de acciÃ³n para reprogramar todas las tareas en la secciÃ³n de ayer"
-    },
-    "planMyDayYesterdayEmptyBody": "No queda nada de ayer.",
-    "@planMyDayYesterdayEmptyBody": {
-        "description": "Texto cuando no hay tareas de ayer en Planificar mi dÃ­a"
+        "description": "Etiqueta de acciÃ³n para reprogramar todas las tareas en la secciÃ³n de planificadas"
     },
     "planMyDaySummaryLabel": "{count, plural, =1{1 elemento planificado} other{{count} elementos planificados}}",
     "@planMyDaySummaryLabel": {

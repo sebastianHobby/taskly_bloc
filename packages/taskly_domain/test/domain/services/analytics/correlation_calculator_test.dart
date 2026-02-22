@@ -22,7 +22,7 @@ void main() {
 
       expect(result.coefficient, 0);
       expect(result.strength, CorrelationStrength.negligible);
-      expect(result.insight, contains('Insufficient data'));
+      expect(result.insight, contains('insufficient data'));
     },
   );
 

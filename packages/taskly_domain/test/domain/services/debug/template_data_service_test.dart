@@ -29,6 +29,9 @@ class _InMemoryValueRepo extends Fake implements ValueRepositoryContract {
   }
 
   @override
+  Future<int> getCount() async => _values.length;
+
+  @override
   Future<void> create({
     required String name,
     required String color,
@@ -131,10 +134,14 @@ class _InMemoryTaskRepo extends Fake implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async {
     final id = 't${++_idCounter}';
@@ -257,6 +264,7 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
     int? restDayBuffer,
     bool isActive = true,
     DateTime? pausedUntilUtc,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) async {
     final id = 'r${++_idCounter}';
@@ -296,6 +304,7 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
     int? restDayBuffer,
     bool? isActive,
     DateTime? pausedUntilUtc,
+    List<String> checklistTitles = const <String>[],
     OperationContext? context,
   }) {
     throw UnimplementedError();

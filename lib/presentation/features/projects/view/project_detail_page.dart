@@ -696,6 +696,7 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                           onToggleTasksCollapsed: _toggleTasksCollapsed,
                           onToggleRoutinesCollapsed: _toggleRoutinesCollapsed,
                           onRoutineLogRequested: _logRoutines,
+                          onRoutineUnlogRequested: _unlogRoutines,
                           density: density,
                         ),
                     };
@@ -724,6 +725,7 @@ class _ProjectDetailBody extends StatelessWidget {
     required this.onToggleTasksCollapsed,
     required this.onToggleRoutinesCollapsed,
     required this.onRoutineLogRequested,
+    required this.onRoutineUnlogRequested,
     required this.density,
   });
 
@@ -739,6 +741,7 @@ class _ProjectDetailBody extends StatelessWidget {
   final VoidCallback onToggleTasksCollapsed;
   final VoidCallback onToggleRoutinesCollapsed;
   final Future<void> Function(List<String> routineIds) onRoutineLogRequested;
+  final Future<void> Function(List<String> routineIds) onRoutineUnlogRequested;
   final DisplayDensity density;
 
   @override
@@ -1016,6 +1019,9 @@ class _ProjectDetailBody extends StatelessWidget {
                     onEditRoutine: (id) => Routing.toRoutineEdit(context, id),
                     onLogRoutine: (id) => unawaited(
                       onRoutineLogRequested([id]),
+                    ),
+                    onUnlogRoutine: (id) => unawaited(
+                      onRoutineUnlogRequested([id]),
                     ),
                     embedded: true,
                     showSectionHeaders: false,

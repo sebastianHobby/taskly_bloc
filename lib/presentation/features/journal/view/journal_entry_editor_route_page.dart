@@ -86,10 +86,7 @@ class _JournalEntryEditorRoutePageState
           final l10n = context.l10n;
           final isSaving = state.status is JournalEntryEditorSaving;
           final isLoading = state.status is JournalEntryEditorLoading;
-          final canSave =
-              !isSaving &&
-              state.mood != null &&
-              (!state.isEditingExisting || state.isDirty);
+          final canSave = !isSaving && state.mood != null;
 
           if (_noteController.text != state.note && !isLoading) {
             _noteController.text = state.note;

@@ -90,3 +90,19 @@ mixin FormSubmissionMixin {
     }
   }
 }
+
+/// Local UI submit guard for forms that dispatch async bloc writes.
+///
+/// This prevents duplicate submit taps while a create/update request is in
+/// flight and lets screens keep the submit button disabled until a terminal
+/// result (success/failure/validation failure) arrives.
+mixin LocalSubmitGuardMixin<T extends StatefulWidget> on State<T> {
+  bool _isSubmitting = false;
+
+  bool get isSubmitting => _isSubmitting;
+
+  void setSubmitting(bool value) {
+    if (!mounted || _isSubmitting == value) return;
+    setState(() => _isSubmitting = value);
+  }
+}
