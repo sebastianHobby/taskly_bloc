@@ -62,13 +62,15 @@ void main() {
     Set<String> selectedRoutineIds = const <String>{},
     List<Value> unratedValues = const <Value>[],
     PlanMyDayValueSort valueSort = PlanMyDayValueSort.lowestAverage,
+    int dailyLimit = 8,
+    bool overCapacity = false,
   }) {
     return PlanMyDayReady(
       needsPlan: true,
       dayKeyUtc: DateTime.utc(2025, 1, 15),
       globalSettings: const settings.GlobalSettings(),
       suggestionSignal: SuggestionSignal.ratingsBased,
-      dailyLimit: 8,
+      dailyLimit: dailyLimit,
       requiresValueSetup: requiresValueSetup,
       requiresRatings: requiresRatings,
       suggested: const <Task>[],
@@ -83,7 +85,7 @@ void main() {
       valueSuggestionGroups: valueGroups,
       unratedValues: unratedValues,
       valueSort: valueSort,
-      overCapacity: false,
+      overCapacity: overCapacity,
       toastRequestId: 0,
     );
   }
@@ -519,6 +521,12 @@ void main() {
         find.text(l10n.planMyDayRoutineSkipInstanceAction),
       );
       expect(foundSkipAction, isTrue);
+      expect(find.text(l10n.moreOptionsLabel), findsNothing);
+      expect(find.text(l10n.routinePauseLabel), findsOneWidget);
+      expect(
+        find.text(l10n.planMyDayRoutineSkipPeriodWeekAction),
+        findsOneWidget,
+      );
       await tester.ensureVisible(
         find.text(l10n.planMyDayRoutineSkipInstanceAction),
       );
@@ -528,6 +536,62 @@ void main() {
       final captured = verify(() => planBloc.add(captureAny())).captured;
       expect(captured, isNotEmpty);
       expect(captured.last, isA<PlanMyDaySkipRoutineInstanceRequested>());
+    },
+  );
+
+  testWidgetsSafe(
+    'plan my day hides limit and over-capacity UI while still showing suggestions',
+    (tester) async {
+      final value = TestData.value(id: 'value-1', name: 'Health');
+      final task = TestData.task(
+        id: 'task-1',
+        name: 'Morning walk',
+        values: [value],
+      );
+      final state = buildReady(
+        valueGroups: [
+          PlanMyDayValueSuggestionGroup(
+            valueId: value.id,
+            value: value,
+            tasks: [task],
+            averageRating: 7.4,
+            trendDelta: -0.6,
+            hasRatings: true,
+            isTrendingDown: true,
+            isLowAverage: false,
+            visibleCount: 1,
+            expanded: true,
+          ),
+        ],
+        dailyLimit: 1,
+        overCapacity: true,
+      );
+      const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+      when(() => planBloc.state).thenReturn(state);
+      whenListen(planBloc, Stream.value(state), initialState: state);
+      when(() => gateBloc.state).thenReturn(gateState);
+      whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+      await tester.pumpWidgetWithBlocs(
+        providers: [
+          BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+          BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+        ],
+        child: RepositoryProvider<NowService>.value(
+          value: nowService,
+          child: PlanMyDayPage(onCloseRequested: () {}),
+        ),
+      );
+      await tester.pumpForStream();
+
+      final l10n = l10nFor(tester);
+      expect(find.text(l10n.planMyDayLimitLabel(1)), findsNothing);
+      expect(find.byTooltip(l10n.planMyDayDecreaseLimitTooltip), findsNothing);
+      expect(find.byTooltip(l10n.planMyDayIncreaseLimitTooltip), findsNothing);
+      expect(find.text(l10n.planMyDayOverCapacityMessage(0, 1)), findsNothing);
+      expect(find.text('Health'), findsOneWidget);
+      expect(find.text('Morning walk'), findsOneWidget);
     },
   );
 

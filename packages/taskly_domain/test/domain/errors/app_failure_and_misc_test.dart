@@ -22,7 +22,7 @@ void main() {
         const TimeoutFailure(),
         const RateLimitedFailure(),
         const StorageFailure(),
-      UnknownFailure(cause: StateError('x')),
+        UnknownFailure(cause: StateError('x')),
       ];
 
       for (final f in failures) {

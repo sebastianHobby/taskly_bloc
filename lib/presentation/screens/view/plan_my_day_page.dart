@@ -399,17 +399,10 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
           limitItems: isCompact,
           maxVisibleItems: maxVisibleItems,
         ),
-      if (!data.overCapacity && data.valueSuggestionGroups.isNotEmpty) ...[
+      if (data.valueSuggestionGroups.isNotEmpty) ...[
         SizedBox(height: tokens.spaceLg),
         _SuggestionsShelf(
           data: data,
-        ),
-      ],
-      if (data.overCapacity) ...[
-        SizedBox(height: tokens.spaceLg),
-        _OverCapacityCard(
-          count: data.plannedCount,
-          limit: data.dailyLimit,
         ),
       ],
     ];
@@ -546,42 +539,8 @@ class _PlanSummaryBar extends StatelessWidget {
               ),
             ),
           ),
-          _LimitStepper(limit: data.dailyLimit),
         ],
       ),
-    );
-  }
-}
-
-class _LimitStepper extends StatelessWidget {
-  const _LimitStepper({required this.limit});
-
-  final int limit;
-
-  @override
-  Widget build(BuildContext context) {
-    final bloc = context.read<PlanMyDayBloc>();
-    final l10n = context.l10n;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          tooltip: l10n.planMyDayDecreaseLimitTooltip,
-          onPressed: () => bloc.add(PlanMyDayDailyLimitChanged(limit - 1)),
-          icon: const Icon(Icons.remove_circle_outline),
-        ),
-        Text(
-          l10n.planMyDayLimitLabel(limit),
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        IconButton(
-          tooltip: l10n.planMyDayIncreaseLimitTooltip,
-          onPressed: () => bloc.add(PlanMyDayDailyLimitChanged(limit + 1)),
-          icon: const Icon(Icons.add_circle_outline),
-        ),
-      ],
     );
   }
 }
@@ -1033,45 +992,6 @@ class _NeedsRatingRow extends StatelessWidget {
   }
 }
 
-class _OverCapacityCard extends StatelessWidget {
-  const _OverCapacityCard({
-    required this.count,
-    required this.limit,
-  });
-
-  final int count;
-  final int limit;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final l10n = context.l10n;
-
-    return Container(
-      padding: EdgeInsets.all(tokens.spaceMd),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.warning_amber_rounded, color: scheme.error),
-          SizedBox(width: tokens.spaceSm),
-          Expanded(
-            child: Text(
-              l10n.planMyDayOverCapacityMessage(count, limit),
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _EmptyShelf extends StatelessWidget {
   const _EmptyShelf({
     required this.title,
@@ -1318,12 +1238,9 @@ TasklyRowSpec _buildRoutineRow(
 
 enum _ScheduledRoutineAction {
   skipInstance,
-  moreOptions,
-}
-
-enum _ScheduledRoutineMoreAction {
   skipPeriod,
   pauseUntil,
+  keepScheduled,
 }
 
 Future<void> _showScheduledRoutineDeselectActionSheet(
@@ -1331,6 +1248,7 @@ Future<void> _showScheduledRoutineDeselectActionSheet(
   required PlanMyDayRoutineItem item,
   required DateTime dayKeyUtc,
 }) async {
+  final skipPeriodType = _skipPeriodTypeFor(item.routine.periodType);
   final action = await showModalBottomSheet<_ScheduledRoutineAction>(
     context: context,
     showDragHandle: true,
@@ -1351,17 +1269,31 @@ Future<void> _showScheduledRoutineDeselectActionSheet(
                 sheetContext,
               ).pop(_ScheduledRoutineAction.skipInstance),
             ),
+            if (skipPeriodType != null)
+              ListTile(
+                leading: const Icon(Icons.event_busy_outlined),
+                title: Text(
+                  item.routine.periodType == RoutinePeriodType.month
+                      ? l10n.planMyDayRoutineSkipPeriodMonthAction
+                      : l10n.planMyDayRoutineSkipPeriodWeekAction,
+                ),
+                onTap: () => Navigator.of(
+                  sheetContext,
+                ).pop(_ScheduledRoutineAction.skipPeriod),
+              ),
             ListTile(
-              leading: const Icon(Icons.more_horiz_rounded),
-              title: Text(l10n.moreOptionsLabel),
+              leading: const Icon(Icons.pause_circle_outline),
+              title: Text(l10n.routinePauseLabel),
               onTap: () => Navigator.of(
                 sheetContext,
-              ).pop(_ScheduledRoutineAction.moreOptions),
+              ).pop(_ScheduledRoutineAction.pauseUntil),
             ),
             ListTile(
               leading: const Icon(Icons.close),
               title: Text(l10n.planMyDayRoutineKeepScheduledAction),
-              onTap: () => Navigator.of(sheetContext).pop(),
+              onTap: () => Navigator.of(
+                sheetContext,
+              ).pop(_ScheduledRoutineAction.keepScheduled),
             ),
           ],
         ),
@@ -1378,70 +1310,7 @@ Future<void> _showScheduledRoutineDeselectActionSheet(
           routineId: item.routine.id,
         ),
       );
-    case _ScheduledRoutineAction.moreOptions:
-      await _showScheduledRoutineMoreOptionsSheet(
-        context,
-        item: item,
-        dayKeyUtc: dayKeyUtc,
-      );
-    case null:
-      return;
-  }
-}
-
-Future<void> _showScheduledRoutineMoreOptionsSheet(
-  BuildContext context, {
-  required PlanMyDayRoutineItem item,
-  required DateTime dayKeyUtc,
-}) async {
-  final skipPeriodType = _skipPeriodTypeFor(item.routine.periodType);
-  final action = await showModalBottomSheet<_ScheduledRoutineMoreAction>(
-    context: context,
-    showDragHandle: true,
-    builder: (sheetContext) {
-      final l10n = sheetContext.l10n;
-      return SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: Text(l10n.planMyDayRoutineActionSheetTitle),
-              subtitle: Text(l10n.planMyDayRoutineActionSheetSubtitle),
-            ),
-            if (skipPeriodType != null)
-              ListTile(
-                leading: const Icon(Icons.event_busy_outlined),
-                title: Text(
-                  item.routine.periodType == RoutinePeriodType.month
-                      ? l10n.planMyDayRoutineSkipPeriodMonthAction
-                      : l10n.planMyDayRoutineSkipPeriodWeekAction,
-                ),
-                onTap: () => Navigator.of(
-                  sheetContext,
-                ).pop(_ScheduledRoutineMoreAction.skipPeriod),
-              ),
-            ListTile(
-              leading: const Icon(Icons.pause_circle_outline),
-              title: Text(l10n.routinePauseLabel),
-              onTap: () => Navigator.of(
-                sheetContext,
-              ).pop(_ScheduledRoutineMoreAction.pauseUntil),
-            ),
-            ListTile(
-              leading: const Icon(Icons.close),
-              title: Text(l10n.cancelLabel),
-              onTap: () => Navigator.of(sheetContext).pop(),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-
-  if (!context.mounted || action == null) return;
-  final bloc = context.read<PlanMyDayBloc>();
-  switch (action) {
-    case _ScheduledRoutineMoreAction.skipPeriod:
+    case _ScheduledRoutineAction.skipPeriod:
       if (skipPeriodType == null) return;
       bloc.add(
         PlanMyDaySkipRoutinePeriodRequested(
@@ -1450,7 +1319,7 @@ Future<void> _showScheduledRoutineMoreOptionsSheet(
           periodKeyUtc: item.snapshot.periodStartUtc,
         ),
       );
-    case _ScheduledRoutineMoreAction.pauseUntil:
+    case _ScheduledRoutineAction.pauseUntil:
       final choice = await showRescheduleChoiceSheet(
         context,
         title: context.l10n.routinePauseSheetTitle,
@@ -1487,6 +1356,9 @@ Future<void> _showScheduledRoutineMoreOptionsSheet(
             ),
           );
       }
+    case _ScheduledRoutineAction.keepScheduled:
+    case null:
+      return;
   }
 }
 

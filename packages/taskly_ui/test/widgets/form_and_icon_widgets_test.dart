@@ -91,6 +91,7 @@ void main() {
       );
 
       await tester.tap(find.text('Open'));
+      // ignore-pump-and-settle
       await tester.pumpAndSettle();
       expect(find.text('Pick icon'), findsOneWidget);
 
@@ -101,6 +102,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'home');
       await tester.pump();
       await tester.tap(find.byIcon(Icons.home));
+      // ignore-pump-and-settle
       await tester.pumpAndSettle();
 
       expect(selected, 'home');
