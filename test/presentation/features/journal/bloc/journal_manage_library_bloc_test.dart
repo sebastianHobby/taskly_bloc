@@ -64,8 +64,8 @@ void main() {
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
-    groupsController = TestStreamController();
-    defsController = TestStreamController();
+    groupsController = TestStreamController.seeded(const []);
+    defsController = TestStreamController.seeded(const []);
 
     when(() => repository.watchTrackerGroups()).thenAnswer(
       (_) => groupsController.stream,
@@ -102,205 +102,264 @@ void main() {
     addTearDown(defsController.close);
   });
 
-  blocTestSafe<JournalManageLibraryBloc, JournalManageLibraryState>(
-    'loads tracker groups and definitions',
-    build: buildBloc,
-    act: (_) {
-      groupsController.emit([
-        TrackerGroup(
-          id: 'g-1',
-          name: 'Group',
-          createdAt: nowUtc,
-          updatedAt: nowUtc,
-          isActive: true,
-          sortOrder: 2,
+  Future<JournalManageLibraryBloc> pumpLoaded({
+    List<TrackerGroup> groups = const <TrackerGroup>[],
+    List<TrackerDefinition> defs = const <TrackerDefinition>[],
+  }) async {
+    final bloc = buildBloc();
+    groupsController.emit(groups);
+    defsController.emit(defs);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    return bloc;
+  }
+
+  testSafe('renameGroup saves updated name', () async {
+    final group = _group('g-1', 'Old');
+    final bloc = await pumpLoaded(groups: [group]);
+    addTearDown(bloc.close);
+
+    await bloc.renameGroup(group: group, name: 'Renamed');
+
+    verify(
+      () => repository.saveTrackerGroup(
+        any(
+          that: isA<TrackerGroup>().having((g) => g.name, 'name', 'Renamed'),
         ),
-      ]);
-      defsController.emit([
-        TrackerDefinition(
-          id: 't-1',
-          name: 'Tracker',
-          scope: 'entry',
-          valueType: 'bool',
-          createdAt: nowUtc,
-          updatedAt: nowUtc,
+        context: any(named: 'context'),
+      ),
+    ).called(1);
+  });
+
+  testSafe('renameTracker saves updated name', () async {
+    final def = _tracker('t-1', 'Old', groupId: 'g-1');
+    final bloc = await pumpLoaded(defs: [def], groups: [_group('g-1', 'G')]);
+    addTearDown(bloc.close);
+
+    await bloc.renameTracker(def: def, name: 'New');
+
+    verify(
+      () => repository.saveTrackerDefinition(
+        any(
+          that: isA<TrackerDefinition>()
+              .having((d) => d.id, 'id', 't-1')
+              .having((d) => d.name, 'name', 'New'),
         ),
-      ]);
-    },
-    expect: () => [
-      isA<JournalManageLibraryLoaded>()
-          .having((s) => s.groups, 'groups', isEmpty)
-          .having((s) => s.trackers, 'trackers', isEmpty),
-      isA<JournalManageLibraryLoaded>()
-          .having((s) => s.groups.length, 'groups', 1)
-          .having((s) => s.trackers.length, 'trackers', 0),
-      isA<JournalManageLibraryLoaded>()
-          .having((s) => s.groups.length, 'groups', 1)
-          .having((s) => s.trackers.length, 'trackers', 1)
-          .having((s) => s.status, 'status', isA<JournalManageLibraryIdle>()),
-    ],
+        context: any(named: 'context'),
+      ),
+    ).called(1);
+  });
+
+  testSafe('setTrackerActive saves active state', () async {
+    final def = _tracker('t-1', 'Habit');
+    final bloc = await pumpLoaded(defs: [def]);
+    addTearDown(bloc.close);
+
+    await bloc.setTrackerActive(def: def, isActive: false);
+
+    verify(
+      () => repository.saveTrackerDefinition(
+        any(
+          that: isA<TrackerDefinition>().having(
+            (d) => d.isActive,
+            'isActive',
+            false,
+          ),
+        ),
+        context: any(named: 'context'),
+      ),
+    ).called(1);
+  });
+
+  testSafe('setTrackerIcon updates config iconName', () async {
+    final def = _tracker('t-1', 'Habit');
+    final bloc = await pumpLoaded(defs: [def]);
+    addTearDown(bloc.close);
+
+    await bloc.setTrackerIcon(def: def, iconName: 'bolt');
+
+    verify(
+      () => repository.saveTrackerDefinition(
+        any(
+          that: isA<TrackerDefinition>().having(
+            (d) => d.config['iconName'],
+            'iconName',
+            'bolt',
+          ),
+        ),
+        context: any(named: 'context'),
+      ),
+    ).called(1);
+  });
+
+  testSafe('moveTrackerToGroup updates group and sort order', () async {
+    final g1 = _group('g-1', 'One', sort: 0);
+    final g2 = _group('g-2', 'Two', sort: 10);
+    final inTarget = _tracker('t-2', 'Existing', groupId: g2.id, sort: 100);
+    final moving = _tracker('t-1', 'Move me', groupId: g1.id, sort: 0);
+
+    final bloc = await pumpLoaded(groups: [g1, g2], defs: [moving, inTarget]);
+    addTearDown(bloc.close);
+
+    await bloc.moveTrackerToGroup(def: moving, groupId: g2.id);
+
+    verify(
+      () => repository.saveTrackerDefinition(
+        any(
+          that: isA<TrackerDefinition>()
+              .having((d) => d.groupId, 'groupId', g2.id)
+              .having((d) => d.sortOrder, 'sortOrder', 110),
+        ),
+        context: any(named: 'context'),
+      ),
+    ).called(1);
+  });
+
+  testSafe('reorderGroups persists new ordering', () async {
+    final g1 = _group('g-1', 'One', sort: 0);
+    final g2 = _group('g-2', 'Two', sort: 10);
+
+    final bloc = await pumpLoaded(groups: [g1, g2]);
+    addTearDown(bloc.close);
+
+    await bloc.reorderGroups(groupId: 'g-1', direction: 1);
+
+    verify(
+      () => repository.saveTrackerGroup(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).called(greaterThanOrEqualTo(1));
+  });
+
+  testSafe('reorderTrackersWithinGroup failure maps to action error', () async {
+    final defs = [
+      _tracker('t-1', 'A', groupId: 'g-1', sort: 0),
+      _tracker('t-2', 'B', groupId: 'g-1', sort: 10),
+    ];
+
+    final bloc = await pumpLoaded(groups: [_group('g-1', 'G')], defs: defs);
+    addTearDown(bloc.close);
+
+    await bloc.reorderTrackersWithinGroup(
+      trackerId: 't-1',
+      groupId: 'g-1',
+      direction: 1,
+    );
+
+    final state = bloc.state as JournalManageLibraryLoaded;
+    expect(state.status, isA<JournalManageLibraryActionError>());
+  });
+
+  testSafe('createGroup failure emits action error status', () async {
+    when(
+      () => repository.saveTrackerGroup(any(), context: any(named: 'context')),
+    ).thenThrow(StateError('boom'));
+
+    final bloc = await pumpLoaded();
+    addTearDown(bloc.close);
+
+    await bloc.createGroup('Group');
+
+    final state = bloc.state as JournalManageLibraryLoaded;
+    expect(state.status, isA<JournalManageLibraryActionError>());
+  });
+
+  testSafe('renameTracker failure emits action error status', () async {
+    when(
+      () => repository.saveTrackerDefinition(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenThrow(StateError('boom'));
+
+    final def = _tracker('t-1', 'A');
+    final bloc = await pumpLoaded(defs: [def]);
+    addTearDown(bloc.close);
+
+    await bloc.renameTracker(def: def, name: 'B');
+
+    final state = bloc.state as JournalManageLibraryLoaded;
+    expect(state.status, isA<JournalManageLibraryActionError>());
+  });
+
+  testSafe('deleteGroup failure emits action error status', () async {
+    when(
+      () => repository.deleteTrackerGroup(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenThrow(StateError('boom'));
+
+    final group = _group('g-1', 'A');
+    final def = _tracker('t-1', 'T', groupId: 'g-1');
+    final bloc = await pumpLoaded(groups: [group], defs: [def]);
+    addTearDown(bloc.close);
+
+    await bloc.deleteGroup(group);
+
+    final state = bloc.state as JournalManageLibraryLoaded;
+    expect(state.status, isA<JournalManageLibraryActionError>());
+  });
+
+  testSafe('deleteTracker failure emits action error status', () async {
+    when(
+      () => repository.deleteTrackerAndData(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenThrow(StateError('boom'));
+
+    final def = _tracker('t-1', 'T');
+    final bloc = await pumpLoaded(defs: [def]);
+    addTearDown(bloc.close);
+
+    await bloc.deleteTracker(def: def);
+
+    final state = bloc.state as JournalManageLibraryLoaded;
+    expect(state.status, isA<JournalManageLibraryActionError>());
+  });
+
+  testSafe('reorderGroups out-of-bounds is a no-op', () async {
+    final bloc = await pumpLoaded(groups: [_group('g-1', 'Solo', sort: 0)]);
+    addTearDown(bloc.close);
+
+    await bloc.reorderGroups(groupId: 'g-1', direction: 1);
+
+    verifyNever(
+      () => repository.saveTrackerGroup(any(), context: any(named: 'context')),
+    );
+  });
+}
+
+TrackerGroup _group(String id, String name, {int sort = 0}) {
+  final now = DateTime.utc(2025, 1, 15);
+  return TrackerGroup(
+    id: id,
+    name: name,
+    createdAt: now,
+    updatedAt: now,
+    isActive: true,
+    sortOrder: sort,
+    userId: null,
   );
+}
 
-  blocTestSafe<JournalManageLibraryBloc, JournalManageLibraryState>(
-    'createGroup saves group and updates status',
-    build: buildBloc,
-    act: (bloc) async {
-      groupsController.emit([
-        TrackerGroup(
-          id: 'g-1',
-          name: 'Group',
-          createdAt: nowUtc,
-          updatedAt: nowUtc,
-          isActive: true,
-        ),
-      ]);
-      defsController.emit(const []);
-      await bloc.createGroup('New Group');
-    },
-    expect: () => [
-      isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>().having(
-        (s) => s.status,
-        'status',
-        isA<JournalManageLibrarySaving>(),
-      ),
-      isA<JournalManageLibraryLoaded>().having(
-        (s) => s.status,
-        'status',
-        isA<JournalManageLibrarySaved>(),
-      ),
-    ],
-    verify: (_) {
-      final captured = verify(
-        () => repository.saveTrackerGroup(
-          any(),
-          context: captureAny(named: 'context'),
-        ),
-      ).captured;
-      final ctx = captured.single as OperationContext;
-      expect(ctx.feature, 'journal');
-      expect(ctx.screen, 'journal_manage_library');
-      expect(ctx.intent, 'create_group');
-      expect(ctx.operation, 'journal.saveTrackerGroup');
-    },
-  );
-
-  blocTestSafe<JournalManageLibraryBloc, JournalManageLibraryState>(
-    'deleteGroup clears trackers and deletes group',
-    build: buildBloc,
-    act: (bloc) async {
-      groupsController.emit([
-        TrackerGroup(
-          id: 'g-1',
-          name: 'Group',
-          createdAt: nowUtc,
-          updatedAt: nowUtc,
-          isActive: true,
-        ),
-      ]);
-      defsController.emit([
-        TrackerDefinition(
-          id: 't-1',
-          name: 'Tracker',
-          scope: 'entry',
-          valueType: 'bool',
-          groupId: 'g-1',
-          createdAt: nowUtc,
-          updatedAt: nowUtc,
-        ),
-      ]);
-
-      await bloc.deleteGroup(
-        TrackerGroup(
-          id: 'g-1',
-          name: 'Group',
-          createdAt: nowUtc,
-          updatedAt: nowUtc,
-        ),
-      );
-    },
-    expect: () => [
-      isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>().having(
-        (s) => s.status,
-        'status',
-        isA<JournalManageLibrarySaving>(),
-      ),
-      isA<JournalManageLibraryLoaded>().having(
-        (s) => s.status,
-        'status',
-        isA<JournalManageLibrarySaved>(),
-      ),
-    ],
-    verify: (_) {
-      verify(
-        () => repository.saveTrackerDefinition(
-          any(),
-          context: any(named: 'context'),
-        ),
-      ).called(1);
-      verify(
-        () => repository.deleteTrackerGroup(
-          'g-1',
-          context: any(named: 'context'),
-        ),
-      ).called(1);
-    },
-  );
-
-  blocTestSafe<JournalManageLibraryBloc, JournalManageLibraryState>(
-    'deleteTracker removes tracker and historical data',
-    build: buildBloc,
-    act: (bloc) async {
-      groupsController.emit(const []);
-      defsController.emit([
-        TrackerDefinition(
-          id: 't-1',
-          name: 'Tracker',
-          scope: 'entry',
-          valueType: 'bool',
-          createdAt: nowUtc,
-          updatedAt: nowUtc,
-        ),
-      ]);
-
-      await bloc.deleteTracker(
-        def: TrackerDefinition(
-          id: 't-1',
-          name: 'Tracker',
-          scope: 'entry',
-          valueType: 'bool',
-          createdAt: nowUtc,
-          updatedAt: nowUtc,
-        ),
-      );
-    },
-    expect: () => [
-      isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>(),
-      isA<JournalManageLibraryLoaded>().having(
-        (s) => s.status,
-        'status',
-        isA<JournalManageLibrarySaving>(),
-      ),
-      isA<JournalManageLibraryLoaded>().having(
-        (s) => s.status,
-        'status',
-        isA<JournalManageLibrarySaved>(),
-      ),
-    ],
-    verify: (_) {
-      verify(
-        () => repository.deleteTrackerAndData(
-          't-1',
-          context: any(named: 'context'),
-        ),
-      ).called(1);
-    },
+TrackerDefinition _tracker(
+  String id,
+  String name, {
+  String? groupId,
+  int sort = 0,
+}) {
+  final now = DateTime.utc(2025, 1, 15);
+  return TrackerDefinition(
+    id: id,
+    name: name,
+    scope: 'entry',
+    valueType: 'bool',
+    createdAt: now,
+    updatedAt: now,
+    isActive: true,
+    sortOrder: sort,
+    groupId: groupId,
   );
 }

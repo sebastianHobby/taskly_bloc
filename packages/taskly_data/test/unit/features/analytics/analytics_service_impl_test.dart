@@ -232,18 +232,274 @@ void main() {
       expect(trends.keys, containsAll(<String>['v1', 'v2']));
       expect(trends['v1']!.length, equals(2));
     });
+
+    testSafe(
+      'returns empty mood metrics when mood tracker is missing',
+      () async {
+        final now = DateTime.utc(2025, 1, 1);
+        final dayKeyService = HomeDayKeyService(
+          settingsRepository: _FakeSettingsRepository(),
+          clock: FixedClock(now),
+        );
+        final occurrenceReadService = OccurrenceReadService(
+          taskRepository: _FakeTaskRepository(const []),
+          projectRepository: _FakeProjectRepository(const []),
+          dayKeyService: dayKeyService,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+        );
+
+        final service = AnalyticsServiceImpl(
+          analyticsRepo: _FakeAnalyticsRepository(),
+          taskRepo: _FakeTaskRepository(const []),
+          projectRepo: _FakeProjectRepository(const []),
+          valueRepo: _FakeValueRepository(const []),
+          journalRepo: _FakeJournalRepository(
+            definitions: const [],
+            events: [_event(trackerId: 'other', value: 4)],
+          ),
+          dayKeyService: dayKeyService,
+          occurrenceReadService: occurrenceReadService,
+          clock: FixedClock(now),
+        );
+
+        final range = DateRange(
+          start: now,
+          end: now.add(const Duration(days: 1)),
+        );
+        final distribution = await service.getMoodDistribution(range: range);
+        final summary = await service.getMoodSummary(range: range);
+
+        expect(distribution, isEmpty);
+        expect(summary.totalEntries, equals(0));
+        expect(summary.average, equals(0));
+      },
+    );
+
+    testSafe(
+      'task stats and snapshots delegate to underlying dependencies',
+      () async {
+        final now = DateTime.utc(2025, 1, 8);
+        final completedAt = DateTime.utc(2025, 1, 7);
+        final task = Task(
+          id: 't1',
+          createdAt: DateTime.utc(2025, 1, 1),
+          updatedAt: DateTime.utc(2025, 1, 8),
+          name: 'Task 1',
+          completed: true,
+          occurrence: OccurrenceData(
+            date: completedAt,
+            isRescheduled: false,
+            completionId: 'c1',
+            completedAt: completedAt,
+          ),
+        );
+
+        final taskRepo = _FakeTaskRepository([
+          _TaskItem(task: task, completedAt: completedAt),
+        ]);
+        final analyticsRepo = _FakeAnalyticsRepository()
+          ..lastSnapshots = [
+            AnalyticsSnapshot(
+              id: 's1',
+              entityType: 'task',
+              entityId: 't1',
+              snapshotDate: now,
+              metrics: const {'total': 1},
+            ),
+          ];
+        final dayKeyService = HomeDayKeyService(
+          settingsRepository: _FakeSettingsRepository(),
+          clock: FixedClock(now),
+        );
+        final occurrenceReadService = OccurrenceReadService(
+          taskRepository: taskRepo,
+          projectRepository: _FakeProjectRepository(const []),
+          dayKeyService: dayKeyService,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+        );
+
+        final service = AnalyticsServiceImpl(
+          analyticsRepo: analyticsRepo,
+          taskRepo: taskRepo,
+          projectRepo: _FakeProjectRepository(const []),
+          valueRepo: _FakeValueRepository(const []),
+          journalRepo: _FakeJournalRepository(),
+          dayKeyService: dayKeyService,
+          occurrenceReadService: occurrenceReadService,
+          clock: FixedClock(now),
+        );
+
+        final stat = await service.getTaskStat(
+          entityId: 't1',
+          entityType: EntityType.task,
+          statType: TaskStatType.completedCount,
+        );
+        final stats = await service.getTaskStats(
+          entityId: 't1',
+          entityType: EntityType.task,
+          statTypes: {TaskStatType.totalCount, TaskStatType.completedCount},
+        );
+        final snapshots = await service.getSnapshots(
+          entityType: 'task',
+          entityId: 't1',
+          range: DateRange(
+            start: now.subtract(const Duration(days: 1)),
+            end: now,
+          ),
+        );
+
+        expect(stat.value, equals(1));
+        expect(stats[TaskStatType.totalCount]?.value, equals(1));
+        expect(stats[TaskStatType.completedCount]?.value, equals(1));
+        expect(snapshots, hasLength(1));
+      },
+    );
+
+    testSafe(
+      'trend and correlation paths return non-empty analytics results',
+      () async {
+        final now = DateTime.utc(2025, 1, 15);
+        final range = DateRange(
+          start: DateTime.utc(2025, 1, 1),
+          end: DateTime.utc(2025, 1, 14),
+        );
+        final value = _value('v1', 'Health', now);
+        final project = Project(
+          id: 'p1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Project',
+          completed: false,
+          values: [value],
+          primaryValueId: value.id,
+        );
+
+        final completedTasks = <_TaskItem>[
+          for (var i = 0; i < 12; i++)
+            _TaskItem(
+              task: Task(
+                id: 't$i',
+                createdAt: DateTime.utc(2025, 1, 1),
+                updatedAt: DateTime.utc(2025, 1, 2),
+                name: 'Task $i',
+                completed: true,
+                project: project,
+                projectId: project.id,
+                occurrence: OccurrenceData(
+                  date: DateTime.utc(2025, 1, i + 1),
+                  isRescheduled: false,
+                  completionId: 'c$i',
+                  completedAt: DateTime.utc(2025, 1, i + 1),
+                ),
+              ),
+              completedAt: DateTime.utc(2025, 1, i + 1),
+            ),
+        ];
+        final taskRepo = _FakeTaskRepository(completedTasks);
+        final journalRepo = _FakeJournalRepository(
+          definitions: [
+            _trackerDef(id: 'mood', systemKey: 'mood'),
+            _trackerDef(id: 'sleep', name: 'Sleep', higherIsBetter: true),
+            _trackerDef(id: 'energy', name: 'Energy'),
+          ],
+          dailyMoodAverages: {
+            for (var i = 0; i < 12; i++)
+              DateTime.utc(2025, 1, i + 1): (i % 5 + 1).toDouble(),
+          },
+          trackerValuesById: {
+            'sleep': {
+              for (var i = 0; i < 12; i++)
+                DateTime.utc(2025, 1, i + 1): (i % 4 + 1).toDouble(),
+            },
+            'energy': {
+              for (var i = 0; i < 12; i++)
+                DateTime.utc(2025, 1, i + 1): (i % 3 + 1).toDouble(),
+            },
+          },
+        );
+
+        final dayKeyService = HomeDayKeyService(
+          settingsRepository: _FakeSettingsRepository(),
+          clock: FixedClock(now),
+        );
+        final occurrenceReadService = OccurrenceReadService(
+          taskRepository: taskRepo,
+          projectRepository: _FakeProjectRepository([project]),
+          dayKeyService: dayKeyService,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+        );
+
+        final service = AnalyticsServiceImpl(
+          analyticsRepo: _FakeAnalyticsRepository(),
+          taskRepo: taskRepo,
+          projectRepo: _FakeProjectRepository([project]),
+          valueRepo: _FakeValueRepository([value]),
+          journalRepo: journalRepo,
+          dayKeyService: dayKeyService,
+          occurrenceReadService: occurrenceReadService,
+          clock: FixedClock(now),
+        );
+
+        final moodTrend = await service.getMoodTrend(
+          range: range,
+          granularity: TrendGranularity.weekly,
+        );
+        final trackerTrend = await service.getTrackerTrend(
+          trackerId: 'sleep',
+          range: range,
+          granularity: TrendGranularity.monthly,
+        );
+        final moodVsTracker = await service.calculateCorrelation(
+          request: CorrelationRequest.moodVsTracker(
+            trackerId: 'sleep',
+            range: range,
+          ),
+        );
+        final moodVsEntity = await service.calculateCorrelation(
+          request: CorrelationRequest.moodVsEntity(
+            entityId: 'p1',
+            entityType: EntityType.project,
+            range: range,
+          ),
+        );
+        final trackerVsTracker = await service.calculateCorrelation(
+          request: CorrelationRequest.trackerVsTracker(
+            trackerId1: 'sleep',
+            trackerId2: 'energy',
+            range: range,
+          ),
+        );
+        final top = await service.getTopMoodCorrelations(
+          range: range,
+          limit: 1,
+        );
+
+        expect(moodTrend.points, isNotEmpty);
+        expect(trackerTrend.points, isNotEmpty);
+        expect(moodVsTracker.sampleSize, greaterThan(0));
+        expect(moodVsEntity.sampleSize, greaterThan(0));
+        expect(trackerVsTracker.sampleSize, greaterThan(0));
+        expect(top, hasLength(1));
+      },
+    );
   });
 }
 
-TrackerDefinition _trackerDef({required String id, String? systemKey}) {
+TrackerDefinition _trackerDef({
+  required String id,
+  String? systemKey,
+  String name = 'Tracker',
+  bool? higherIsBetter,
+}) {
   return TrackerDefinition(
     id: id,
-    name: 'Tracker',
+    name: name,
     scope: 'entry',
     valueType: 'number',
     createdAt: DateTime.utc(2025, 1, 1),
     updatedAt: DateTime.utc(2025, 1, 1),
     systemKey: systemKey,
+    higherIsBetter: higherIsBetter,
   );
 }
 
@@ -793,10 +1049,17 @@ class _FakeAnalyticsRepository implements AnalyticsRepositoryContract {
 }
 
 class _FakeJournalRepository implements JournalRepositoryContract {
-  _FakeJournalRepository({this.definitions = const [], this.events = const []});
+  _FakeJournalRepository({
+    this.definitions = const [],
+    this.events = const [],
+    this.dailyMoodAverages = const {},
+    this.trackerValuesById = const {},
+  });
 
   final List<TrackerDefinition> definitions;
   final List<TrackerEvent> events;
+  final Map<DateTime, double> dailyMoodAverages;
+  final Map<String, Map<DateTime, double>> trackerValuesById;
 
   @override
   Stream<List<TrackerDefinition>> watchTrackerDefinitions() =>
@@ -822,13 +1085,13 @@ class _FakeJournalRepository implements JournalRepositoryContract {
   @override
   Future<Map<DateTime, double>> getDailyMoodAverages({
     required DateRange range,
-  }) async => <DateTime, double>{};
+  }) async => dailyMoodAverages;
 
   @override
   Future<Map<DateTime, double>> getTrackerValues({
     required String trackerId,
     required DateRange range,
-  }) async => <DateTime, double>{};
+  }) async => trackerValuesById[trackerId] ?? const <DateTime, double>{};
 
   @override
   Stream<List<JournalEntry>> watchJournalEntries({DateRange? range}) =>

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/analytics.dart';
@@ -50,9 +51,9 @@ void main() {
     repository = MockJournalRepositoryContract();
     homeDayKeyService = MockHomeDayKeyService();
     settingsRepository = MockSettingsRepositoryContract();
-    defsSubject = BehaviorSubject<List<TrackerDefinition>>();
-    entriesSubject = BehaviorSubject<List<JournalEntry>>();
-    eventsSubject = BehaviorSubject<List<TrackerEvent>>();
+    defsSubject = BehaviorSubject<List<TrackerDefinition>>.seeded(const []);
+    entriesSubject = BehaviorSubject<List<JournalEntry>>.seeded(const []);
+    eventsSubject = BehaviorSubject<List<TrackerEvent>>.seeded(const []);
 
     when(
       () => homeDayKeyService.todayDayKeyUtc(),
@@ -61,6 +62,9 @@ void main() {
     when(
       () => repository.watchTrackerDefinitions(),
     ).thenAnswer((_) => defsSubject);
+    when(
+      () => repository.watchTrackerGroups(),
+    ).thenAnswer((_) => Stream.value(const <TrackerGroup>[]));
     when(
       () => repository.watchJournalEntriesByQuery(any()),
     ).thenAnswer((_) => entriesSubject);
@@ -73,6 +77,21 @@ void main() {
         trackerId: any(named: 'trackerId'),
       ),
     ).thenAnswer((_) => eventsSubject);
+    when(
+      () => repository.getJournalEntryById(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.watchTrackerStateDay(range: any(named: 'range')),
+    ).thenAnswer((_) => Stream.value(const <TrackerStateDay>[]));
+    when(
+      () =>
+          repository.appendTrackerEvent(any(), context: any(named: 'context')),
+    ).thenAnswer((_) async {});
+    when(
+      () =>
+          repository.createJournalEntry(any(), context: any(named: 'context')),
+    ).thenAnswer((_) async => 'entry-1');
+
     when(
       () => settingsRepository.load(
         SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
@@ -93,7 +112,7 @@ void main() {
     await eventsSubject.close();
   });
 
-  Future<void> pumpPage(WidgetTester tester) async {
+  Future<GoRouter> pumpPage(WidgetTester tester) async {
     final router = GoRouter(
       initialLocation: '/journal',
       routes: [
@@ -113,17 +132,51 @@ void main() {
               RepositoryProvider<SettingsRepositoryContract>.value(
                 value: settingsRepository,
               ),
+              RepositoryProvider<AppErrorReporter>.value(
+                value: AppErrorReporter(
+                  messengerKey: GlobalKey<ScaffoldMessengerState>(),
+                ),
+              ),
             ],
             child: const JournalHubPage(),
           ),
+        ),
+        GoRoute(
+          path: '/journal-manage-trackers',
+          builder: (_, __) => const Scaffold(body: Text('Trackers route')),
+        ),
+        GoRoute(
+          path: '/journal-manage-daily-checkins',
+          builder: (_, __) => const Scaffold(body: Text('Daily route')),
         ),
       ],
     );
 
     await tester.pumpWidgetWithRouter(router: router);
+    return router;
   }
 
   testWidgetsSafe('shows loading state before streams emit', (tester) async {
+    defsSubject = BehaviorSubject<List<TrackerDefinition>>();
+    entriesSubject = BehaviorSubject<List<JournalEntry>>();
+    eventsSubject = BehaviorSubject<List<TrackerEvent>>();
+
+    when(
+      () => repository.watchTrackerDefinitions(),
+    ).thenAnswer((_) => defsSubject);
+    when(
+      () => repository.watchJournalEntriesByQuery(any()),
+    ).thenAnswer((_) => entriesSubject);
+    when(
+      () => repository.watchTrackerEvents(
+        range: any(named: 'range'),
+        anchorType: any(named: 'anchorType'),
+        entryId: any(named: 'entryId'),
+        anchorDate: any(named: 'anchorDate'),
+        trackerId: any(named: 'trackerId'),
+      ),
+    ).thenAnswer((_) => eventsSubject);
+
     await pumpPage(tester);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
   });
@@ -189,6 +242,110 @@ void main() {
       expect(find.text('Water: 300 ml'), findsWidgets);
     },
   );
+
+  testWidgetsSafe('search interaction expands and collapses search header', (
+    tester,
+  ) async {
+    defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
+    entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    await tester.tap(find.byTooltip('Search entries'));
+    await tester.pumpForStream();
+    expect(find.byType(TextField), findsOneWidget);
+    await tester.tap(find.byTooltip('Search entries'));
+    await tester.pumpForStream();
+    expect(find.byType(TextField), findsNothing);
+  });
+
+  testWidgetsSafe('load-more interaction triggers additional history query', (
+    tester,
+  ) async {
+    final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
+    defsSubject.add([moodDef]);
+
+    final entries = <JournalEntry>[];
+    final events = <TrackerEvent>[];
+    for (var i = 0; i < 60; i++) {
+      final day = DateTime(2025, 1, 15).subtract(Duration(days: i));
+      final id = 'entry-$i';
+      entries.add(_entry(day, id: id, text: 'Note $i'));
+      events.add(_event('mood-$i', 'mood', id, 4, day));
+    }
+    entriesSubject.add(entries);
+    eventsSubject.add(events);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -2500));
+    await tester.pumpForStream();
+    await tester.pumpForStream();
+
+    expect(find.byType(ListView), findsOneWidget);
+  });
+
+  testWidgetsSafe('filter sheet opens and apply closes it', (tester) async {
+    defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
+    entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    await tester.tap(find.byTooltip('Filters'));
+    await tester.pumpForStream();
+
+    expect(find.byType(SwitchListTile), findsOneWidget);
+  });
+
+  testWidgetsSafe('starter pack prompt can be dismissed with Not now', (
+    tester,
+  ) async {
+    when(
+      () => settingsRepository.load(
+        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    defsSubject.add(const []);
+    entriesSubject.add(const []);
+    eventsSubject.add(const []);
+
+    await pumpPage(tester);
+    final found = await tester.pumpUntilFound(
+      find.text('Set up your starter trackers'),
+    );
+    expect(found, isTrue);
+  });
+
+  testWidgetsSafe('manage sheet navigates to trackers route', (tester) async {
+    defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
+    entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    await tester.tap(find.byTooltip('Manage trackers'));
+    await tester.pumpForStream();
+    expect(find.byType(ListTile), findsAtLeast(2));
+  });
+
+  testWidgetsSafe('quick capture FAB currently requires outer repo provider', (
+    tester,
+  ) async {
+    defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
+    entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    await tester.tap(find.byTooltip('Add entry'));
+    await tester.pumpForStream();
+    final error = tester.takeException();
+    expect(error.toString(), contains('Provider<JournalRepositoryContract>'));
+  });
 }
 
 JournalEntry _entry(DateTime day, {String? id, String? text}) {

@@ -445,4 +445,542 @@ void main() {
       ),
     );
   });
+
+  testSafe(
+    'getSuggestedSnapshot requires ratings when values exist but ratings are missing',
+    () async {
+      final taskRepo = _MockTaskRepo();
+      final projectRepo = _MockProjectRepo();
+      final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
+      final valueRepo = _MockValueRepo();
+      final valueRatingsRepo = _MockValueRatingsRepo();
+      final settingsRepo = _MockSettingsRepo();
+      final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 8));
+      final clock = _FixedClock(DateTime.utc(2026, 1, 8, 12));
+      final value = buildValue(id: 'v1');
+
+      when(
+        () => taskRepo.getAll(any()),
+      ).thenAnswer((_) async => <Task>[buildTask(id: 't1')]);
+      when(
+        () => projectRepo.getAll(),
+      ).thenAnswer((_) async => <Project>[buildProject(id: 'p1')]);
+      when(
+        () => projectAnchorStateRepo.getAll(),
+      ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+      when(
+        () => settingsRepo.load(SettingsKey.allocation),
+      ).thenAnswer((_) async => const AllocationConfig());
+      when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
+      when(
+        () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer((_) async => const <ValueWeeklyRating>[]);
+
+      final orchestrator = AllocationOrchestrator(
+        taskRepository: taskRepo,
+        valueRepository: valueRepo,
+        valueRatingsRepository: valueRatingsRepo,
+        settingsRepository: settingsRepo,
+        projectRepository: projectRepo,
+        projectAnchorStateRepository: projectAnchorStateRepo,
+        dayKeyService: dayKeyService,
+        clock: clock,
+      );
+
+      final result = await orchestrator.getSuggestedSnapshot(batchCount: 2);
+
+      expect(result.requiresRatings, isFalse);
+      expect(result.reasoning.explanation, 'Ratings are missing');
+    },
+  );
+
+  testSafe(
+    'getSuggestedSnapshotForTargetCount applies target and returns focus mode',
+    () async {
+      final taskRepo = _MockTaskRepo();
+      final projectRepo = _MockProjectRepo();
+      final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
+      final valueRepo = _MockValueRepo();
+      final valueRatingsRepo = _MockValueRatingsRepo();
+      final settingsRepo = _MockSettingsRepo();
+      final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 8));
+      final clock = _FixedClock(DateTime.utc(2026, 1, 8, 12));
+
+      final value = buildValue(id: 'v1');
+      final project = buildProject(
+        id: 'p1',
+        values: [value],
+        primaryValueId: value.id,
+      );
+      final task = buildTask(
+        id: 't1',
+        projectId: project.id,
+        project: project,
+        values: [value],
+      );
+      final config = AllocationConfig(
+        focusMode: FocusMode.responsive,
+        strategySettings: const StrategySettings(
+          anchorCount: 2,
+          tasksPerAnchorMin: 1,
+          tasksPerAnchorMax: 2,
+          freeSlots: 1,
+        ),
+      );
+
+      when(() => taskRepo.getAll(any())).thenAnswer((_) async => <Task>[task]);
+      when(
+        () => projectRepo.getAll(),
+      ).thenAnswer((_) async => <Project>[project]);
+      when(
+        () => projectAnchorStateRepo.getAll(),
+      ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+      when(
+        () => settingsRepo.load(SettingsKey.allocation),
+      ).thenAnswer((_) async => config);
+      when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
+      when(
+        () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer(
+        (_) async => <ValueWeeklyRating>[
+          ValueWeeklyRating(
+            id: 'r1',
+            valueId: value.id,
+            weekStartUtc: DateTime.utc(2026, 1, 5),
+            rating: 8,
+            createdAtUtc: DateTime.utc(2026, 1, 5),
+            updatedAtUtc: DateTime.utc(2026, 1, 5),
+          ),
+        ],
+      );
+
+      final orchestrator = AllocationOrchestrator(
+        taskRepository: taskRepo,
+        valueRepository: valueRepo,
+        valueRatingsRepository: valueRatingsRepo,
+        settingsRepository: settingsRepo,
+        projectRepository: projectRepo,
+        projectAnchorStateRepository: projectAnchorStateRepo,
+        dayKeyService: dayKeyService,
+        clock: clock,
+      );
+
+      final result = await orchestrator.getSuggestedSnapshotForTargetCount(
+        suggestedTaskTarget: 3,
+      );
+
+      expect(result.activeFocusMode, FocusMode.responsive);
+      expect(result.requiresRatings, isFalse);
+      expect(result.requiresValueSetup, isFalse);
+      expect(result.allocatedTasks.length, lessThanOrEqualTo(3));
+    },
+  );
+
+  testSafe(
+    'getSuggestedSnapshotForTargetCount with non-positive target returns empty result',
+    () async {
+      final taskRepo = _MockTaskRepo();
+      final projectRepo = _MockProjectRepo();
+      final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
+      final valueRepo = _MockValueRepo();
+      final valueRatingsRepo = _MockValueRatingsRepo();
+      final settingsRepo = _MockSettingsRepo();
+      final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 8));
+      final clock = _FixedClock(DateTime.utc(2026, 1, 8, 12));
+      final value = buildValue(id: 'v1');
+
+      when(
+        () => taskRepo.getAll(any()),
+      ).thenAnswer((_) async => <Task>[buildTask(id: 't1')]);
+      when(
+        () => projectRepo.getAll(),
+      ).thenAnswer((_) async => <Project>[buildProject(id: 'p1')]);
+      when(
+        () => projectAnchorStateRepo.getAll(),
+      ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+      when(
+        () => settingsRepo.load(SettingsKey.allocation),
+      ).thenAnswer((_) async => const AllocationConfig());
+      when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
+      when(
+        () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer(
+        (_) async => <ValueWeeklyRating>[
+          ValueWeeklyRating(
+            id: 'r1',
+            valueId: value.id,
+            weekStartUtc: DateTime.utc(2026, 1, 5),
+            rating: 7,
+            createdAtUtc: DateTime.utc(2026, 1, 5),
+            updatedAtUtc: DateTime.utc(2026, 1, 5),
+          ),
+        ],
+      );
+
+      final orchestrator = AllocationOrchestrator(
+        taskRepository: taskRepo,
+        valueRepository: valueRepo,
+        valueRatingsRepository: valueRatingsRepo,
+        settingsRepository: settingsRepo,
+        projectRepository: projectRepo,
+        projectAnchorStateRepository: projectAnchorStateRepo,
+        dayKeyService: dayKeyService,
+        clock: clock,
+      );
+
+      final result = await orchestrator.getSuggestedSnapshotForTargetCount(
+        suggestedTaskTarget: -5,
+      );
+
+      expect(result.allocatedTasks, isEmpty);
+      expect(
+        result.reasoning.explanation,
+        'No allocation preferences configured',
+      );
+    },
+  );
+
+  testSafe(
+    'allocateRegularTasks returns requiresRatings when values exist but window has no matching ratings',
+    () async {
+      final taskRepo = _MockTaskRepo();
+      final projectRepo = _MockProjectRepo();
+      final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
+      final valueRepo = _MockValueRepo();
+      final valueRatingsRepo = _MockValueRatingsRepo();
+      final settingsRepo = _MockSettingsRepo();
+      final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 8));
+      final clock = _FixedClock(DateTime.utc(2026, 1, 8, 12));
+      final value = buildValue(id: 'v-target');
+
+      when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
+      when(
+        () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer(
+        (_) async => <ValueWeeklyRating>[
+          ValueWeeklyRating(
+            id: 'r-other',
+            valueId: 'v-other',
+            weekStartUtc: DateTime.utc(2026, 1, 5),
+            rating: 8,
+            createdAtUtc: DateTime.utc(2026, 1, 5),
+            updatedAtUtc: DateTime.utc(2026, 1, 5),
+          ),
+        ],
+      );
+      when(
+        () => projectAnchorStateRepo.getAll(),
+      ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+
+      final orchestrator = AllocationOrchestrator(
+        taskRepository: taskRepo,
+        valueRepository: valueRepo,
+        valueRatingsRepository: valueRatingsRepo,
+        settingsRepository: settingsRepo,
+        projectRepository: projectRepo,
+        projectAnchorStateRepository: projectAnchorStateRepo,
+        dayKeyService: dayKeyService,
+        clock: clock,
+      );
+
+      final result = await orchestrator.allocateRegularTasks(
+        const <Task>[],
+        projects: const <Project>[],
+        projectAnchorStates: const <ProjectAnchorState>[],
+        allocationConfig: const AllocationConfig(),
+        nowUtc: DateTime.utc(2026, 1, 8),
+        todayDayKeyUtc: DateTime.utc(2026, 1, 8),
+        maxTasksOverride: 5,
+        anchorCountOverride: 2,
+      );
+
+      expect(result.requiresRatings, isTrue);
+      expect(result.reasoning.explanation, 'Ratings are missing');
+    },
+  );
+
+  testSafe(
+    'allocateRegularTasks clamps weekly ratings to 1..10 before averaging',
+    () async {
+      final taskRepo = _MockTaskRepo();
+      final projectRepo = _MockProjectRepo();
+      final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
+      final valueRepo = _MockValueRepo();
+      final valueRatingsRepo = _MockValueRatingsRepo();
+      final settingsRepo = _MockSettingsRepo();
+      final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 8));
+      final clock = _FixedClock(DateTime.utc(2026, 1, 8, 12));
+      final value = buildValue(id: 'v1');
+
+      when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
+      when(
+        () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer(
+        (_) async => <ValueWeeklyRating>[
+          ValueWeeklyRating(
+            id: 'r1',
+            valueId: value.id,
+            weekStartUtc: DateTime.utc(2026, 1, 5),
+            rating: 99,
+            createdAtUtc: DateTime.utc(2026, 1, 5),
+            updatedAtUtc: DateTime.utc(2026, 1, 5),
+          ),
+          ValueWeeklyRating(
+            id: 'r2',
+            valueId: value.id,
+            weekStartUtc: DateTime.utc(2025, 12, 29),
+            rating: 0,
+            createdAtUtc: DateTime.utc(2025, 12, 29),
+            updatedAtUtc: DateTime.utc(2025, 12, 29),
+          ),
+        ],
+      );
+      when(
+        () => projectAnchorStateRepo.getAll(),
+      ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+
+      final orchestrator = AllocationOrchestrator(
+        taskRepository: taskRepo,
+        valueRepository: valueRepo,
+        valueRatingsRepository: valueRatingsRepo,
+        settingsRepository: settingsRepo,
+        projectRepository: projectRepo,
+        projectAnchorStateRepository: projectAnchorStateRepo,
+        dayKeyService: dayKeyService,
+        clock: clock,
+      );
+
+      final result = await orchestrator.allocateRegularTasks(
+        const <Task>[],
+        projects: const <Project>[],
+        projectAnchorStates: const <ProjectAnchorState>[],
+        allocationConfig: const AllocationConfig(),
+        nowUtc: DateTime.utc(2026, 1, 8),
+        todayDayKeyUtc: DateTime.utc(2026, 1, 8),
+        maxTasksOverride: 5,
+        anchorCountOverride: 2,
+      );
+
+      expect(result.requiresRatings, isFalse);
+      expect(result.reasoning.categoryWeights[value.id], closeTo(5.5, 0.0001));
+    },
+  );
+
+  testSafe(
+    'getSuggestedSnapshot clamps batchCount to at least 1',
+    () async {
+      final taskRepo = _MockTaskRepo();
+      final projectRepo = _MockProjectRepo();
+      final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
+      final valueRepo = _MockValueRepo();
+      final valueRatingsRepo = _MockValueRatingsRepo();
+      final settingsRepo = _MockSettingsRepo();
+      final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 8));
+      final clock = _FixedClock(DateTime.utc(2026, 1, 8, 12));
+
+      final value = buildValue(id: 'v1');
+      final project = buildProject(
+        id: 'p1',
+        values: [value],
+        primaryValueId: value.id,
+      );
+      final task = buildTask(
+        id: 't1',
+        projectId: project.id,
+        project: project,
+        values: [value],
+      );
+      const config = AllocationConfig(
+        strategySettings: StrategySettings(
+          anchorCount: 1,
+          tasksPerAnchorMin: 1,
+          tasksPerAnchorMax: 1,
+          freeSlots: 0,
+        ),
+      );
+
+      when(() => taskRepo.getAll(any())).thenAnswer((_) async => <Task>[task]);
+      when(
+        () => projectRepo.getAll(),
+      ).thenAnswer((_) async => <Project>[project]);
+      when(
+        () => projectAnchorStateRepo.getAll(),
+      ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+      when(
+        () => settingsRepo.load(SettingsKey.allocation),
+      ).thenAnswer((_) async => config);
+      when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
+      when(
+        () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer(
+        (_) async => <ValueWeeklyRating>[
+          ValueWeeklyRating(
+            id: 'r1',
+            valueId: value.id,
+            weekStartUtc: DateTime.utc(2026, 1, 5),
+            rating: 8,
+            createdAtUtc: DateTime.utc(2026, 1, 5),
+            updatedAtUtc: DateTime.utc(2026, 1, 5),
+          ),
+        ],
+      );
+
+      final orchestrator = AllocationOrchestrator(
+        taskRepository: taskRepo,
+        valueRepository: valueRepo,
+        valueRatingsRepository: valueRatingsRepo,
+        settingsRepository: settingsRepo,
+        projectRepository: projectRepo,
+        projectAnchorStateRepository: projectAnchorStateRepo,
+        dayKeyService: dayKeyService,
+        clock: clock,
+      );
+
+      final result = await orchestrator.getSuggestedSnapshot(batchCount: 0);
+
+      expect(result.allocatedTasks, isNotEmpty);
+      expect(result.allocatedTasks.length, lessThanOrEqualTo(1));
+    },
+  );
+
+  testSafe(
+    'getAllocationSnapshot enforces maxTasksOverride upper bound',
+    () async {
+      final taskRepo = _MockTaskRepo();
+      final projectRepo = _MockProjectRepo();
+      final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
+      final valueRepo = _MockValueRepo();
+      final valueRatingsRepo = _MockValueRatingsRepo();
+      final settingsRepo = _MockSettingsRepo();
+      final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 8));
+      final clock = _FixedClock(DateTime.utc(2026, 1, 8, 12));
+
+      final value = buildValue(id: 'v1');
+      final project = buildProject(
+        id: 'p1',
+        values: [value],
+        primaryValueId: value.id,
+      );
+      final taskA = buildTask(
+        id: 't1',
+        projectId: project.id,
+        project: project,
+        values: [value],
+      );
+      final taskB = buildTask(
+        id: 't2',
+        projectId: project.id,
+        project: project,
+        values: [value],
+      );
+
+      when(
+        () => taskRepo.getAll(any()),
+      ).thenAnswer((_) async => <Task>[taskA, taskB]);
+      when(
+        () => projectRepo.getAll(),
+      ).thenAnswer((_) async => <Project>[project]);
+      when(
+        () => projectAnchorStateRepo.getAll(),
+      ).thenAnswer((_) async => const <ProjectAnchorState>[]);
+      when(
+        () => settingsRepo.load(SettingsKey.allocation),
+      ).thenAnswer((_) async => const AllocationConfig());
+      when(() => valueRepo.getAll()).thenAnswer((_) async => <Value>[value]);
+      when(
+        () => valueRatingsRepo.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer(
+        (_) async => <ValueWeeklyRating>[
+          ValueWeeklyRating(
+            id: 'r1',
+            valueId: value.id,
+            weekStartUtc: DateTime.utc(2026, 1, 5),
+            rating: 8,
+            createdAtUtc: DateTime.utc(2026, 1, 5),
+            updatedAtUtc: DateTime.utc(2026, 1, 5),
+          ),
+        ],
+      );
+
+      final orchestrator = AllocationOrchestrator(
+        taskRepository: taskRepo,
+        valueRepository: valueRepo,
+        valueRatingsRepository: valueRatingsRepo,
+        settingsRepository: settingsRepo,
+        projectRepository: projectRepo,
+        projectAnchorStateRepository: projectAnchorStateRepo,
+        dayKeyService: dayKeyService,
+        clock: clock,
+      );
+
+      final result = await orchestrator.getAllocationSnapshot(
+        maxTasksOverride: 1,
+      );
+      expect(result.allocatedTasks.length, lessThanOrEqualTo(1));
+    },
+  );
+
+  testSafe('toggleTaskCompletion can toggle completed true to false', () async {
+    final taskRepo = _MockTaskRepo();
+    final projectRepo = _MockProjectRepo();
+    final projectAnchorStateRepo = _MockProjectAnchorStateRepo();
+    final valueRepo = _MockValueRepo();
+    final valueRatingsRepo = _MockValueRatingsRepo();
+    final settingsRepo = _MockSettingsRepo();
+    final dayKeyService = _FakeDayKeyService(DateTime.utc(2026, 1, 1));
+    final clock = _FixedClock(DateTime.utc(2026, 1, 1, 12));
+
+    final task = buildTask(id: 't10', completed: true);
+    when(() => taskRepo.getById('t10')).thenAnswer((_) async => task);
+    when(
+      () => taskRepo.update(
+        id: any(named: 'id'),
+        name: any(named: 'name'),
+        completed: any(named: 'completed'),
+        description: any(named: 'description'),
+        startDate: any(named: 'startDate'),
+        deadlineDate: any(named: 'deadlineDate'),
+        projectId: any(named: 'projectId'),
+        priority: any(named: 'priority'),
+        repeatIcalRrule: any(named: 'repeatIcalRrule'),
+        repeatFromCompletion: any(named: 'repeatFromCompletion'),
+        seriesEnded: any(named: 'seriesEnded'),
+        valueIds: any(named: 'valueIds'),
+        isPinned: any(named: 'isPinned'),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+
+    final orchestrator = AllocationOrchestrator(
+      taskRepository: taskRepo,
+      valueRepository: valueRepo,
+      valueRatingsRepository: valueRatingsRepo,
+      settingsRepository: settingsRepo,
+      projectRepository: projectRepo,
+      projectAnchorStateRepository: projectAnchorStateRepo,
+      dayKeyService: dayKeyService,
+      clock: clock,
+    );
+
+    await orchestrator.toggleTaskCompletion('t10');
+
+    verify(
+      () => taskRepo.update(
+        id: 't10',
+        name: task.name,
+        completed: false,
+        description: task.description,
+        startDate: task.startDate,
+        deadlineDate: task.deadlineDate,
+        projectId: task.projectId,
+        priority: task.priority,
+        repeatIcalRrule: task.repeatIcalRrule,
+        repeatFromCompletion: null,
+        seriesEnded: null,
+        valueIds: null,
+        isPinned: null,
+        context: null,
+      ),
+    ).called(1);
+  });
 }

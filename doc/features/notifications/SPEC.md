@@ -26,6 +26,8 @@ Defines local reminder and notification planning behavior, including Plan My Day
   - remove reminder.
 - Task reminder delivery resolves recurrence `Before due` reminders against the
   next active occurrence only.
+- `At date/time` reminders are fixed absolute timestamps and do not shift with
+  recurrence occurrences.
 
 ## Testing minimums
 

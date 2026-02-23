@@ -150,4 +150,22 @@ final class TaskValidators {
         };
     }
   }
+
+  static Map<FieldKey, List<ValidationError>> recurrenceShape({
+    required String? repeatIcalRrule,
+    required DateTime? startDate,
+  }) {
+    final hasRecurrence = (repeatIcalRrule ?? '').trim().isNotEmpty;
+    if (!hasRecurrence || startDate != null) return const {};
+
+    const errors = [
+      ValidationError(
+        code: 'required',
+        messageKey: 'validationRequired',
+      ),
+    ];
+    return {
+      TaskFieldKeys.startDate: errors,
+    };
+  }
 }

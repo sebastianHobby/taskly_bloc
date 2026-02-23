@@ -273,6 +273,44 @@ void main() {
 
       expect(rule.applies(t, today), isTrue);
     });
+
+    testSafe('relative returns false when params are missing', () async {
+      final t = task(deadlineDate: DateTime.utc(2026, 1, 20));
+      final rule = DateRule(
+        field: DateRuleField.deadlineDate,
+        operator: DateRuleOperator.relative,
+        relativeDays: 1,
+      );
+      expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isFalse);
+    });
+
+    testSafe('relative supports before/after/onOrAfter', () async {
+      final today = DateTime.utc(2026, 1, 18);
+      final target = task(deadlineDate: DateTime.utc(2026, 1, 20));
+
+      final beforeRule = DateRule(
+        field: DateRuleField.deadlineDate,
+        operator: DateRuleOperator.relative,
+        relativeComparison: RelativeComparison.before,
+        relativeDays: 3,
+      );
+      final afterRule = DateRule(
+        field: DateRuleField.deadlineDate,
+        operator: DateRuleOperator.relative,
+        relativeComparison: RelativeComparison.after,
+        relativeDays: 1,
+      );
+      final onOrAfterRule = DateRule(
+        field: DateRuleField.deadlineDate,
+        operator: DateRuleOperator.relative,
+        relativeComparison: RelativeComparison.onOrAfter,
+        relativeDays: 2,
+      );
+
+      expect(beforeRule.applies(target, today), isTrue);
+      expect(afterRule.applies(target, today), isTrue);
+      expect(onOrAfterRule.applies(target, today), isTrue);
+    });
   });
 
   group('BooleanRule', () {
@@ -294,6 +332,16 @@ void main() {
       );
 
       expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isTrue);
+    });
+
+    testSafe('toJson/fromJson roundtrip and validate is empty', () async {
+      const rule = BooleanRule(
+        field: BooleanRuleField.completed,
+        operator: BooleanRuleOperator.isFalse,
+      );
+      final decoded = TaskRule.fromJson(rule.toJson());
+      expect(decoded, equals(rule));
+      expect(rule.validate(), isEmpty);
     });
   });
 
@@ -392,6 +440,32 @@ void main() {
       expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isTrue);
       expect(rule.validate(), isEmpty);
     });
+
+    testSafe('hasAll/hasAny return false for empty or blank IDs', () async {
+      final v1 = value('a');
+      final project = Project(
+        id: 'p1',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        name: 'Project',
+        completed: false,
+        values: [v1],
+        primaryValueId: 'a',
+      );
+      final t = task(project: project);
+
+      final emptyAll = ValueRule(
+        operator: ValueRuleOperator.hasAll,
+        valueIds: const [],
+      );
+      final blankAny = ValueRule(
+        operator: ValueRuleOperator.hasAny,
+        valueIds: const [''],
+      );
+
+      expect(emptyAll.applies(t, DateTime.utc(2026, 1, 18)), isFalse);
+      expect(blankAny.applies(t, DateTime.utc(2026, 1, 18)), isFalse);
+    });
   });
 
   group('ProjectRule', () {
@@ -452,6 +526,16 @@ void main() {
 
       expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isTrue);
       expect(rule.validate(), isEmpty);
+    });
+
+    testSafe('matchesAny ignores blank IDs and fails without match', () async {
+      final t = task(projectId: 'p3');
+      final rule = ProjectRule(
+        operator: ProjectRuleOperator.matchesAny,
+        projectIds: const ['  ', 'p2'],
+      );
+
+      expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isFalse);
     });
   });
 
@@ -534,5 +618,172 @@ void main() {
       final decoded = TaskRuleSet.fromJson(set.toJson());
       expect(decoded, equals(set));
     });
+
+    testSafe('validate aggregates multiple nested rule errors', () async {
+      final set = TaskRuleSet(
+        operator: RuleSetOperator.and,
+        rules: const [
+          DateRule(
+            field: DateRuleField.deadlineDate,
+            operator: DateRuleOperator.onOrAfter,
+          ),
+          ValueRule(operator: ValueRuleOperator.hasAny, valueIds: ['  ']),
+        ],
+      );
+
+      final errors = set.validate();
+      expect(errors, hasLength(2));
+      expect(errors.first, contains('Rule 1:'));
+      expect(errors.last, contains('Rule 2:'));
+    });
   });
+
+  testSafe('TaskRule.fromJson resolves concrete rule types', () async {
+    expect(
+      TaskRule.fromJson(
+        const <String, dynamic>{
+          'type': 'date',
+          'field': 'deadlineDate',
+          'operator': 'on',
+          'date': '2026-01-01',
+        },
+      ),
+      isA<DateRule>(),
+    );
+    expect(
+      TaskRule.fromJson(
+        const <String, dynamic>{
+          'type': 'value',
+          'operator': 'isNull',
+        },
+      ),
+      isA<ValueRule>(),
+    );
+    expect(
+      TaskRule.fromJson(
+        const <String, dynamic>{
+          'type': 'project',
+          'operator': 'isNotNull',
+        },
+      ),
+      isA<ProjectRule>(),
+    );
+  });
+
+  testSafe(
+    'DateRule.fromJson applies defaults when fields are omitted',
+    () async {
+      final rule = DateRule.fromJson(const <String, dynamic>{});
+
+      expect(rule.field, DateRuleField.deadlineDate);
+      expect(rule.operator, DateRuleOperator.onOrAfter);
+      expect(rule.date, isNull);
+    },
+  );
+
+  testSafe('DateRule evaluate uses context.today', () async {
+    final t = task(deadlineDate: DateTime.utc(2026, 1, 20));
+    final rule = DateRule(
+      field: DateRuleField.deadlineDate,
+      operator: DateRuleOperator.relative,
+      relativeComparison: RelativeComparison.on,
+      relativeDays: 2,
+    );
+    final context = EvaluationContext(today: DateTime.utc(2026, 1, 18));
+
+    expect(rule.evaluate(t, context), isTrue);
+  });
+
+  testSafe(
+    'DateRule equality compares date moments, not object identity',
+    () async {
+      final a = DateRule(
+        field: DateRuleField.startDate,
+        operator: DateRuleOperator.on,
+        date: DateTime.utc(2026, 1, 12, 0),
+      );
+      final b = DateRule(
+        field: DateRuleField.startDate,
+        operator: DateRuleOperator.on,
+        date: DateTime.utc(2026, 1, 12, 0),
+      );
+
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    },
+  );
+
+  testSafe('BooleanRule evaluate delegates to applies', () async {
+    const rule = BooleanRule(
+      field: BooleanRuleField.completed,
+      operator: BooleanRuleOperator.isTrue,
+    );
+    final t = task(completed: true);
+
+    expect(
+      rule.evaluate(t, EvaluationContext(today: DateTime.utc(2026, 1, 1))),
+      isTrue,
+    );
+  });
+
+  testSafe('ValueRule.fromJson defaults operator and ids', () async {
+    final decoded = ValueRule.fromJson(const <String, dynamic>{});
+    expect(decoded.operator, ValueRuleOperator.hasAll);
+    expect(decoded.valueIds, isEmpty);
+  });
+
+  testSafe('ValueRule evaluate delegates to applies', () async {
+    final v = value('v1');
+    final p = Project(
+      id: 'p1',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+      name: 'P',
+      completed: false,
+      values: [v],
+      primaryValueId: v.id,
+    );
+    final t = task(project: p);
+    final rule = ValueRule(
+      operator: ValueRuleOperator.hasAny,
+      valueIds: const ['v1'],
+    );
+
+    expect(
+      rule.evaluate(t, EvaluationContext(today: DateTime.utc(2026, 1, 1))),
+      isTrue,
+    );
+  });
+
+  testSafe('ProjectRule.fromJson defaults operator and ids', () async {
+    final decoded = ProjectRule.fromJson(const <String, dynamic>{});
+    expect(decoded.operator, ProjectRuleOperator.matches);
+    expect(decoded.projectId, isNull);
+    expect(decoded.projectIds, isEmpty);
+  });
+
+  testSafe('ProjectRule evaluate delegates to applies', () async {
+    final t = task(projectId: 'p1');
+    final rule = ProjectRule(
+      operator: ProjectRuleOperator.matches,
+      projectId: 'p1',
+    );
+
+    expect(
+      rule.evaluate(t, EvaluationContext(today: DateTime.utc(2026, 1, 1))),
+      isTrue,
+    );
+  });
+
+  testSafe(
+    'ProjectRule.matches returns false when task has no project',
+    () async {
+      final t = task(projectId: null);
+      final rule = ProjectRule(
+        operator: ProjectRuleOperator.matches,
+        projectId: 'p1',
+      );
+      expect(rule.applies(t, DateTime.utc(2026, 1, 18)), isFalse);
+    },
+  );
 }

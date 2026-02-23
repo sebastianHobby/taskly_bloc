@@ -92,4 +92,36 @@ void main() {
       expect(reminderBeforeDue, isNull);
     },
   );
+
+  testWidgetsSafe(
+    'planned editor opens schedule sheet with visible repeat row',
+    (tester) async {
+      final formKey = GlobalKey<FormBuilderState>();
+
+      await tester.pumpWidget(
+        Provider<NowService>.value(
+          value: _FakeNowService(DateTime(2026, 1, 2, 9, 0)),
+          child: MaterialApp(
+            theme: AppTheme.lightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: TaskForm(
+                formKey: formKey,
+                submitTooltip: 'save',
+                onSubmit: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpForStream();
+
+      await tester.tap(find.byIcon(Icons.calendar_today_rounded).first);
+      await tester.pumpForStream();
+
+      expect(find.text('Repeat'), findsWidgets);
+      expect(find.byType(CalendarDatePicker), findsOneWidget);
+    },
+  );
 }

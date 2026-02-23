@@ -16,6 +16,12 @@ void main() {
     talker.info('info');
     talker.warning('warning');
     talker.error('error');
+    talker.blocLog('my_bloc', 'event');
+    talker.serviceLog('my_service', 'call');
+    talker.repositoryLog('my_repo', 'query');
+    talker.apiError('/v1/ping', StateError('api'));
+    talker.databaseError('insert', StateError('db'));
+    talker.operationFailed('save', StateError('op'));
 
     log.debug('log debug');
     log.info('log info');

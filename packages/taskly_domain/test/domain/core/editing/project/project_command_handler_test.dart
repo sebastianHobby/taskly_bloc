@@ -129,6 +129,25 @@ void main() {
     expect(repo.createCalls, 0);
   });
 
+  testSafe('handleCreate requires start date when recurrence is set', () async {
+    final repo = _RecordingProjectRepository();
+    final handler = ProjectCommandHandler(projectRepository: repo);
+
+    const cmd = CreateProjectCommand(
+      name: 'Project',
+      completed: false,
+      repeatIcalRrule: 'FREQ=WEEKLY',
+      valueIds: ['v1'],
+    );
+
+    final result = await handler.handleCreate(cmd);
+
+    expect(result, isA<CommandValidationFailure>());
+    final failure = (result as CommandValidationFailure).failure;
+    expect(failure.fieldErrors.keys, contains(ProjectFieldKeys.startDate));
+    expect(repo.createCalls, 0);
+  });
+
   testSafe('handleUpdate forwards args to repository', () async {
     final repo = _RecordingProjectRepository();
     final handler = ProjectCommandHandler(projectRepository: repo);

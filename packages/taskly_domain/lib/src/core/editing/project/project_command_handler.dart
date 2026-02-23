@@ -84,6 +84,12 @@ final class ProjectCommandHandler {
       fieldErrors[ProjectFieldKeys.valueIds] = valueErrors;
     }
     fieldErrors.addAll(ProjectValidators.dateOrder(startDate, deadlineDate));
+    fieldErrors.addAll(
+      ProjectValidators.recurrenceShape(
+        repeatIcalRrule: repeat,
+        startDate: startDate,
+      ),
+    );
 
     final pruned = Map<FieldKey, List<ValidationError>>.fromEntries(
       fieldErrors.entries.where((entry) => entry.value.isNotEmpty),

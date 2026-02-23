@@ -91,6 +91,48 @@ void main() {
         t,
       );
       expect(completedAtIsNull, isA<Expression<bool>>());
+
+      final repeatingFalse = mapper.predicateToExpression(
+        const TaskBoolPredicate(
+          field: TaskBoolField.repeating,
+          operator: BoolOperator.isFalse,
+        ),
+        t,
+      );
+      expect(repeatingFalse, isA<Expression<bool>>());
+
+      final projectIsNull = mapper.predicateToExpression(
+        const TaskProjectPredicate(operator: ProjectOperator.isNull),
+        t,
+      );
+      expect(projectIsNull, isA<Expression<bool>>());
+
+      final projectMatchesAnyEmpty = mapper.predicateToExpression(
+        const TaskProjectPredicate(
+          operator: ProjectOperator.matchesAny,
+          projectIds: <String>[],
+        ),
+        t,
+      );
+      expect(projectMatchesAnyEmpty, isA<Constant<bool>>());
+
+      final valueIsNotNullInherited = mapper.predicateToExpression(
+        const TaskValuePredicate(
+          operator: ValueOperator.isNotNull,
+          includeInherited: true,
+        ),
+        t,
+      );
+      expect(valueIsNotNullInherited, isA<Expression<bool>>());
+
+      final textDateRelativeMissingArgs = mapper.predicateToExpression(
+        const TaskDatePredicate(
+          field: TaskDateField.deadlineDate,
+          operator: DateOperator.relative,
+        ),
+        t,
+      );
+      expect(textDateRelativeMissingArgs, isA<Constant<bool>>());
     });
 
     testSafe(
@@ -121,6 +163,107 @@ void main() {
           p,
         );
         expect(valueHasAll, isA<Expression<bool>>());
+
+        final repeatingFalse = mapper.predicateToExpression(
+          const ProjectBoolPredicate(
+            field: ProjectBoolField.repeating,
+            operator: BoolOperator.isFalse,
+          ),
+          p,
+        );
+        expect(repeatingFalse, isA<Expression<bool>>());
+
+        final textDateRelativeMissingArgs = mapper.predicateToExpression(
+          const ProjectDatePredicate(
+            field: ProjectDateField.startDate,
+            operator: DateOperator.relative,
+          ),
+          p,
+        );
+        expect(textDateRelativeMissingArgs, isA<Constant<bool>>());
+      },
+    );
+
+    testSafe(
+      'ProjectPredicateMapper covers id, bool, date and value branches',
+      () async {
+        final db = autoTearDown(
+          AppDatabase(NativeDatabase.memory()),
+          (d) async => d.close(),
+        );
+
+        final mapper = ProjectPredicateMapper(driftDb: db, clock: clock);
+        final p = db.projectTable;
+
+        expect(
+          mapper.predicateToExpression(
+            const ProjectIdPredicate(id: 'p1'),
+            p,
+          ),
+          isA<Expression<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const ProjectBoolPredicate(
+              field: ProjectBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
+            p,
+          ),
+          isA<Expression<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const ProjectDatePredicate(
+              field: ProjectDateField.createdAt,
+              operator: DateOperator.relative,
+              relativeComparison: RelativeComparison.onOrAfter,
+              relativeDays: -7,
+            ),
+            p,
+          ),
+          isA<Expression<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const ProjectDatePredicate(
+              field: ProjectDateField.completedAt,
+              operator: DateOperator.relative,
+            ),
+            p,
+          ),
+          isA<Constant<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const ProjectValuePredicate(
+              operator: ValueOperator.hasAny,
+              valueIds: ['v1'],
+            ),
+            p,
+          ),
+          isA<Expression<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const ProjectValuePredicate(
+              operator: ValueOperator.hasAll,
+              valueIds: ['v1'],
+            ),
+            p,
+          ),
+          isA<Expression<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const ProjectValuePredicate(
+              operator: ValueOperator.hasAny,
+              valueIds: <String>[],
+            ),
+            p,
+          ),
+          isA<Constant<bool>>(),
+        );
       },
     );
 
@@ -145,6 +288,96 @@ void main() {
         );
 
         expect(relativeEntryDate, isA<Expression<bool>>());
+
+        final moodIsNull = mapper.predicateToExpression(
+          const JournalMoodPredicate(operator: MoodOperator.isNull),
+          j,
+        );
+        expect(moodIsNull, isA<Constant<bool>>());
+
+        final moodEquals = mapper.predicateToExpression(
+          const JournalMoodPredicate(operator: MoodOperator.equals),
+          j,
+        );
+        expect(moodEquals, isA<Constant<bool>>());
+
+        final textContains = mapper.predicateToExpression(
+          const JournalTextPredicate(
+            operator: TextOperator.contains,
+            value: 'focus',
+          ),
+          j,
+        );
+        expect(textContains, isA<Expression<bool>>());
+
+        final textIsNotEmpty = mapper.predicateToExpression(
+          const JournalTextPredicate(operator: TextOperator.isNotEmpty),
+          j,
+        );
+        expect(textIsNotEmpty, isA<Expression<bool>>());
+      },
+    );
+
+    testSafe(
+      'JournalPredicateMapper covers additional text and mood branches',
+      () async {
+        final mapper = JournalPredicateMapper(clock: clock);
+        final db = autoTearDown(
+          AppDatabase(NativeDatabase.memory()),
+          (d) async => d.close(),
+        );
+
+        final j = db.journalEntries;
+
+        expect(
+          mapper.predicateToExpression(
+            const JournalIdPredicate(id: 'j1'),
+            j,
+          ),
+          isA<Expression<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const JournalDatePredicate(
+              operator: DateOperator.relative,
+            ),
+            j,
+          ),
+          isA<Constant<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const JournalMoodPredicate(operator: MoodOperator.isNotNull),
+            j,
+          ),
+          isA<Constant<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const JournalTextPredicate(
+              operator: TextOperator.equals,
+              value: 'entry',
+            ),
+            j,
+          ),
+          isA<Expression<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const JournalTextPredicate(
+              operator: TextOperator.contains,
+            ),
+            j,
+          ),
+          isA<Constant<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const JournalTextPredicate(operator: TextOperator.isEmpty),
+            j,
+          ),
+          isA<Expression<bool>>(),
+        );
       },
     );
   });

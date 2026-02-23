@@ -83,11 +83,12 @@ void main() {
   late TestStreamController<List<TrackerStateDay>> dayStateController;
   late TestStreamController<List<TrackerEvent>> eventsController;
 
-  final nowUtc = DateTime.utc(2025, 1, 15, 12);
+  final nowUtc = DateTime.utc(2025, 1, 15, 12, 30);
 
   JournalEntryEditorBloc buildBloc({
     String? entryId,
     Set<String>? preselected,
+    DateTime? selectedDayLocal,
   }) {
     return JournalEntryEditorBloc(
       repository: repository,
@@ -95,6 +96,7 @@ void main() {
       entryId: entryId,
       preselectedTrackerIds: preselected ?? const {},
       nowUtc: () => nowUtc,
+      selectedDayLocal: selectedDayLocal,
     );
   }
 
@@ -103,10 +105,10 @@ void main() {
     errorReporter = AppErrorReporter(
       messengerKey: GlobalKey<ScaffoldMessengerState>(),
     );
-    defsController = TestStreamController();
-    groupsController = TestStreamController();
-    dayStateController = TestStreamController();
-    eventsController = TestStreamController();
+    defsController = TestStreamController.seeded(const []);
+    groupsController = TestStreamController.seeded(const []);
+    dayStateController = TestStreamController.seeded(const []);
+    eventsController = TestStreamController.seeded(const []);
 
     when(() => repository.watchTrackerDefinitions()).thenAnswer(
       (_) => defsController.stream,
@@ -133,11 +135,22 @@ void main() {
       ),
     ).thenAnswer((_) async => 'entry-1');
     when(
+      () => repository.updateJournalEntry(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
       () => repository.appendTrackerEvent(
         any(),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => repository.watchTrackerDefinitionChoices(
+        trackerId: any(named: 'trackerId'),
+      ),
+    ).thenAnswer((_) => Stream.value(const <TrackerDefinitionChoice>[]));
 
     addTearDown(defsController.close);
     addTearDown(groupsController.close);
@@ -159,6 +172,7 @@ void main() {
             true,
           )
           .having((s) => s.isDirty, 'isDirty', false),
+      isA<JournalEntryEditorState>(),
       isA<JournalEntryEditorState>(),
     ],
   );
@@ -223,6 +237,7 @@ void main() {
           .having((s) => s.mood, 'mood', MoodRating.good)
           .having((s) => s.note, 'note', 'Note'),
       isA<JournalEntryEditorState>(),
+      isA<JournalEntryEditorState>(),
     ],
   );
 
@@ -280,14 +295,6 @@ void main() {
       ),
     ],
     verify: (_) {
-      final entryCaptured = verify(
-        () => repository.createJournalEntry(
-          captureAny<JournalEntry>(),
-          context: captureAny(named: 'context'),
-        ),
-      ).captured;
-      expect(entryCaptured.length, 2);
-
       final captured = verify(
         () => repository.appendTrackerEvent(
           captureAny<TrackerEvent>(),
@@ -309,4 +316,227 @@ void main() {
       }
     },
   );
+
+  testSafe(
+    'daily value change writes day-anchored event for selected day',
+    () async {
+      final selectedDay = DateTime(2025, 1, 14);
+      final bloc = buildBloc(selectedDayLocal: selectedDay);
+      addTearDown(bloc.close);
+
+      bloc.add(const JournalEntryEditorStarted());
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      defsController.emit([
+        TrackerDefinition(
+          id: 'daily-1',
+          name: 'Water',
+          scope: 'day',
+          valueType: 'quantity',
+          opKind: 'set',
+          createdAt: nowUtc,
+          updatedAt: nowUtc,
+        ),
+      ]);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      bloc.add(
+        const JournalEntryEditorDailyValueChanged(
+          trackerId: 'daily-1',
+          value: 350,
+        ),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      final captured = verify(
+        () => repository.appendTrackerEvent(
+          captureAny(),
+          context: captureAny(named: 'context'),
+        ),
+      ).captured;
+
+      final event =
+          captured.firstWhere((it) => it is TrackerEvent) as TrackerEvent;
+      expect(event.anchorType, 'day');
+      expect(event.anchorDate, DateTime.utc(2025, 1, 14));
+      expect(event.op, 'set');
+      expect(event.value, 350);
+
+      final ctx =
+          captured.firstWhere((it) => it is OperationContext)
+              as OperationContext;
+      expect(ctx.intent, 'set_daily_value');
+      expect(ctx.operation, 'journal.entry_editor.daily.set');
+    },
+  );
+
+  testSafe('daily delta add writes add event using selected day', () async {
+    final selectedDay = DateTime(2025, 1, 14);
+    final bloc = buildBloc(selectedDayLocal: selectedDay);
+    addTearDown(bloc.close);
+
+    bloc.add(const JournalEntryEditorStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    defsController.emit([
+      TrackerDefinition(
+        id: 'steps',
+        name: 'Steps',
+        scope: 'day',
+        valueType: 'quantity',
+        createdAt: nowUtc,
+        updatedAt: nowUtc,
+      ),
+    ]);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    bloc.add(
+      const JournalEntryEditorDailyDeltaAdded(
+        trackerId: 'steps',
+        delta: 2,
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    final captured = verify(
+      () => repository.appendTrackerEvent(
+        captureAny(),
+        context: captureAny(named: 'context'),
+      ),
+    ).captured;
+
+    final event =
+        captured.firstWhere((it) => it is TrackerEvent) as TrackerEvent;
+    expect(event.anchorType, 'day');
+    expect(event.anchorDate, DateTime.utc(2025, 1, 14));
+    expect(event.op, 'add');
+    expect(event.value, 2);
+
+    final ctx =
+        captured.firstWhere((it) => it is OperationContext) as OperationContext;
+    expect(ctx.intent, 'add_daily_delta');
+    expect(ctx.operation, 'journal.entry_editor.daily.add');
+  });
+
+  testSafe('existing unchanged save short-circuits without writes', () async {
+    final bloc = buildBloc(entryId: 'entry-1');
+    addTearDown(bloc.close);
+
+    bloc.add(
+      const JournalEntryEditorSaveRequested(),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    expect(bloc.state.status, isA<JournalEntryEditorSaved>());
+    verifyNever(
+      () =>
+          repository.createJournalEntry(any(), context: any(named: 'context')),
+    );
+    verifyNever(
+      () =>
+          repository.updateJournalEntry(any(), context: any(named: 'context')),
+    );
+  });
+
+  testSafe(
+    'editing existing entry updates journal entry instead of creating',
+    () async {
+      final existing = JournalEntry(
+        id: 'entry-1',
+        entryDate: DateTime.utc(2025, 1, 14),
+        entryTime: DateTime.utc(2025, 1, 14, 9),
+        occurredAt: DateTime.utc(2025, 1, 14, 9),
+        localDate: DateTime.utc(2025, 1, 14),
+        createdAt: DateTime.utc(2025, 1, 14, 9),
+        updatedAt: DateTime.utc(2025, 1, 14, 9),
+        journalText: 'Old note',
+        deletedAt: null,
+      );
+
+      when(
+        () => repository.getJournalEntryById('entry-1'),
+      ).thenAnswer((_) async => existing);
+      when(
+        () => repository.watchTrackerDefinitions(),
+      ).thenAnswer(
+        (_) => Stream.value([
+          TrackerDefinition(
+            id: 'mood-id',
+            name: 'Mood',
+            scope: 'entry',
+            valueType: 'rating',
+            systemKey: 'mood',
+            createdAt: nowUtc,
+            updatedAt: nowUtc,
+          ),
+        ]),
+      );
+      when(
+        () => repository.watchTrackerEvents(
+          anchorType: 'entry',
+          entryId: 'entry-1',
+        ),
+      ).thenAnswer(
+        (_) => Stream.value([
+          TrackerEvent(
+            id: 'ev-mood',
+            trackerId: 'mood-id',
+            anchorType: 'entry',
+            entryId: 'entry-1',
+            op: 'set',
+            value: 4,
+            occurredAt: existing.occurredAt,
+            recordedAt: existing.occurredAt,
+          ),
+        ]),
+      );
+
+      final bloc = buildBloc(entryId: 'entry-1');
+      addTearDown(bloc.close);
+
+      bloc.add(const JournalEntryEditorStarted());
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      bloc.add(const JournalEntryEditorNoteChanged('Updated note'));
+      bloc.add(const JournalEntryEditorSaveRequested());
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+
+      verify(
+        () => repository.updateJournalEntry(
+          any(
+            that: isA<JournalEntry>().having(
+              (e) => e.journalText,
+              'journalText',
+              'Updated note',
+            ),
+          ),
+          context: any(named: 'context'),
+        ),
+      ).called(1);
+      verifyNever(
+        () => repository.createJournalEntry(
+          any(),
+          context: any(named: 'context'),
+        ),
+      );
+    },
+  );
+
+  testSafe('missing existing entry emits error status', () async {
+    when(
+      () => repository.getJournalEntryById('missing'),
+    ).thenAnswer((_) async => null);
+
+    final bloc = buildBloc(entryId: 'missing');
+    addTearDown(bloc.close);
+    final seenStatuses = <JournalEntryEditorStatus>[];
+    final sub = bloc.stream.listen((state) => seenStatuses.add(state.status));
+    addTearDown(sub.cancel);
+
+    bloc.add(const JournalEntryEditorStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    final errorStatus = seenStatuses.whereType<JournalEntryEditorError>().last;
+    expect(errorStatus.message, contains('Failed to load log'));
+  });
 }

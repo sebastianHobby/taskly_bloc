@@ -427,6 +427,7 @@ Future<void> setupDependencies() async {
         valueRatingsRepository: getIt<ValueRatingsRepositoryContract>(),
         demoModeService: getIt<DemoModeService>(),
         demoDataProvider: getIt<DemoDataProvider>(),
+        occurrenceReadService: getIt<OccurrenceReadService>(),
       ),
     )
     ..registerFactory<SettingsMaintenanceBloc>(

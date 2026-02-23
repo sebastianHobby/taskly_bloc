@@ -69,6 +69,32 @@ class _InMemoryValueRepo extends Fake implements ValueRepositoryContract {
   }
 }
 
+class _ThrowingValueRepo extends _InMemoryValueRepo {
+  _ThrowingValueRepo({required this.failOnName});
+
+  final String failOnName;
+
+  @override
+  Future<void> create({
+    required String name,
+    required String color,
+    String? iconName,
+    ValuePriority priority = ValuePriority.medium,
+    OperationContext? context,
+  }) async {
+    if (name == failOnName) {
+      throw StateError('value create failed for $name');
+    }
+    return super.create(
+      name: name,
+      color: color,
+      iconName: iconName,
+      priority: priority,
+      context: context,
+    );
+  }
+}
+
 class _InMemoryProjectRepo extends Fake implements ProjectRepositoryContract {
   _InMemoryProjectRepo({List<Project>? seed}) {
     if (seed != null) _projects.addAll(seed);
@@ -119,6 +145,44 @@ class _InMemoryProjectRepo extends Fake implements ProjectRepositoryContract {
   @override
   Future<void> delete(String id, {OperationContext? context}) async {
     _projects.removeWhere((project) => project.id == id);
+  }
+}
+
+class _ThrowingProjectRepo extends _InMemoryProjectRepo {
+  _ThrowingProjectRepo({required this.failOnName});
+
+  final String failOnName;
+
+  @override
+  Future<void> create({
+    required String name,
+    String? description,
+    bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
+    bool seriesEnded = false,
+    List<String>? valueIds,
+    int? priority,
+    OperationContext? context,
+  }) async {
+    if (name == failOnName) {
+      throw StateError('project create failed for $name');
+    }
+    return super.create(
+      name: name,
+      description: description,
+      completed: completed,
+      startDate: startDate,
+      deadlineDate: deadlineDate,
+      repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
+      valueIds: valueIds,
+      priority: priority,
+      context: context,
+    );
   }
 }
 
@@ -224,6 +288,96 @@ class _InMemoryTaskRepo extends Fake implements TaskRepositoryContract {
     required DateTime untilUtc,
   }) async {
     return const <String, TaskSnoozeStats>{};
+  }
+}
+
+class _ThrowingTaskRepo extends _InMemoryTaskRepo {
+  _ThrowingTaskRepo({
+    this.failOnCreateName,
+    this.throwOnCompleteOccurrence = false,
+    this.throwOnSnooze = false,
+  });
+
+  final String? failOnCreateName;
+  final bool throwOnCompleteOccurrence;
+  final bool throwOnSnooze;
+
+  @override
+  Future<void> create({
+    required String name,
+    String? description,
+    bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? projectId,
+    int? priority,
+    TaskReminderKind reminderKind = TaskReminderKind.none,
+    DateTime? reminderAtUtc,
+    int? reminderMinutesBeforeDue,
+    String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
+    bool seriesEnded = false,
+    List<String>? valueIds,
+    List<String> checklistTitles = const <String>[],
+    OperationContext? context,
+  }) async {
+    if (name == failOnCreateName) {
+      throw StateError('task create failed for $name');
+    }
+    return super.create(
+      name: name,
+      description: description,
+      completed: completed,
+      startDate: startDate,
+      deadlineDate: deadlineDate,
+      projectId: projectId,
+      priority: priority,
+      reminderKind: reminderKind,
+      reminderAtUtc: reminderAtUtc,
+      reminderMinutesBeforeDue: reminderMinutesBeforeDue,
+      repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
+      valueIds: valueIds,
+      checklistTitles: checklistTitles,
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> completeOccurrence({
+    required String taskId,
+    DateTime? occurrenceDate,
+    DateTime? originalOccurrenceDate,
+    String? notes,
+    OperationContext? context,
+  }) async {
+    if (throwOnCompleteOccurrence) {
+      throw StateError('task complete failed');
+    }
+    return super.completeOccurrence(
+      taskId: taskId,
+      occurrenceDate: occurrenceDate,
+      originalOccurrenceDate: originalOccurrenceDate,
+      notes: notes,
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> setMyDaySnoozedUntil({
+    required String id,
+    required DateTime? untilUtc,
+    OperationContext? context,
+  }) async {
+    if (throwOnSnooze) {
+      throw StateError('task snooze failed');
+    }
+    return super.setMyDaySnoozedUntil(
+      id: id,
+      untilUtc: untilUtc,
+      context: context,
+    );
   }
 }
 
@@ -371,6 +525,50 @@ class _InMemoryRoutineRepo extends Fake implements RoutineRepositoryContract {
   }
 }
 
+class _ThrowingRoutineRepo extends _InMemoryRoutineRepo {
+  _ThrowingRoutineRepo({required this.failOnName});
+
+  final String failOnName;
+
+  @override
+  Future<void> create({
+    required String name,
+    required String projectId,
+    required RoutinePeriodType periodType,
+    required RoutineScheduleMode scheduleMode,
+    required int targetCount,
+    List<int> scheduleDays = const <int>[],
+    List<int> scheduleMonthDays = const <int>[],
+    int? scheduleTimeMinutes,
+    int? minSpacingDays,
+    int? restDayBuffer,
+    bool isActive = true,
+    DateTime? pausedUntilUtc,
+    List<String> checklistTitles = const <String>[],
+    OperationContext? context,
+  }) async {
+    if (name == failOnName) {
+      throw StateError('routine create failed for $name');
+    }
+    return super.create(
+      name: name,
+      projectId: projectId,
+      periodType: periodType,
+      scheduleMode: scheduleMode,
+      targetCount: targetCount,
+      scheduleDays: scheduleDays,
+      scheduleMonthDays: scheduleMonthDays,
+      scheduleTimeMinutes: scheduleTimeMinutes,
+      minSpacingDays: minSpacingDays,
+      restDayBuffer: restDayBuffer,
+      isActive: isActive,
+      pausedUntilUtc: pausedUntilUtc,
+      checklistTitles: checklistTitles,
+      context: context,
+    );
+  }
+}
+
 class _FixedClock implements Clock {
   _FixedClock(this._nowUtc);
 
@@ -421,6 +619,17 @@ class _InMemorySettingsRepository implements SettingsRepositoryContract {
   }
 }
 
+class _ThrowingSettingsRepository extends _InMemorySettingsRepository {
+  @override
+  Future<void> save<T>(
+    SettingsKey<T> key,
+    T value, {
+    OperationContext? context,
+  }) async {
+    throw StateError('settings save failed');
+  }
+}
+
 class _InMemoryValueRatingsRepository extends Fake
     implements ValueRatingsRepositoryContract {
   final Map<String, ValueWeeklyRating> _ratings = <String, ValueWeeklyRating>{};
@@ -463,6 +672,42 @@ class _InMemoryValueRatingsRepository extends Fake
   @override
   Stream<List<ValueWeeklyRating>> watchAll({int weeks = 4}) {
     throw UnimplementedError();
+  }
+}
+
+class _ThrowingValueRatingsRepository extends _InMemoryValueRatingsRepository {
+  @override
+  Future<void> upsertWeeklyRating({
+    required String valueId,
+    required DateTime weekStartUtc,
+    required int rating,
+    OperationContext? context,
+  }) async {
+    throw StateError('weekly rating upsert failed');
+  }
+}
+
+class _DroppingValueRepo extends _InMemoryValueRepo {
+  _DroppingValueRepo({required this.dropName});
+
+  final String dropName;
+
+  @override
+  Future<void> create({
+    required String name,
+    required String color,
+    String? iconName,
+    ValuePriority priority = ValuePriority.medium,
+    OperationContext? context,
+  }) async {
+    if (name == dropName) return;
+    return super.create(
+      name: name,
+      color: color,
+      iconName: iconName,
+      priority: priority,
+      context: context,
+    );
   }
 }
 
@@ -554,6 +799,198 @@ void main() {
       expect(ratingsRepo.getAll(), completion(isNotEmpty));
       expect(settingsRepo.settings.weeklyReviewLastCompletedAt, isNull);
       expect(settingsRepo.settings.onboardingCompleted, isTrue);
+    },
+  );
+
+  testSafe(
+    'resetAndSeed rethrows when value create fails',
+    () async {
+      final valueRepo = _ThrowingValueRepo(failOnName: 'Health');
+      final projectRepo = _InMemoryProjectRepo();
+      final taskRepo = _InMemoryTaskRepo();
+      final routineRepo = _InMemoryRoutineRepo();
+      final wipeService = _RecordingUserDataWipeService();
+      final ratingsWriteService = ValueRatingsWriteService(
+        repository: _InMemoryValueRatingsRepository(),
+      );
+      final settingsRepo = _InMemorySettingsRepository();
+      final service = TemplateDataService(
+        taskRepository: taskRepo,
+        projectRepository: projectRepo,
+        routineRepository: routineRepo,
+        valueRepository: valueRepo,
+        valueRatingsWriteService: ratingsWriteService,
+        userDataWipeService: wipeService,
+        settingsRepository: settingsRepo,
+        clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+      );
+
+      await expectLater(
+        () => service.resetAndSeed(),
+        throwsA(isA<StateError>()),
+      );
+    },
+  );
+
+  testSafe(
+    'resetAndSeed rethrows when saving weekly review settings fails',
+    () async {
+      final valueRepo = _InMemoryValueRepo();
+      final projectRepo = _InMemoryProjectRepo();
+      final taskRepo = _InMemoryTaskRepo();
+      final routineRepo = _InMemoryRoutineRepo();
+      final wipeService = _RecordingUserDataWipeService();
+      final ratingsWriteService = ValueRatingsWriteService(
+        repository: _InMemoryValueRatingsRepository(),
+      );
+      final service = TemplateDataService(
+        taskRepository: taskRepo,
+        projectRepository: projectRepo,
+        routineRepository: routineRepo,
+        valueRepository: valueRepo,
+        valueRatingsWriteService: ratingsWriteService,
+        userDataWipeService: wipeService,
+        settingsRepository: _ThrowingSettingsRepository(),
+        clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+      );
+
+      await expectLater(
+        () => service.resetAndSeed(),
+        throwsA(isA<StateError>()),
+      );
+    },
+  );
+
+  testSafe('resetAndSeed rethrows when project create fails', () async {
+    final service = TemplateDataService(
+      taskRepository: _InMemoryTaskRepo(),
+      projectRepository: _ThrowingProjectRepo(failOnName: 'Work'),
+      routineRepository: _InMemoryRoutineRepo(),
+      valueRepository: _InMemoryValueRepo(),
+      valueRatingsWriteService: ValueRatingsWriteService(
+        repository: _InMemoryValueRatingsRepository(),
+      ),
+      userDataWipeService: _RecordingUserDataWipeService(),
+      settingsRepository: _InMemorySettingsRepository(),
+      clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+    );
+
+    await expectLater(() => service.resetAndSeed(), throwsA(isA<StateError>()));
+  });
+
+  testSafe('resetAndSeed rethrows when routine create fails', () async {
+    final service = TemplateDataService(
+      taskRepository: _InMemoryTaskRepo(),
+      projectRepository: _InMemoryProjectRepo(),
+      routineRepository: _ThrowingRoutineRepo(failOnName: 'Study session'),
+      valueRepository: _InMemoryValueRepo(),
+      valueRatingsWriteService: ValueRatingsWriteService(
+        repository: _InMemoryValueRatingsRepository(),
+      ),
+      userDataWipeService: _RecordingUserDataWipeService(),
+      settingsRepository: _InMemorySettingsRepository(),
+      clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+    );
+
+    await expectLater(() => service.resetAndSeed(), throwsA(isA<StateError>()));
+  });
+
+  testSafe('resetAndSeed rethrows when task create fails', () async {
+    final service = TemplateDataService(
+      taskRepository: _ThrowingTaskRepo(failOnCreateName: 'Review PR comments'),
+      projectRepository: _InMemoryProjectRepo(),
+      routineRepository: _InMemoryRoutineRepo(),
+      valueRepository: _InMemoryValueRepo(),
+      valueRatingsWriteService: ValueRatingsWriteService(
+        repository: _InMemoryValueRatingsRepository(),
+      ),
+      userDataWipeService: _RecordingUserDataWipeService(),
+      settingsRepository: _InMemorySettingsRepository(),
+      clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+    );
+
+    await expectLater(() => service.resetAndSeed(), throwsA(isA<StateError>()));
+  });
+
+  testSafe('resetAndSeed rethrows when complete occurrence fails', () async {
+    final service = TemplateDataService(
+      taskRepository: _ThrowingTaskRepo(throwOnCompleteOccurrence: true),
+      projectRepository: _InMemoryProjectRepo(),
+      routineRepository: _InMemoryRoutineRepo(),
+      valueRepository: _InMemoryValueRepo(),
+      valueRatingsWriteService: ValueRatingsWriteService(
+        repository: _InMemoryValueRatingsRepository(),
+      ),
+      userDataWipeService: _RecordingUserDataWipeService(),
+      settingsRepository: _InMemorySettingsRepository(),
+      clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+    );
+
+    await expectLater(() => service.resetAndSeed(), throwsA(isA<StateError>()));
+  });
+
+  testSafe('resetAndSeed rethrows when task snooze fails', () async {
+    final service = TemplateDataService(
+      taskRepository: _ThrowingTaskRepo(throwOnSnooze: true),
+      projectRepository: _InMemoryProjectRepo(),
+      routineRepository: _InMemoryRoutineRepo(),
+      valueRepository: _InMemoryValueRepo(),
+      valueRatingsWriteService: ValueRatingsWriteService(
+        repository: _InMemoryValueRatingsRepository(),
+      ),
+      userDataWipeService: _RecordingUserDataWipeService(),
+      settingsRepository: _InMemorySettingsRepository(),
+      clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+    );
+
+    await expectLater(() => service.resetAndSeed(), throwsA(isA<StateError>()));
+  });
+
+  testSafe('resetAndSeed rethrows when weekly ratings seed fails', () async {
+    final service = TemplateDataService(
+      taskRepository: _InMemoryTaskRepo(),
+      projectRepository: _InMemoryProjectRepo(),
+      routineRepository: _InMemoryRoutineRepo(),
+      valueRepository: _InMemoryValueRepo(),
+      valueRatingsWriteService: ValueRatingsWriteService(
+        repository: _ThrowingValueRatingsRepository(),
+      ),
+      userDataWipeService: _RecordingUserDataWipeService(),
+      settingsRepository: _InMemorySettingsRepository(),
+      clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+    );
+
+    await expectLater(() => service.resetAndSeed(), throwsA(isA<StateError>()));
+  });
+
+  testSafe(
+    'resetAndSeed skips projects/routines/tasks when mapped value is missing',
+    () async {
+      final valueRepo = _DroppingValueRepo(dropName: 'Social');
+      final projectRepo = _InMemoryProjectRepo();
+      final taskRepo = _InMemoryTaskRepo();
+      final routineRepo = _InMemoryRoutineRepo();
+      final service = TemplateDataService(
+        taskRepository: taskRepo,
+        projectRepository: projectRepo,
+        routineRepository: routineRepo,
+        valueRepository: valueRepo,
+        valueRatingsWriteService: ValueRatingsWriteService(
+          repository: _InMemoryValueRatingsRepository(),
+        ),
+        userDataWipeService: _RecordingUserDataWipeService(),
+        settingsRepository: _InMemorySettingsRepository(),
+        clock: _FixedClock(DateTime.utc(2026, 1, 1, 12)),
+      );
+
+      await service.resetAndSeed();
+
+      final projects = await projectRepo.getAll();
+      final routines = await routineRepo.getAll();
+      final tasks = await taskRepo.getAll();
+      expect(projects.map((p) => p.name), isNot(contains('People')));
+      expect(routines.map((r) => r.name), isNot(contains('Text a friend')));
+      expect(tasks.map((t) => t.name), isNot(contains('Call parent')));
     },
   );
 }

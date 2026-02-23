@@ -28,7 +28,7 @@ abstract final class TaskFormFieldKeys {
   static const checklistTitles = 'task.checklistTitles';
 }
 
-enum _TaskDateEditorTarget { planned, due }
+enum _TaskDateEditorTarget { due }
 
 enum _ReminderSelectionMode { none, absolute, beforeDue }
 
@@ -354,17 +354,116 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     );
   }
 
-  void _toggleDateEditor(_TaskDateEditorTarget target) {
+  void _toggleDueDateEditor() {
     setState(() {
-      _activeDateEditor = _activeDateEditor == target ? null : target;
+      _activeDateEditor = _activeDateEditor == _TaskDateEditorTarget.due
+          ? null
+          : _TaskDateEditorTarget.due;
     });
   }
 
-  Future<void> _setDateForTarget(
-    _TaskDateEditorTarget target,
-    DateTime? value,
-  ) async {
-    if (target == _TaskDateEditorTarget.due && value == null) {
+  Future<void> _openPlannedScheduleEditor({
+    required BuildContext anchorContext,
+  }) async {
+    if (_activeDateEditor != null) {
+      setState(() => _activeDateEditor = null);
+    }
+
+    final now = context.read<NowService>().nowLocal();
+    final startField =
+        widget.formKey.currentState?.fields[TaskFieldKeys.startDate.id];
+    final recurrenceField =
+        widget.formKey.currentState?.fields[TaskFieldKeys.repeatIcalRrule.id];
+    final repeatFromCompletionField = widget
+        .formKey
+        .currentState
+        ?.fields[TaskFieldKeys.repeatFromCompletion.id];
+    final seriesEndedField =
+        widget.formKey.currentState?.fields[TaskFieldKeys.seriesEnded.id];
+
+    final initialStartDate = startField?.value as DateTime?;
+    final initialRrule = (recurrenceField?.value as String?) ?? '';
+    final initialRepeatFromCompletion =
+        (repeatFromCompletionField?.value as bool?) ?? false;
+    final initialSeriesEnded = (seriesEndedField?.value as bool?) ?? false;
+
+    final result = await _showPlannedScheduleSheet(
+      anchorContext: anchorContext,
+      now: now,
+      initialStartDate: initialStartDate,
+      initialRrule: initialRrule,
+      initialRepeatFromCompletion: initialRepeatFromCompletion,
+      initialSeriesEnded: initialSeriesEnded,
+      initialRecurrenceLabel: _recurrenceLabel,
+    );
+    if (!mounted || result == null) return;
+
+    startField?.didChange(result.startDate);
+    recurrenceField?.didChange(result.rrule);
+    repeatFromCompletionField?.didChange(result.repeatFromCompletion);
+    seriesEndedField?.didChange(result.seriesEnded);
+
+    _updateRecurrenceLabel(result.rrule);
+    markDirty();
+    setState(() {});
+  }
+
+  Future<_PlannedScheduleEditorResult?> _showPlannedScheduleSheet({
+    required BuildContext anchorContext,
+    required DateTime now,
+    required DateTime? initialStartDate,
+    required String? initialRrule,
+    required bool initialRepeatFromCompletion,
+    required bool initialSeriesEnded,
+    required String? initialRecurrenceLabel,
+  }) {
+    final sheet = _PlannedScheduleEditorSheet(
+      now: now,
+      initialStartDate: initialStartDate,
+      initialRrule: initialRrule,
+      initialRepeatFromCompletion: initialRepeatFromCompletion,
+      initialSeriesEnded: initialSeriesEnded,
+      initialRecurrenceLabel: initialRecurrenceLabel,
+      onEditRecurrence:
+          (
+            sheetContext, {
+            required rrule,
+            required repeatFromCompletion,
+            required seriesEnded,
+          }) {
+            return _pickRecurrence(
+              anchorContext: sheetContext,
+              initialRrule: rrule,
+              initialRepeatFromCompletion: repeatFromCompletion,
+              initialSeriesEnded: seriesEnded,
+            );
+          },
+    );
+
+    if (_isCompact(context)) {
+      return showModalBottomSheet<_PlannedScheduleEditorResult>(
+        context: context,
+        useSafeArea: true,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (_) => FractionallySizedBox(
+          heightFactor: 0.94,
+          child: sheet,
+        ),
+      );
+    }
+
+    return _showAnchoredDialog<_PlannedScheduleEditorResult>(
+      context,
+      anchorContext: anchorContext,
+      maxWidth: 640,
+      maxHeight: 760,
+      builder: (_) => sheet,
+    );
+  }
+
+  Future<void> _setDueDate(DateTime? value) async {
+    if (value == null) {
       final reminderKind =
           widget
                   .formKey
@@ -404,10 +503,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       }
     }
 
-    final fieldKey = target == _TaskDateEditorTarget.planned
-        ? TaskFieldKeys.startDate.id
-        : TaskFieldKeys.deadlineDate.id;
-    widget.formKey.currentState?.fields[fieldKey]?.didChange(value);
+    widget.formKey.currentState?.fields[TaskFieldKeys.deadlineDate.id]
+        ?.didChange(
+          value,
+        );
     markDirty();
     setState(() => _activeDateEditor = null);
   }
@@ -624,6 +723,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     required DateTime? currentAtUtc,
     required int? currentBeforeDueMinutes,
     required DateTime? dueDate,
+    required bool hasRecurrence,
   }) {
     const options = <int>[5, 10, 15, 30, 60, 120, 24 * 60];
     return showModalBottomSheet<_ReminderSelectionResult>(
@@ -634,6 +734,13 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
         return ListView(
           shrinkWrap: true,
           children: [
+            if (hasRecurrence && dueDate != null)
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.repeat),
+                title: Text(context.l10n.taskReminderBeforeDueLabel),
+                subtitle: Text(context.l10n.taskReminderRecurringBeforeDueHint),
+              ),
             ListTile(
               leading: const Icon(Icons.notifications_off_outlined),
               title: Text(context.l10n.offLabel),
@@ -652,16 +759,20 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
             ListTile(
               leading: const Icon(Icons.schedule),
               title: Text(context.l10n.taskReminderAtLabel),
-              subtitle: currentKind == TaskReminderKind.absolute
-                  ? Text(
-                      _formatReminderLabel(
-                        context,
-                        reminderKind: currentKind,
-                        reminderAtUtc: currentAtUtc,
-                        reminderMinutesBeforeDue: currentBeforeDueMinutes,
-                      ),
-                    )
-                  : null,
+              subtitle: switch ((currentKind, hasRecurrence)) {
+                (TaskReminderKind.absolute, _) => Text(
+                  _formatReminderLabel(
+                    context,
+                    reminderKind: currentKind,
+                    reminderAtUtc: currentAtUtc,
+                    reminderMinutesBeforeDue: currentBeforeDueMinutes,
+                  ),
+                ),
+                (_, true) => Text(
+                  context.l10n.taskReminderRecurringAbsoluteHint,
+                ),
+                _ => null,
+              },
               onTap: () async {
                 final nowLocal = context.read<NowService>().nowLocal();
                 final initialDate = currentAtUtc?.toLocal() ?? nowLocal;
@@ -700,6 +811,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
               title: Text(context.l10n.taskReminderBeforeDueLabel),
               subtitle: dueDate == null
                   ? Text(context.l10n.taskReminderDueDateRequiredHint)
+                  : hasRecurrence
+                  ? Text(context.l10n.taskReminderRecurringBeforeDueHint)
                   : null,
             ),
             for (final minutes in options)
@@ -1087,9 +1200,6 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     priorityColor = colorScheme.onSurfaceVariant;
                   }
 
-                  final repeatValueLabel = hasRecurrence
-                      ? (_recurrenceLabel ?? l10n.loadingTitle)
-                      : null;
                   final reminderLabel = _formatReminderLabel(
                     context,
                     reminderKind: reminderKind,
@@ -1098,15 +1208,19 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                   );
 
                   final chips = <Widget>[
-                    TasklyFormInlineChip(
-                      label: l10n.plannedLabel,
-                      icon: Icons.calendar_today_rounded,
-                      valueLabel: plannedLabel,
-                      hasValue: plannedLabel != null,
-                      showLabelWhenEmpty: false,
-                      preset: chipPreset,
-                      onTap: () => _toggleDateEditor(
-                        _TaskDateEditorTarget.planned,
+                    Builder(
+                      builder: (chipContext) => TasklyFormInlineChip(
+                        label: l10n.plannedLabel,
+                        icon: Icons.calendar_today_rounded,
+                        valueLabel: plannedLabel,
+                        hasValue: plannedLabel != null,
+                        showLabelWhenEmpty: false,
+                        preset: chipPreset,
+                        onTap: () => unawaited(
+                          _openPlannedScheduleEditor(
+                            anchorContext: chipContext,
+                          ),
+                        ),
                       ),
                     ),
                     TasklyFormInlineChip(
@@ -1119,52 +1233,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           : colorScheme.primary,
                       showLabelWhenEmpty: false,
                       preset: chipPreset,
-                      onTap: () => _toggleDateEditor(_TaskDateEditorTarget.due),
-                    ),
-                    TasklyFormInlineChip(
-                      label: l10n.recurrenceRepeatTitle,
-                      icon: Icons.repeat,
-                      valueLabel: repeatValueLabel,
-                      hasValue: hasRecurrence,
-                      showLabelWhenEmpty: false,
-                      preset: chipPreset,
-                      onTap: () async {
-                        if (_activeDateEditor != null) {
-                          setState(() => _activeDateEditor = null);
-                        }
-                        final repeatFromCompletionField = widget
-                            .formKey
-                            .currentState
-                            ?.fields[TaskFieldKeys.repeatFromCompletion.id];
-                        final seriesEndedField = widget
-                            .formKey
-                            .currentState
-                            ?.fields[TaskFieldKeys.seriesEnded.id];
-
-                        final result = await _pickRecurrence(
-                          anchorContext: context,
-                          initialRrule: recurrenceRrule,
-                          initialRepeatFromCompletion:
-                              (repeatFromCompletionField?.value as bool?) ??
-                              false,
-                          initialSeriesEnded:
-                              (seriesEndedField?.value as bool?) ?? false,
-                        );
-
-                        if (result == null) return;
-                        widget
-                            .formKey
-                            .currentState
-                            ?.fields[TaskFieldKeys.repeatIcalRrule.id]
-                            ?.didChange(result.rrule);
-                        repeatFromCompletionField?.didChange(
-                          result.repeatFromCompletion,
-                        );
-                        seriesEndedField?.didChange(result.seriesEnded);
-                        _updateRecurrenceLabel(result.rrule);
-                        markDirty();
-                        setState(() {});
-                      },
+                      onTap: _toggleDueDateEditor,
                     ),
                     Builder(
                       builder: (chipContext) => TasklyFormInlineChip(
@@ -1212,6 +1281,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           currentAtUtc: reminderAtUtc,
                           currentBeforeDueMinutes: reminderMinutesBeforeDue,
                           dueDate: deadlineDate,
+                          hasRecurrence: hasRecurrence,
                         );
                         if (!mounted || result == null) return;
 
@@ -1329,6 +1399,16 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       TasklyFormChipRow(chips: chips),
+                      if (hasRecurrence) ...[
+                        SizedBox(height: tokens.spaceSm),
+                        Text(
+                          '${l10n.recurrenceRepeatTitle}: '
+                          '${_recurrenceLabel ?? l10n.loadingTitle}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                       if (_showChecklistEditor) ...[
                         SizedBox(height: sectionGap),
                         FormBuilderField<List<String>>(
@@ -1356,28 +1436,34 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       if (_activeDateEditor != null) ...[
                         SizedBox(height: sectionGap),
                         InlineDateEditorPanel(
-                          label:
-                              _activeDateEditor == _TaskDateEditorTarget.planned
-                              ? l10n.plannedLabel
-                              : l10n.dueLabel,
-                          icon:
-                              _activeDateEditor == _TaskDateEditorTarget.planned
-                              ? Icons.calendar_today_rounded
-                              : Icons.flag_rounded,
+                          label: l10n.dueLabel,
+                          icon: Icons.flag_rounded,
                           now: now,
-                          selectedDate:
-                              _activeDateEditor == _TaskDateEditorTarget.planned
-                              ? startDate
-                              : deadlineDate,
+                          selectedDate: deadlineDate,
                           onDateSelected: (value) {
-                            unawaited(
-                              _setDateForTarget(_activeDateEditor!, value),
-                            );
+                            unawaited(_setDueDate(value));
                           },
                           onClose: () {
                             setState(() => _activeDateEditor = null);
                           },
                         ),
+                        if (_activeDateEditor == _TaskDateEditorTarget.due &&
+                            hasRecurrence)
+                          Padding(
+                            padding: EdgeInsets.only(top: tokens.spaceMd),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: () => unawaited(
+                                  _openPlannedScheduleEditor(
+                                    anchorContext: context,
+                                  ),
+                                ),
+                                icon: const Icon(Icons.repeat),
+                                label: Text(l10n.recurrenceRepeatTitle),
+                              ),
+                            ),
+                          ),
                       ],
                     ],
                   );
@@ -1470,6 +1556,233 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+final class _PlannedScheduleEditorResult {
+  const _PlannedScheduleEditorResult({
+    required this.startDate,
+    required this.rrule,
+    required this.repeatFromCompletion,
+    required this.seriesEnded,
+  });
+
+  final DateTime? startDate;
+  final String? rrule;
+  final bool repeatFromCompletion;
+  final bool seriesEnded;
+}
+
+class _PlannedScheduleEditorSheet extends StatefulWidget {
+  const _PlannedScheduleEditorSheet({
+    required this.now,
+    required this.initialStartDate,
+    required this.initialRrule,
+    required this.initialRepeatFromCompletion,
+    required this.initialSeriesEnded,
+    required this.initialRecurrenceLabel,
+    required this.onEditRecurrence,
+  });
+
+  final DateTime now;
+  final DateTime? initialStartDate;
+  final String? initialRrule;
+  final bool initialRepeatFromCompletion;
+  final bool initialSeriesEnded;
+  final String? initialRecurrenceLabel;
+  final Future<RecurrencePickerResult?> Function(
+    BuildContext sheetContext, {
+    required String? rrule,
+    required bool repeatFromCompletion,
+    required bool seriesEnded,
+  })
+  onEditRecurrence;
+
+  @override
+  State<_PlannedScheduleEditorSheet> createState() =>
+      _PlannedScheduleEditorSheetState();
+}
+
+class _PlannedScheduleEditorSheetState
+    extends State<_PlannedScheduleEditorSheet> {
+  late DateTime? _startDate;
+  late String? _rrule;
+  late bool _repeatFromCompletion;
+  late bool _seriesEnded;
+  String? _recurrenceLabel;
+
+  @override
+  void initState() {
+    super.initState();
+    _startDate = widget.initialStartDate;
+    _rrule = (widget.initialRrule ?? '').trim();
+    _repeatFromCompletion = widget.initialRepeatFromCompletion;
+    _seriesEnded = widget.initialSeriesEnded;
+    _recurrenceLabel = widget.initialRecurrenceLabel;
+    unawaited(_refreshRecurrenceLabel());
+  }
+
+  DateTime _dateOnly(DateTime value) =>
+      DateTime(value.year, value.month, value.day);
+
+  Future<void> _refreshRecurrenceLabel() async {
+    final rrule = (_rrule ?? '').trim();
+    if (rrule.isEmpty) {
+      if (!mounted) return;
+      setState(() => _recurrenceLabel = null);
+      return;
+    }
+    final label = await resolveRruleLabel(context, rrule);
+    if (!mounted || (_rrule ?? '').trim() != rrule) return;
+    setState(() => _recurrenceLabel = label);
+  }
+
+  Future<void> _editRecurrence() async {
+    var anchor = _startDate;
+    if (anchor == null) {
+      anchor = _dateOnly(widget.now);
+      setState(() => _startDate = anchor);
+    }
+
+    final result = await widget.onEditRecurrence(
+      context,
+      rrule: _rrule,
+      repeatFromCompletion: _repeatFromCompletion,
+      seriesEnded: _seriesEnded,
+    );
+    if (!mounted || result == null) return;
+
+    setState(() {
+      _rrule = result.rrule;
+      _repeatFromCompletion = result.repeatFromCompletion;
+      _seriesEnded = result.seriesEnded;
+      _recurrenceLabel = null;
+    });
+    await _refreshRecurrenceLabel();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final tokens = TasklyTokens.of(context);
+    final today = _dateOnly(widget.now);
+    final tomorrow = today.add(const Duration(days: 1));
+    final nextWeek = today.add(const Duration(days: 7));
+    final hasRecurrence = (_rrule ?? '').trim().isNotEmpty;
+    final selectedDate = _startDate ?? today;
+    final recurrenceSummary = hasRecurrence
+        ? (_recurrenceLabel ?? l10n.loadingTitle)
+        : l10n.recurrenceDoesNotRepeat;
+
+    return TasklyFormSheet(
+      title: '${l10n.plannedLabel} · ${l10n.recurrenceRepeatTitle}',
+      preset: TasklyFormPreset.standard(tokens),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.repeat),
+            title: Text(l10n.recurrenceRepeatTitle),
+            subtitle: Text(recurrenceSummary),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: _editRecurrence,
+          ),
+          SizedBox(height: tokens.spaceSm),
+          Wrap(
+            spacing: tokens.spaceXs2,
+            runSpacing: tokens.spaceXs2,
+            children: [
+              _ScheduleQuickChip(
+                label: l10n.dateToday,
+                onTap: () => setState(() => _startDate = today),
+              ),
+              _ScheduleQuickChip(
+                label: l10n.dateTomorrow,
+                onTap: () => setState(() => _startDate = tomorrow),
+              ),
+              _ScheduleQuickChip(
+                label: l10n.dateNextWeek,
+                onTap: () => setState(() => _startDate = nextWeek),
+              ),
+              _ScheduleQuickChip(
+                label: l10n.sortFieldNoneLabel,
+                onTap: () => setState(() => _startDate = null),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spaceSm),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+              ),
+            ),
+            child: CalendarDatePicker(
+              initialDate: selectedDate,
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2100),
+              onDateChanged: (date) =>
+                  setState(() => _startDate = _dateOnly(date)),
+            ),
+          ),
+          SizedBox(height: tokens.spaceMd),
+          Row(
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(l10n.cancelLabel),
+              ),
+              const Spacer(),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(context).pop(
+                    _PlannedScheduleEditorResult(
+                      startDate: _startDate,
+                      rrule: _rrule,
+                      repeatFromCompletion: _repeatFromCompletion,
+                      seriesEnded: _seriesEnded,
+                    ),
+                  );
+                },
+                child: Text(l10n.doneLabel),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScheduleQuickChip extends StatelessWidget {
+  const _ScheduleQuickChip({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    return ActionChip(
+      onPressed: onTap,
+      label: Text(label),
+      side: BorderSide(color: scheme.outlineVariant),
+      backgroundColor: scheme.surface,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spaceXs,
+        vertical: tokens.spaceXxs,
       ),
     );
   }

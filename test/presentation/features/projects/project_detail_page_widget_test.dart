@@ -338,6 +338,51 @@ void main() {
     expect(find.text('Task B'), findsOneWidget);
   });
 
+  testWidgetsSafe(
+    'shows newly created project task immediately after closing add-task flow',
+    (tester) async {
+      final openTaskEditorCompleter = Completer<void>();
+      when(
+        () => editorLauncher.openTaskEditor(
+          any(),
+          taskId: any(named: 'taskId'),
+          defaultProjectId: any(named: 'defaultProjectId'),
+          defaultStartDate: any(named: 'defaultStartDate'),
+          defaultDeadlineDate: any(named: 'defaultDeadlineDate'),
+          openToProjectPicker: any(named: 'openToProjectPicker'),
+          includeInMyDayDefault: any(named: 'includeInMyDayDefault'),
+          showDragHandle: any(named: 'showDragHandle'),
+        ),
+      ).thenAnswer((_) => openTaskEditorCompleter.future);
+
+      await pumpPage(tester);
+
+      final project = TestData.project(id: 'project-1', name: 'Alpha Project');
+      projectSubject.add(project);
+      tasksSubject.add(const <Task>[]);
+      await tester.pumpForStream();
+
+      final speedDial = tester.widget<TaskRoutineAddSpeedDial>(
+        find.byType(TaskRoutineAddSpeedDial),
+      );
+      speedDial.onCreateTask();
+      await tester.pump();
+
+      tasksSubject.add([
+        TestData.task(
+          id: 'task-created-from-fab',
+          name: 'Task Created From FAB',
+          projectId: project.id,
+        ),
+      ]);
+
+      openTaskEditorCompleter.complete();
+      await tester.pumpForStream();
+
+      expect(find.text('Task Created From FAB'), findsOneWidget);
+    },
+  );
+
   testWidgetsSafe('shows compact notes preview by default', (tester) async {
     await pumpPage(tester);
 

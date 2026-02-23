@@ -144,6 +144,12 @@ final class TaskCommandHandler {
     }
     fieldErrors.addAll(TaskValidators.dateOrder(startDate, deadlineDate));
     fieldErrors.addAll(
+      TaskValidators.recurrenceShape(
+        repeatIcalRrule: repeat,
+        startDate: startDate,
+      ),
+    );
+    fieldErrors.addAll(
       TaskValidators.reminderShape(
         reminderKind: reminderKind,
         reminderAtUtc: reminderAtUtc,

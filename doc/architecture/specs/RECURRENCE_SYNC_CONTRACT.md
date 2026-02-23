@@ -9,6 +9,9 @@ Canonical contract for recurrence occurrence keys, routine window keys, and sync
 - Non-recurring tasks may use baseline null occurrence scope where applicable.
 - Recurring task actions must target a derived local date occurrence key.
 - UI must not derive occurrence keys ad-hoc.
+- Repeating tasks and projects require an explicit start-date anchor. Legacy
+  rows without start-date anchors must be repaired before recurrence
+  reads/writes.
 
 ## Routine window keys
 

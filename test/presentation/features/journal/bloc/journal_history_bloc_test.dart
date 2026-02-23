@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_b
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 
@@ -19,7 +20,29 @@ class MockSettingsRepository extends Mock
     implements SettingsRepositoryContract {}
 
 void main() {
-  setUpAll(setUpAllTestEnvironment);
+  setUpAll(() {
+    setUpAllTestEnvironment();
+    registerAllFallbackValues();
+    registerFallbackValue(
+      TrackerGroup(
+        id: 'g-1',
+        name: 'Group',
+        createdAt: DateTime.utc(2025, 1, 1),
+        updatedAt: DateTime.utc(2025, 1, 1),
+      ),
+    );
+    registerFallbackValue(
+      TrackerDefinitionChoice(
+        id: 'c-1',
+        trackerId: 't-1',
+        choiceKey: 'choice',
+        label: 'Choice',
+        createdAt: DateTime.utc(2025, 1, 1),
+        updatedAt: DateTime.utc(2025, 1, 1),
+      ),
+    );
+    registerFallbackValue(SettingsKey.microLearningSeen('fallback-tip-id'));
+  });
   setUp(setUpTestEnvironment);
 
   late MockJournalRepository repository;
@@ -29,6 +52,16 @@ void main() {
   late TestStreamController<List<JournalEntry>> entriesController;
   late TestStreamController<List<TrackerStateDay>> dayStateController;
   late TestStreamController<List<TrackerEvent>> eventsController;
+  late TestStreamController<List<TrackerGroup>> groupsController;
+
+  JournalHistoryBloc buildBloc() {
+    return JournalHistoryBloc(
+      repository: repository,
+      dayKeyService: dayKeyService,
+      settingsRepository: settingsRepository,
+      nowUtc: () => DateTime.utc(2026, 1, 28, 9),
+    );
+  }
 
   setUp(() {
     repository = MockJournalRepository();
@@ -39,6 +72,7 @@ void main() {
     entriesController = TestStreamController.seeded(<JournalEntry>[]);
     dayStateController = TestStreamController.seeded(<TrackerStateDay>[]);
     eventsController = TestStreamController.seeded(<TrackerEvent>[]);
+    groupsController = TestStreamController.seeded(<TrackerGroup>[]);
 
     when(
       () => repository.watchTrackerDefinitions(),
@@ -55,6 +89,25 @@ void main() {
         anchorType: any(named: 'anchorType'),
       ),
     ).thenAnswer((_) => eventsController.stream);
+    when(
+      () => repository.watchTrackerGroups(),
+    ).thenAnswer((_) => groupsController.stream);
+
+    when(
+      () => repository.saveTrackerGroup(any(), context: any(named: 'context')),
+    ).thenAnswer((_) async {});
+    when(
+      () => repository.saveTrackerDefinition(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => repository.saveTrackerDefinitionChoice(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
 
     when(
       () => dayKeyService.todayDayKeyUtc(),
@@ -65,10 +118,16 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
     when(
-      () => settingsRepository.save(
-        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+      () => settingsRepository.save<bool>(
         any(),
+        any<bool>(),
         context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => settingsRepository.save<bool>(
+        any(),
+        any<bool>(),
       ),
     ).thenAnswer((_) async {});
   });
@@ -78,16 +137,12 @@ void main() {
     await entriesController.close();
     await dayStateController.close();
     await eventsController.close();
+    await groupsController.close();
   });
 
   blocTestSafe<JournalHistoryBloc, JournalHistoryState>(
     'filters days by mood minimum',
-    build: () => JournalHistoryBloc(
-      repository: repository,
-      dayKeyService: dayKeyService,
-      settingsRepository: settingsRepository,
-      nowUtc: () => DateTime.utc(2026, 1, 28, 9),
-    ),
+    build: buildBloc,
     act: (bloc) {
       final moodTracker = TrackerDefinition(
         id: 'mood-1',
@@ -169,6 +224,235 @@ void main() {
               4,
             ),
       );
+    },
+  );
+
+  testSafe(
+    'builds query with search and explicit date range filters',
+    () async {
+      final bloc = buildBloc();
+      addTearDown(bloc.close);
+
+      bloc.add(const JournalHistoryStarted());
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      final start = DateTime.utc(2026, 1, 1);
+      final end = DateTime.utc(2026, 1, 7);
+      bloc.add(
+        JournalHistoryFiltersChanged(
+          JournalHistoryFilters.initial().copyWith(
+            searchText: 'gratitude',
+            rangeStart: start,
+            rangeEnd: end,
+          ),
+        ),
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+
+      final captured = verify(
+        () => repository.watchJournalEntriesByQuery(captureAny()),
+      ).captured;
+      final query = captured.last as JournalQuery;
+
+      expect(
+        query.filter.shared.whereType<JournalTextPredicate>().single.value,
+        'gratitude',
+      );
+
+      final datePredicate = query.filter.shared
+          .whereType<JournalDatePredicate>()
+          .single;
+      expect(datePredicate.operator, DateOperator.between);
+      expect(dateOnly(datePredicate.startDate!), dateOnly(start));
+      expect(dateOnly(datePredicate.endDate!), dateOnly(end));
+    },
+  );
+
+  testSafe('load more increases lookback when no explicit range', () async {
+    final bloc = buildBloc();
+    addTearDown(bloc.close);
+
+    bloc.add(const JournalHistoryStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    bloc.add(const JournalHistoryLoadMoreRequested());
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+
+    final state = bloc.state as JournalHistoryLoaded;
+    expect(state.filters.lookbackDays, 60);
+  });
+
+  testSafe('load more is ignored when explicit range is active', () async {
+    final bloc = buildBloc();
+    addTearDown(bloc.close);
+
+    final start = DateTime.utc(2026, 1, 1);
+    final end = DateTime.utc(2026, 1, 2);
+
+    bloc.add(const JournalHistoryStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    bloc.add(
+      JournalHistoryFiltersChanged(
+        JournalHistoryFilters.initial().copyWith(
+          rangeStart: start,
+          rangeEnd: end,
+        ),
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    bloc.add(const JournalHistoryLoadMoreRequested());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    final state = bloc.state as JournalHistoryLoaded;
+    expect(state.filters.rangeStart, start);
+    expect(state.filters.rangeEnd, end);
+    expect(state.filters.lookbackDays, 30);
+  });
+
+  testSafe('starter pack dismissed marks seen and hides prompt', () async {
+    when(
+      () => settingsRepository.load(
+        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    final bloc = buildBloc();
+    addTearDown(bloc.close);
+
+    bloc.add(const JournalHistoryStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+
+    final loadedBefore = bloc.state as JournalHistoryLoaded;
+    expect(loadedBefore.showStarterPack, isTrue);
+
+    bloc.add(const JournalHistoryStarterPackDismissed());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    final loadedAfter = bloc.state as JournalHistoryLoaded;
+    expect(loadedAfter.showStarterPack, isFalse);
+
+    verify(
+      () => settingsRepository.save(
+        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+        true,
+      ),
+    ).called(1);
+  });
+
+  testSafe('starter pack with empty selection only dismisses', () async {
+    when(
+      () => settingsRepository.load(
+        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    final bloc = buildBloc();
+    addTearDown(bloc.close);
+
+    bloc.add(const JournalHistoryStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    bloc.add(const JournalHistoryStarterPackApplied(<String>{}));
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+
+    final loaded = bloc.state as JournalHistoryLoaded;
+    expect(loaded.showStarterPack, isFalse);
+
+    verifyNever(
+      () => repository.saveTrackerDefinition(
+        any(),
+        context: any(named: 'context'),
+      ),
+    );
+    verify(
+      () => settingsRepository.save(
+        SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+        true,
+      ),
+    ).called(1);
+  });
+
+  testSafe(
+    'starter pack apply creates hobbies group, trackers, and choices',
+    () async {
+      when(
+        () => settingsRepository.load(
+          SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      var defs = <TrackerDefinition>[];
+      var groups = <TrackerGroup>[];
+      defsController.emit(defs);
+      groupsController.emit(groups);
+
+      when(
+        () =>
+            repository.saveTrackerGroup(any(), context: any(named: 'context')),
+      ).thenAnswer((invocation) async {
+        final requested = invocation.positionalArguments.first as TrackerGroup;
+        final saved = requested.copyWith(id: 'group-hobbies');
+        groups = [saved];
+        groupsController.emit(groups);
+      });
+
+      when(
+        () => repository.saveTrackerDefinition(
+          any(),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((invocation) async {
+        final requested =
+            invocation.positionalArguments.first as TrackerDefinition;
+        final saved = requested.copyWith(
+          id: 'def-${requested.name.toLowerCase().replaceAll(' ', '-')}',
+        );
+        defs = [...defs, saved];
+        defsController.emit(defs);
+      });
+
+      final bloc = buildBloc();
+      addTearDown(bloc.close);
+
+      bloc.add(const JournalHistoryStarted());
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+
+      bloc.add(
+        const JournalHistoryStarterPackApplied(<String>{
+          'running',
+          'social_time',
+        }),
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+
+      verify(
+        () =>
+            repository.saveTrackerGroup(any(), context: any(named: 'context')),
+      ).called(1);
+
+      verify(
+        () => repository.saveTrackerDefinition(
+          any(),
+          context: any(named: 'context'),
+        ),
+      ).called(2);
+
+      verify(
+        () => repository.saveTrackerDefinitionChoice(
+          any(),
+          context: any(named: 'context'),
+        ),
+      ).called(4);
+
+      verify(
+        () => settingsRepository.save(
+          SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
+          true,
+        ),
+      ).called(1);
     },
   );
 }

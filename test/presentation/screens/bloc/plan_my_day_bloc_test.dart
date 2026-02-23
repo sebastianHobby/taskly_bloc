@@ -300,6 +300,41 @@ void main() {
   );
 
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
+    'auto-included scheduled routines are emitted as selected items',
+    build: () {
+      final routine = Routine(
+        id: 'routine-scheduled',
+        createdAt: DateTime.utc(2024, 12, 1),
+        updatedAt: DateTime.utc(2025, 1, 1),
+        name: 'Morning routine',
+        projectId: 'project-1',
+        periodType: RoutinePeriodType.week,
+        scheduleMode: RoutineScheduleMode.scheduled,
+        targetCount: 1,
+        scheduleDays: const <int>[3],
+      );
+
+      when(
+        () => routineRepository.getAll(includeInactive: true),
+      ).thenAnswer((_) async => [routine]);
+
+      return buildBloc();
+    },
+    act: (bloc) async {
+      if (bloc.state is! PlanMyDayReady) {
+        await bloc.stream.firstWhere((state) => state is PlanMyDayReady);
+      }
+    },
+    verify: (bloc) {
+      final ready = bloc.state as PlanMyDayReady;
+      expect(ready.selectedRoutineIds, contains('routine-scheduled'));
+      expect(ready.scheduledRoutines, isNotEmpty);
+      expect(ready.scheduledRoutines.first.routine.id, 'routine-scheduled');
+      expect(ready.scheduledRoutines.first.selected, isTrue);
+    },
+  );
+
+  blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
     'swaps a selected suggestion for another option',
     build: () {
       demoModeService.enable();

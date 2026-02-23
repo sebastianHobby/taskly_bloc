@@ -13,6 +13,18 @@
     "doneLabel": "Listo",
     "recurrenceTitle": "Repetir",
     "recurrenceRepeatFromCompletionLabel": "Repetir desde la finalizaciÃ³n",
+    "recurrenceRepeatModeLabel": "Repetir segun",
+    "@recurrenceRepeatModeLabel": {
+        "description": "Section label for selecting recurrence basis"
+    },
+    "recurrenceRepeatModeScheduled": "Calendario",
+    "@recurrenceRepeatModeScheduled": {
+        "description": "Recurrence basis option: anchored to schedule dates"
+    },
+    "recurrenceRepeatModeFromCompletion": "Finalizacion",
+    "@recurrenceRepeatModeFromCompletion": {
+        "description": "Recurrence basis option: anchored from completion date"
+    },
     "recurrenceSeriesEndedLabel": "Finalizar serie",
 
     
@@ -5080,6 +5092,14 @@
     "taskReminderDueDateRequiredHint": "Primero define una fecha de vencimiento para usar este recordatorio.",
     "@taskReminderDueDateRequiredHint": {
         "description": "Hint shown when before-due reminder is unavailable without a due date"
+    },
+    "taskReminderRecurringAbsoluteHint": "Recordatorio unico. No se repetira en futuras ocurrencias.",
+    "@taskReminderRecurringAbsoluteHint": {
+        "description": "Hint shown for absolute reminders on recurring tasks"
+    },
+    "taskReminderRecurringBeforeDueHint": "Se repite en cada ocurrencia usando el desfase de vencimiento.",
+    "@taskReminderRecurringBeforeDueHint": {
+        "description": "Hint shown for before-due reminders on recurring tasks"
     },
     "taskReminderDueRemovedTitle": "Quieres mantener este recordatorio?",
     "@taskReminderDueRemovedTitle": {

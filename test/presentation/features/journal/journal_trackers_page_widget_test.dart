@@ -55,6 +55,18 @@ void main() {
     when(
       () => repository.watchTrackerDefinitions(),
     ).thenAnswer((_) => defsSubject);
+    when(
+      () => repository.saveTrackerDefinition(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => repository.deleteTrackerAndData(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -128,6 +140,101 @@ void main() {
 
     expect(find.text('No trackers yet'), findsOneWidget);
   });
+
+  testWidgetsSafe('rename popup action saves tracker definition', (
+    tester,
+  ) async {
+    final def = _tracker('tracker-1', 'Mood', scope: 'entry');
+    defsSubject.add([def]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    await _tapPopupAction(tester, 'Rename');
+    await tester.pumpForStream();
+
+    await tester.enterText(find.byType(TextField).last, 'Renamed mood');
+    await _tapText(tester, find.text('Save').last);
+    await tester.pumpForStream();
+
+    verify(
+      () => repository.saveTrackerDefinition(
+        any(
+          that: isA<TrackerDefinition>().having(
+            (d) => d.name,
+            'name',
+            'Renamed mood',
+          ),
+        ),
+        context: any(named: 'context'),
+      ),
+    ).called(1);
+  });
+
+  testWidgetsSafe('archive popup action deactivates tracker', (tester) async {
+    final def = _tracker('tracker-1', 'Mood', scope: 'entry');
+    defsSubject.add([def]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    await _tapPopupAction(tester, 'Archive');
+    await tester.pumpForStream();
+
+    verify(
+      () => repository.saveTrackerDefinition(
+        any(
+          that: isA<TrackerDefinition>().having(
+            (d) => d.isActive,
+            'isActive',
+            false,
+          ),
+        ),
+        context: any(named: 'context'),
+      ),
+    ).called(1);
+  });
+
+  testWidgetsSafe('delete popup action can hard delete tracker', (
+    tester,
+  ) async {
+    final def = _tracker('tracker-1', 'Mood', scope: 'entry');
+    defsSubject.add([def]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    await _tapPopupAction(tester, 'Delete');
+    await tester.pumpForStream();
+
+    await _tapText(tester, find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpForStream();
+
+    verify(
+      () => repository.deleteTrackerAndData(
+        'tracker-1',
+        context: any(named: 'context'),
+      ),
+    ).called(1);
+  });
+}
+
+Future<void> _tapPopupAction(WidgetTester tester, String text) async {
+  final menuButton = find.byType(PopupMenuButton<String>).first;
+  await tester.ensureVisible(menuButton);
+  await tester.tap(menuButton, warnIfMissed: false);
+  await tester.pumpForStream();
+
+  final action = find.text(text).last;
+  await _tapText(tester, action);
+}
+
+Future<void> _tapText(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpUntilCondition(
+    () => finder.hitTestable().evaluate().isNotEmpty,
+  );
+  await tester.tap(finder.hitTestable().first, warnIfMissed: false);
 }
 
 TrackerGroup _group(String id, String name) {

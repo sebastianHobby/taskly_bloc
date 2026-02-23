@@ -112,4 +112,92 @@ void main() {
       expect(result.insight, contains('n=12'));
     },
   );
+
+  testSafe(
+    'CorrelationCalculator uses non-early non-significant insight for larger samples',
+    () async {
+      final calculator = CorrelationCalculator();
+
+      final sourceDays = <DateTime>[for (int i = 1; i <= 40; i += 2) day(i)];
+      final targetData = <DateTime, double>{
+        for (int i = 1; i <= 40; i++) day(i): 5,
+      };
+
+      final result = calculator.calculate(
+        sourceLabel: 'Sleep',
+        targetLabel: 'Mood',
+        sourceDays: sourceDays,
+        targetData: targetData,
+      );
+
+      expect(result.sampleSize, 40);
+      expect(result.statisticalSignificance?.isSignificant, isFalse);
+      expect(
+        result.insight,
+        contains('No statistically significant correlation'),
+      );
+    },
+  );
+
+  testSafe(
+    'CorrelationCalculator detects strong negative correlation with significance',
+    () async {
+      final calculator = CorrelationCalculator();
+
+      final sourceDays = <DateTime>[];
+      final targetData = <DateTime, double>{};
+      for (int i = 1; i <= 24; i++) {
+        final d = day(i);
+        final sourceOn = i.isEven;
+        if (sourceOn) sourceDays.add(d);
+        targetData[d] = sourceOn ? 1 : 10;
+      }
+
+      final result = calculator.calculate(
+        sourceLabel: 'Late caffeine',
+        targetLabel: 'Sleep quality',
+        sourceDays: sourceDays,
+        targetData: targetData,
+      );
+
+      expect(result.coefficient, lessThan(-0.9));
+      expect(result.strength, CorrelationStrength.strongNegative);
+      expect(result.statisticalSignificance?.isSignificant, isTrue);
+      expect(result.insight, contains('lower'));
+    },
+  );
+
+  testSafe(
+    'CorrelationCalculator can produce moderate positive strength',
+    () async {
+      final calculator = CorrelationCalculator();
+
+      final sourceDays = <DateTime>[];
+      final targetData = <DateTime, double>{};
+      for (int i = 1; i <= 120; i++) {
+        final d = day(i);
+        final sourceOn = i.isEven;
+        if (sourceOn) sourceDays.add(d);
+        final base = (i % 10).toDouble();
+        targetData[d] = sourceOn ? base + 3 : base;
+      }
+
+      final result = calculator.calculate(
+        sourceLabel: 'Planning',
+        targetLabel: 'Productivity',
+        sourceDays: sourceDays,
+        targetData: targetData,
+      );
+
+      expect(result.sampleSize, 120);
+      expect(result.statisticalSignificance?.isSignificant, isTrue);
+      expect(
+        result.strength,
+        anyOf(
+          CorrelationStrength.moderatePositive,
+          CorrelationStrength.strongPositive,
+        ),
+      );
+    },
+  );
 }

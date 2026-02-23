@@ -12,6 +12,18 @@
     "doneLabel": "Done",
     "recurrenceTitle": "Repeat",
     "recurrenceRepeatFromCompletionLabel": "Repeat from completion",
+    "recurrenceRepeatModeLabel": "Repeat based on",
+    "@recurrenceRepeatModeLabel": {
+        "description": "Section label for selecting recurrence basis"
+    },
+    "recurrenceRepeatModeScheduled": "Schedule",
+    "@recurrenceRepeatModeScheduled": {
+        "description": "Recurrence basis option: anchored to schedule dates"
+    },
+    "recurrenceRepeatModeFromCompletion": "Completion",
+    "@recurrenceRepeatModeFromCompletion": {
+        "description": "Recurrence basis option: anchored from completion date"
+    },
     "recurrenceSeriesEndedLabel": "End series",
 
     
@@ -5197,6 +5209,14 @@
     "taskReminderDueDateRequiredHint": "Set a due date first to use before-due reminders.",
     "@taskReminderDueDateRequiredHint": {
         "description": "Hint shown when before-due reminder is unavailable without a due date"
+    },
+    "taskReminderRecurringAbsoluteHint": "One-time reminder. It will not repeat with future occurrences.",
+    "@taskReminderRecurringAbsoluteHint": {
+        "description": "Hint shown for absolute reminders on recurring tasks"
+    },
+    "taskReminderRecurringBeforeDueHint": "Repeats for each occurrence using your due-date offset.",
+    "@taskReminderRecurringBeforeDueHint": {
+        "description": "Hint shown for before-due reminders on recurring tasks"
     },
     "taskReminderDueRemovedTitle": "Keep this reminder?",
     "@taskReminderDueRemovedTitle": {

@@ -11,6 +11,8 @@ Defines plan building and execution surfaces, inclusion rules, ordering, over-ca
 - Scheduled routines are shown before flexible routines.
 - Flexible routines sort by urgency in window and completion recency.
 - Deselecting due/planned/scheduled items requires explicit alternate action (reschedule/skip/pause flow).
+- Recurring tasks are occurrence-aware in planning reads. Occurrence start is
+  treated as planned/start date for bucketing.
 
 ## Ordering baseline
 

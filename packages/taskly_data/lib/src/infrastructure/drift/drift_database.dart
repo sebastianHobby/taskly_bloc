@@ -808,6 +808,21 @@ class AppDatabase extends _$AppDatabase {
     // migrations (like table rebuilds) that could drop synced columns.
     onUpgrade: (migrator, from, to) async {},
     beforeOpen: (details) async {
+      // Backfill explicit recurrence anchors for legacy repeating entities.
+      // U2 semantics require recurring items to have a start date anchor.
+      await customStatement('''
+        UPDATE tasks
+        SET start_date = COALESCE(deadline_date, date(created_at))
+        WHERE (start_date IS NULL OR TRIM(start_date) = '')
+          AND TRIM(COALESCE(repeat_ical_rrule, '')) <> '';
+      ''');
+      await customStatement('''
+        UPDATE projects
+        SET start_date = COALESCE(deadline_date, date(created_at))
+        WHERE (start_date IS NULL OR TRIM(start_date) = '')
+          AND TRIM(COALESCE(repeat_ical_rrule, '')) <> '';
+      ''');
+
       // Ensure SQLite enforces foreign keys at runtime.
       // Do not enable. Powersync exposes views which do not support
       // foreign key constraints.

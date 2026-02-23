@@ -323,5 +323,30 @@ void main() {
       final rotated0 = File('${current.path}.0');
       expect(await rotated0.exists(), isFalse);
     });
+
+    testSafe(
+      'sync truncate path rewrites oversized file before append',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'taskly_core_logs_',
+        );
+        addTearDown(() async {
+          await tempDir.delete(recursive: true);
+        });
+
+        final observer = DebugFileLogObserver(
+          maxFileBytes: 32,
+          supportDirectoryProvider: () async => tempDir,
+        );
+        await observer.ensureInitializedForTest();
+
+        final t = Talker(observer: observer);
+        t.error('A' * 128);
+        t.error('B' * 128);
+
+        final content = await File(observer.logFilePath!).readAsString();
+        expect(content, contains('cleared'));
+      },
+    );
   });
 }

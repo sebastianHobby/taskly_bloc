@@ -66,5 +66,139 @@ void main() {
       expect(IdGenerator.isRandom('tasks'), isTrue);
       expect(IdGenerator.isRandom('values'), isFalse);
     });
+
+    testSafe('covers v4 id factories', () async {
+      final gen = IdGenerator.withUserId('u1');
+
+      final ids = <String>[
+        gen.taskId(),
+        gen.projectId(),
+        gen.journalEntryId(),
+        gen.trackerGroupId(),
+        gen.userProfileId(),
+        gen.pendingNotificationId(),
+        gen.syncIssueId(),
+        gen.analyticsCorrelationId(),
+        gen.analyticsInsightId(),
+        gen.taskSnoozeEventId(),
+        gen.routineId(),
+        gen.routineCompletionId(),
+        gen.routineSkipId(),
+        gen.taskChecklistItemId(),
+        gen.routineChecklistItemId(),
+        gen.checklistEventId(),
+        gen.trackerEventId(),
+        gen.attentionResolutionId(),
+      ];
+
+      expect(ids.every((id) => id.isNotEmpty), isTrue);
+      expect(ids.toSet().length, ids.length);
+    });
+
+    testSafe('covers deterministic id factories', () async {
+      final gen = IdGenerator.withUserId('user-1');
+      final day = DateTime.utc(2026, 2, 1);
+
+      final valueId = gen.valueId(name: 'Health');
+      expect(gen.valueId(name: 'Health'), valueId);
+      expect(gen.valueId(name: 'Career'), isNot(valueId));
+
+      expect(
+        gen.trackerDefinitionId(name: 'Mood'),
+        gen.trackerDefinitionId(name: 'Mood'),
+      );
+      expect(
+        gen.trackerPreferenceId(trackerId: 't1'),
+        gen.trackerPreferenceId(trackerId: 't1'),
+      );
+      expect(
+        gen.trackerDefinitionChoiceId(trackerId: 't1', choiceKey: 'good'),
+        gen.trackerDefinitionChoiceId(trackerId: 't1', choiceKey: 'good'),
+      );
+
+      expect(
+        gen.projectCompletionId(projectId: 'p1', occurrenceDate: day),
+        gen.projectCompletionId(
+          projectId: 'p1',
+          occurrenceDate: DateTime.utc(2026, 2, 1, 23, 59),
+        ),
+      );
+      expect(
+        gen.taskRecurrenceExceptionId(taskId: 't1', originalDate: day),
+        gen.taskRecurrenceExceptionId(
+          taskId: 't1',
+          originalDate: DateTime.utc(2026, 2, 1, 10),
+        ),
+      );
+      expect(
+        gen.projectRecurrenceExceptionId(projectId: 'p1', originalDate: day),
+        gen.projectRecurrenceExceptionId(
+          projectId: 'p1',
+          originalDate: DateTime.utc(2026, 2, 1, 10),
+        ),
+      );
+      expect(
+        gen.screenDefinitionId(screenKey: 'inbox'),
+        gen.screenDefinitionId(screenKey: 'inbox'),
+      );
+      expect(
+        gen.analyticsSnapshotId(
+          entityType: 'value',
+          entityId: 'v1',
+          snapshotDate: day,
+        ),
+        gen.analyticsSnapshotId(
+          entityType: 'value',
+          entityId: 'v1',
+          snapshotDate: DateTime.utc(2026, 2, 1, 22),
+        ),
+      );
+      expect(gen.myDayDayId(dayUtc: day), gen.myDayDayId(dayUtc: day));
+      expect(
+        gen.myDayPickId(dayId: 'd1', targetType: 'task', targetId: 't1'),
+        gen.myDayPickId(dayId: 'd1', targetType: 'task', targetId: 't1'),
+      );
+      expect(
+        gen.attentionRuleId(ruleKey: 'stale'),
+        gen.attentionRuleId(ruleKey: 'stale'),
+      );
+      expect(
+        gen.projectAnchorStateIdForProject(projectId: 'p1'),
+        gen.projectAnchorStateIdForProject(projectId: 'p1'),
+      );
+      expect(
+        gen.taskChecklistItemStateId(
+          taskId: 't1',
+          checklistItemId: 'c1',
+          occurrenceDate: day,
+        ),
+        gen.taskChecklistItemStateId(
+          taskId: 't1',
+          checklistItemId: 'c1',
+          occurrenceDate: DateTime.utc(2026, 2, 1, 5),
+        ),
+      );
+      expect(
+        gen.routineChecklistItemStateId(
+          routineId: 'r1',
+          checklistItemId: 'c1',
+          periodType: 'week',
+          windowKey: day,
+        ),
+        gen.routineChecklistItemStateId(
+          routineId: 'r1',
+          checklistItemId: 'c1',
+          periodType: 'week',
+          windowKey: DateTime.utc(2026, 2, 1, 5),
+        ),
+      );
+      expect(
+        gen.valueWeeklyRatingId(valueId: 'v1', weekStartUtc: day),
+        gen.valueWeeklyRatingId(
+          valueId: 'v1',
+          weekStartUtc: DateTime.utc(2026, 2, 1, 7),
+        ),
+      );
+    });
   });
 }

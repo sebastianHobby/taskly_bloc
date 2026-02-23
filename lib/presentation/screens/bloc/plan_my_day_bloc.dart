@@ -185,6 +185,23 @@ final class PlanMyDayRoutineItem {
   final DateTime? lastScheduledDayUtc;
   final DateTime? lastCompletedAtUtc;
   final List<RoutineCompletion> completionsInPeriod;
+
+  PlanMyDayRoutineItem copyWith({
+    bool? selected,
+  }) {
+    return PlanMyDayRoutineItem(
+      routine: routine,
+      snapshot: snapshot,
+      selected: selected ?? this.selected,
+      completedToday: completedToday,
+      isCatchUpDay: isCatchUpDay,
+      isScheduled: isScheduled,
+      isEligibleToday: isEligibleToday,
+      lastScheduledDayUtc: lastScheduledDayUtc,
+      lastCompletedAtUtc: lastCompletedAtUtc,
+      completionsInPeriod: completionsInPeriod,
+    );
+  }
 }
 
 @immutable
@@ -401,6 +418,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     required NowService nowService,
     required DemoModeService demoModeService,
     required DemoDataProvider demoDataProvider,
+    OccurrenceReadService? occurrenceReadService,
     RoutineScheduleService scheduleService = const RoutineScheduleService(),
   }) : _settingsRepository = settingsRepository,
        _myDayRepository = myDayRepository,
@@ -416,6 +434,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
        _nowService = nowService,
        _demoModeService = demoModeService,
        _demoDataProvider = demoDataProvider,
+       _occurrenceReadService = occurrenceReadService,
        _scheduleService = scheduleService,
        _dayKeyUtc = dayKeyService.todayDayKeyUtc(),
        super(const PlanMyDayLoading()) {
@@ -451,6 +470,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   final NowService _nowService;
   final DemoModeService _demoModeService;
   final DemoDataProvider _demoDataProvider;
+  final OccurrenceReadService? _occurrenceReadService;
   final RoutineScheduleService _scheduleService;
 
   final OperationContextFactory _contextFactory =
@@ -513,9 +533,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       _temporalTriggerService.events
           .where((e) => e is HomeDayBoundaryCrossed || e is AppResumed)
           .map(_PlanMyDayTemporalTrigger.new),
-      _taskRepository
-          .watchAll(TaskQuery.incomplete())
-          .map(_PlanMyDayTasksUpdated.new),
+      _watchIncompleteTasksForCurrentDay().map(_PlanMyDayTasksUpdated.new),
       _valueRatingsRepository
           .watchAll(weeks: _ratingsHistoryWeeks)
           .map(_PlanMyDayRatingsUpdated.new),
@@ -1244,7 +1262,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         _settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
         _valueRatingsRepository.getAll(weeks: _ratingsHistoryWeeks),
         _myDayRepository.loadDay(_dayKeyUtc),
-        _taskRepository.getAll(TaskQuery.incomplete()),
+        _loadIncompleteTasks(),
         _routineRepository.getAll(includeInactive: true),
         _routineRepository.getCompletions(),
         _routineRepository.getSkips(),
@@ -1361,6 +1379,28 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     );
   }
 
+  Stream<List<Task>> _watchIncompleteTasksForCurrentDay() {
+    final service = _occurrenceReadService;
+    if (service == null) {
+      return _taskRepository.watchAll(TaskQuery.incomplete());
+    }
+    return service.watchTasksWithOccurrencePreview(
+      query: TaskQuery.incomplete(),
+      preview: OccurrencePolicy.projectsPreview(asOfDayKey: _dayKeyUtc),
+    );
+  }
+
+  Future<List<Task>> _loadIncompleteTasks() {
+    final service = _occurrenceReadService;
+    if (service == null) {
+      return _taskRepository.getAll(TaskQuery.incomplete());
+    }
+    return service.getTasksWithOccurrencePreview(
+      query: TaskQuery.incomplete(),
+      preview: OccurrencePolicy.projectsPreview(asOfDayKey: _dayKeyUtc),
+    );
+  }
+
   void _emitReady(Emitter<PlanMyDayState> emit) {
     final snapshot = _suggestionSnapshot;
     final suggestedEntries = snapshot?.suggested ?? const <SuggestedTask>[];
@@ -1450,6 +1490,14 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       planned: plannedTasks,
     );
     final selectedRoutineIds = _selectedRoutineIds;
+    final selectedScheduledRoutines = _withSelectedRoutineState(
+      scheduledRoutines,
+      selectedRoutineIds,
+    );
+    final selectedFlexibleRoutines = _withSelectedRoutineState(
+      flexibleRoutines,
+      selectedRoutineIds,
+    );
     final overCapacity =
         (selectedTaskIds.length + selectedRoutineIds.length) > _dailyLimit;
     final toast = _pendingToast;
@@ -1469,8 +1517,8 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         suggested: suggested,
         valueSuggestionGroups: valueGroups,
         unratedValues: unratedValues,
-        scheduledRoutines: scheduledRoutines,
-        flexibleRoutines: flexibleRoutines,
+        scheduledRoutines: selectedScheduledRoutines,
+        flexibleRoutines: selectedFlexibleRoutines,
         selectedTaskIds: selectedTaskIds,
         selectedRoutineIds: selectedRoutineIds,
         allTasks: activeTasks,
@@ -1482,6 +1530,19 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       ),
     );
     _pendingToast = null;
+  }
+
+  List<PlanMyDayRoutineItem> _withSelectedRoutineState(
+    List<PlanMyDayRoutineItem> items,
+    Set<String> selectedRoutineIds,
+  ) {
+    return items
+        .map((item) {
+          final isSelected = selectedRoutineIds.contains(item.routine.id);
+          if (item.selected == isSelected) return item;
+          return item.copyWith(selected: isSelected);
+        })
+        .toList(growable: false);
   }
 
   _RoutineItemBuildResult _buildRoutineItems() {

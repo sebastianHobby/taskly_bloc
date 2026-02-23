@@ -131,14 +131,17 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
       RecurrenceFrequency.none => throw StateError('Invalid frequency'),
     };
 
+    final byWeekDays =
+        _frequency == RecurrenceFrequency.weekly && !_repeatFromCompletion
+        ? _byWeekDay.map(ByWeekDayEntry.new).toList()
+        : const <ByWeekDayEntry>[];
+
     final recurrenceRule = RecurrenceRule(
       frequency: frequency,
       interval: _interval,
       count: _count,
       until: _until,
-      byWeekDays: _byWeekDay.isNotEmpty
-          ? _byWeekDay.map(ByWeekDayEntry.new).toList()
-          : const [],
+      byWeekDays: byWeekDays,
     );
 
     return recurrenceRule.toString();
@@ -262,6 +265,34 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
 
           if (_frequency != RecurrenceFrequency.none) ...[
             SizedBox(height: tokens.spaceXl),
+            Text(
+              l10n.recurrenceRepeatModeLabel,
+              style: theme.textTheme.titleMedium,
+            ),
+            SizedBox(height: tokens.spaceSm),
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment(
+                  value: false,
+                  label: Text(l10n.recurrenceRepeatModeScheduled),
+                ),
+                ButtonSegment(
+                  value: true,
+                  label: Text(l10n.recurrenceRepeatModeFromCompletion),
+                ),
+              ],
+              selected: {_repeatFromCompletion},
+              onSelectionChanged: (selected) {
+                setState(() {
+                  _repeatFromCompletion = selected.first;
+                  if (_repeatFromCompletion) {
+                    _byWeekDay.clear();
+                  }
+                });
+              },
+              showSelectedIcon: false,
+            ),
+            SizedBox(height: tokens.spaceMd),
 
             // Interval
             Row(
@@ -327,7 +358,8 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             ),
 
             // Weekly: Day selector
-            if (_frequency == RecurrenceFrequency.weekly) ...[
+            if (_frequency == RecurrenceFrequency.weekly &&
+                !_repeatFromCompletion) ...[
               SizedBox(height: tokens.spaceLg),
               Text(
                 l10n.recurrenceOnDays,
@@ -519,12 +551,6 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
           SizedBox(height: tokens.spaceXl),
 
           if (_frequency != RecurrenceFrequency.none) ...[
-            SwitchListTile.adaptive(
-              value: _repeatFromCompletion,
-              onChanged: (v) => setState(() => _repeatFromCompletion = v),
-              title: Text(l10n.recurrenceRepeatFromCompletionLabel),
-              contentPadding: EdgeInsets.zero,
-            ),
             SwitchListTile.adaptive(
               value: _seriesEnded,
               onChanged: (v) => setState(() => _seriesEnded = v),

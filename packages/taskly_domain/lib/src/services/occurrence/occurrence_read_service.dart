@@ -82,11 +82,66 @@ final class OccurrenceReadService {
               final next = nextById[task.id];
               if (next == null) return task;
 
-              return task.copyWith(occurrence: next);
+              return _taskWithVirtualOccurrenceDates(
+                task.copyWith(occurrence: next),
+              );
             })
             .toList(growable: false);
       },
     );
+  }
+
+  /// Gets tasks decorated with a single "next" occurrence preview.
+  ///
+  /// Unlike [watchTasksWithOccurrencePreview], this resolves a one-time
+  /// snapshot and ensures recurring rows are normalized to virtual
+  /// start/deadline values derived from occurrence data.
+  Future<List<Task>> getTasksWithOccurrencePreview({
+    required TaskQuery query,
+    required OccurrencePreview preview,
+  }) async {
+    final baseQuery = query.copyWith(
+      clearOccurrenceExpansion: true,
+      clearOccurrencePreview: true,
+    );
+
+    final tasks = await _taskRepository.getAll(baseQuery);
+    if (tasks.isEmpty) return const <Task>[];
+
+    final range = OccurrencePolicy.previewRange(preview);
+    final byTaskId = <String, List<Task>>{};
+    for (final task in tasks.where(
+      (task) => task.isRepeating && !task.seriesEnded,
+    )) {
+      final occurrences = await _taskRepository.getOccurrencesForTask(
+        taskId: task.id,
+        rangeStart: range.rangeStart,
+        rangeEnd: range.rangeEnd,
+      );
+      byTaskId[task.id] = occurrences;
+    }
+
+    final nextById = <String, OccurrenceData>{};
+    for (final entry in byTaskId.entries) {
+      final selected =
+          NextOccurrenceSelector.nextUncompletedTaskOccurrenceByTaskId(
+            expandedTasks: entry.value,
+            asOfDay: range.asOfDayKey,
+          )[entry.key];
+      if (selected != null) {
+        nextById[entry.key] = selected;
+      }
+    }
+
+    return tasks
+        .map((task) {
+          final next = nextById[task.id];
+          if (next == null) return task;
+          return _taskWithVirtualOccurrenceDates(
+            task.copyWith(occurrence: next),
+          );
+        })
+        .toList(growable: false);
   }
 
   /// Watches task occurrences in the inclusive date window.
@@ -118,14 +173,20 @@ final class OccurrenceReadService {
       return _taskFilterEvaluator.matches(task, query.filter, ctx);
     }
 
-    return _occurrenceExpander.expandTaskOccurrences(
-      tasksStream: _taskRepository.watchAll(candidateQuery),
-      completionsStream: _taskRepository.watchCompletionHistory(),
-      exceptionsStream: _taskRepository.watchRecurrenceExceptions(),
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
-      postExpansionFilter: postExpansionFilter,
-    );
+    return _occurrenceExpander
+        .expandTaskOccurrences(
+          tasksStream: _taskRepository.watchAll(candidateQuery),
+          completionsStream: _taskRepository.watchCompletionHistory(),
+          exceptionsStream: _taskRepository.watchRecurrenceExceptions(),
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+          postExpansionFilter: postExpansionFilter,
+        )
+        .map(
+          (tasks) => tasks
+              .map(_taskWithVirtualOccurrenceDates)
+              .toList(growable: false),
+        );
   }
 
   /// Watches project occurrences in the inclusive date window.
@@ -153,13 +214,75 @@ final class OccurrenceReadService {
       return _projectFilterEvaluator.matches(project, query.filter, ctx);
     }
 
-    return _occurrenceExpander.expandProjectOccurrences(
-      projectsStream: _projectRepository.watchAll(candidateQuery),
-      completionsStream: _projectRepository.watchCompletionHistory(),
-      exceptionsStream: _projectRepository.watchRecurrenceExceptions(),
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
-      postExpansionFilter: postExpansionFilter,
+    return _occurrenceExpander
+        .expandProjectOccurrences(
+          projectsStream: _projectRepository.watchAll(candidateQuery),
+          completionsStream: _projectRepository.watchCompletionHistory(),
+          exceptionsStream: _projectRepository.watchRecurrenceExceptions(),
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+          postExpansionFilter: postExpansionFilter,
+        )
+        .map(
+          (projects) => projects
+              .map(_projectWithVirtualOccurrenceDates)
+              .toList(growable: false),
+        );
+  }
+
+  Task _taskWithVirtualOccurrenceDates(Task task) {
+    final occurrence = task.occurrence;
+    if (occurrence == null) return task;
+    return Task(
+      id: task.id,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
+      name: task.name,
+      completed: task.completed,
+      startDate: occurrence.date,
+      deadlineDate: occurrence.deadline,
+      myDaySnoozedUntilUtc: task.myDaySnoozedUntilUtc,
+      description: task.description,
+      projectId: task.projectId,
+      priority: task.priority,
+      isPinned: task.isPinned,
+      reminderKind: task.reminderKind,
+      reminderAtUtc: task.reminderAtUtc,
+      reminderMinutesBeforeDue: task.reminderMinutesBeforeDue,
+      repeatIcalRrule: task.repeatIcalRrule,
+      repeatFromCompletion: task.repeatFromCompletion,
+      seriesEnded: task.seriesEnded,
+      project: task.project,
+      values: task.values,
+      overridePrimaryValueId: task.overridePrimaryValueId,
+      overrideSecondaryValueId: task.overrideSecondaryValueId,
+      occurrence: occurrence,
+    );
+  }
+
+  Project _projectWithVirtualOccurrenceDates(Project project) {
+    final occurrence = project.occurrence;
+    if (occurrence == null) return project;
+    return Project(
+      id: project.id,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      name: project.name,
+      completed: project.completed,
+      taskCount: project.taskCount,
+      completedTaskCount: project.completedTaskCount,
+      startDate: occurrence.date,
+      deadlineDate: occurrence.deadline,
+      description: project.description,
+      primaryValueId: project.primaryValueId,
+      repeatIcalRrule: project.repeatIcalRrule,
+      repeatFromCompletion: project.repeatFromCompletion,
+      seriesEnded: project.seriesEnded,
+      priority: project.priority,
+      isPinned: project.isPinned,
+      lastProgressAt: project.lastProgressAt,
+      values: project.values,
+      occurrence: occurrence,
     );
   }
 

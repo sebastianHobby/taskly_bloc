@@ -10,6 +10,9 @@ Defines task lifecycle behavior: creation, scheduling (start/due), completion, r
 - Due/start date meaning is consistent across My Day, Scheduled, and Projects surfaces.
 - Recurrence occurrence targeting is domain-owned.
 - Task completion may include checklist snapshot metrics when checklist is present.
+- Repeating tasks require a planned/start date anchor.
+- For occurrence-aware reads, recurring task rows are normalized so occurrence
+  start/deadline are exposed through task start/due fields.
 
 ## Screen contracts
 

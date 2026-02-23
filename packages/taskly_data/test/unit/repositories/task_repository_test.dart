@@ -286,6 +286,49 @@ void main() {
       expect(identical(upcoming1, upcoming2), isTrue);
     });
 
+    testSafe('createReturningId returns id and normalizes reminders', () async {
+      final db = createAutoClosingDb();
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final id = await repo.createReturningId(
+        name: 'Task',
+        reminderKind: TaskReminderKind.absolute,
+        reminderAtUtc: DateTime.utc(2026, 2, 15, 9),
+      );
+      final row = await db.select(db.taskTable).getSingle();
+
+      expect(id, equals(row.id));
+      expect(row.reminderKind, equals('absolute'));
+      expect(row.reminderAtUtc, equals(DateTime.utc(2026, 2, 15, 9)));
+      expect(row.reminderMinutesBeforeDue, isNull);
+    });
+
+    testSafe('create clamps before-due reminder minutes', () async {
+      final db = createAutoClosingDb();
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      await repo.create(
+        name: 'Task',
+        reminderKind: TaskReminderKind.beforeDue,
+        reminderMinutesBeforeDue: 20000,
+      );
+
+      final row = await db.select(db.taskTable).getSingle();
+      expect(row.reminderKind, equals('before_due'));
+      expect(row.reminderAtUtc, isNull);
+      expect(row.reminderMinutesBeforeDue, equals(10080));
+    });
+
     testSafe('getAll applies sort criteria', () async {
       final db = createAutoClosingDb();
       final repo = TaskRepository(
@@ -353,6 +396,53 @@ void main() {
       expect(tasks.map((t) => t.id).toList(), equals(['t2', 't1']));
     });
 
+    testSafe('watchById returns null for missing task', () async {
+      final db = createAutoClosingDb();
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final task = await repo.watchById('missing').first;
+      expect(task, isNull);
+    });
+
+    testSafe('watchByIds returns empty for empty ids', () async {
+      final db = createAutoClosingDb();
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final tasks = await repo.watchByIds(const <String>[]).first;
+      expect(tasks, isEmpty);
+    });
+
+    testSafe('occurrence query flags are rejected', () async {
+      final db = createAutoClosingDb();
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final query = TaskQuery(
+        occurrenceExpansion: OccurrenceExpansion(
+          rangeStart: DateTime.utc(2026, 1, 1),
+          rangeEnd: DateTime.utc(2026, 1, 2),
+        ),
+      );
+
+      expect(() => repo.watchAll(query), throwsA(isA<UnsupportedError>()));
+      expect(() => repo.watchAllCount(query), throwsA(isA<UnsupportedError>()));
+      expect(() => repo.getAll(query), throwsA(isA<UnsupportedError>()));
+    });
+
     testSafe('recognizes inbox/upcoming queries', () async {
       final db = createAutoClosingDb();
       final repo = TaskRepository(
@@ -408,6 +498,77 @@ void main() {
       expect(stripped.shared.length, equals(1));
       expect(stripped.shared.first, isA<TaskBoolPredicate>());
     });
+
+    testSafe('update clears overrides when project is removed', () async {
+      final db = createAutoClosingDb();
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      await db
+          .into(db.taskTable)
+          .insert(
+            TaskTableCompanion.insert(
+              id: const drift.Value('t1'),
+              name: 'Task',
+              completed: const drift.Value(false),
+              projectId: const drift.Value('p1'),
+              overridePrimaryValueId: const drift.Value('v2'),
+              overrideSecondaryValueId: const drift.Value('v3'),
+            ),
+          );
+
+      await repo.update(
+        id: 't1',
+        name: 'Task',
+        completed: false,
+        projectId: '  ',
+      );
+
+      final row = await (db.select(
+        db.taskTable,
+      )..where((t) => t.id.equals('t1'))).getSingle();
+      expect(row.projectId, isNull);
+      expect(row.overridePrimaryValueId, isNull);
+      expect(row.overrideSecondaryValueId, isNull);
+    });
+
+    testSafe(
+      'setMyDaySnoozedUntil records events and computes snooze stats',
+      () async {
+        final db = createAutoClosingDb();
+        final now = DateTime.utc(2026, 1, 1, 8);
+        final repo = TaskRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+          clock: FixedClock(now),
+        );
+
+        await repo.create(name: 'Task');
+        final taskId = (await db.select(db.taskTable).getSingle()).id;
+
+        await repo.setMyDaySnoozedUntil(
+          id: taskId,
+          untilUtc: now.add(const Duration(hours: 25)),
+        );
+        await repo.setMyDaySnoozedUntil(id: taskId, untilUtc: null);
+
+        final events = await db.select(db.taskSnoozeEventsTable).get();
+        expect(events, hasLength(1));
+
+        final stats = await repo.getSnoozeStats(
+          sinceUtc: now.subtract(const Duration(hours: 1)),
+          untilUtc: now.add(const Duration(days: 2)),
+        );
+        expect(stats[taskId]?.snoozeCount, equals(1));
+        expect(stats[taskId]?.totalSnoozeDays, equals(2));
+      },
+    );
 
     testSafe('getOccurrences delegates to expander', () async {
       final db = createAutoClosingDb();
@@ -465,6 +626,45 @@ void main() {
       );
 
       expect(identical(s1, s2), isTrue);
+    });
+
+    testSafe('occurrence write helpers are delegated', () async {
+      final db = createAutoClosingDb();
+      final writeHelper = _FakeOccurrenceWriteHelper();
+      final repo = TaskRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: writeHelper,
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final day = DateTime.utc(2026, 1, 2);
+      await repo.completeOccurrence(taskId: 't1', occurrenceDate: day);
+      await repo.uncompleteOccurrence(taskId: 't1', occurrenceDate: day);
+      await repo.skipOccurrence(taskId: 't1', originalDate: day);
+      await repo.rescheduleOccurrence(
+        taskId: 't1',
+        originalDate: day,
+        newDate: day.add(const Duration(days: 1)),
+      );
+      await repo.removeException(taskId: 't1', originalDate: day);
+      await repo.stopSeries('t1');
+      await repo.completeSeries('t1');
+      await repo.convertToOneTime('t1');
+
+      expect(
+        writeHelper.calls,
+        equals([
+          'completeTaskOccurrence',
+          'uncompleteTaskOccurrence',
+          'skipTaskOccurrence',
+          'rescheduleTaskOccurrence',
+          'removeTaskException',
+          'stopTaskSeries',
+          'completeTaskSeries',
+          'convertTaskToOneTime',
+        ]),
+      );
     });
   });
 }

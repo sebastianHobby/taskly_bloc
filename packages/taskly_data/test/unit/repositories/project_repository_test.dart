@@ -198,6 +198,30 @@ void main() {
       expect(identical(s1, s2), isFalse);
     });
 
+    testSafe('watchAll/getAll/watchAllCount reject occurrence flags', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final query = ProjectQuery(
+        occurrenceExpansion: OccurrenceExpansion(
+          rangeStart: DateTime.utc(2026, 1, 1),
+          rangeEnd: DateTime.utc(2026, 1, 2),
+        ),
+      );
+
+      expect(() => repo.watchAll(query), throwsA(isA<UnsupportedError>()));
+      expect(() => repo.getAll(query), throwsA(isA<UnsupportedError>()));
+      expect(
+        () => repo.watchAllCount(query),
+        throwsA(isA<UnsupportedError>()),
+      );
+    });
+
     testSafe('getAll returns projects ordered by name', () async {
       final db = createAutoClosingDb();
       final repo = ProjectRepository(
@@ -314,6 +338,81 @@ void main() {
       expect(project.completedTaskCount, equals(0));
     });
 
+    testSafe('watchById emits null when project does not exist', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final project = await repo.watchById('missing').first;
+      expect(project, isNull);
+    });
+
+    testSafe('getById returns null when project does not exist', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final project = await repo.getById('missing');
+      expect(project, isNull);
+    });
+
+    testSafe(
+      'update normalizes project task overrides on primary change',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = ProjectRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
+
+        await db
+            .into(db.projectTable)
+            .insert(
+              ProjectTableCompanion.insert(
+                id: const drift.Value('p1'),
+                name: 'Project',
+                completed: false,
+                primaryValueId: const drift.Value('v1'),
+              ),
+            );
+        await db
+            .into(db.taskTable)
+            .insert(
+              TaskTableCompanion.insert(
+                id: const drift.Value('t1'),
+                name: 'Task',
+                completed: const drift.Value(false),
+                projectId: const drift.Value('p1'),
+                overridePrimaryValueId: const drift.Value('v2'),
+                overrideSecondaryValueId: const drift.Value('v3'),
+              ),
+            );
+
+        await repo.update(
+          id: 'p1',
+          name: 'Project',
+          completed: false,
+          valueIds: ['v2'],
+        );
+
+        final task = await (db.select(
+          db.taskTable,
+        )..where((t) => t.id.equals('t1'))).getSingle();
+        expect(task.overridePrimaryValueId, equals('v3'));
+        expect(task.overrideSecondaryValueId, isNull);
+      },
+    );
+
     testSafe('getOccurrences delegates to expander', () async {
       final db = createAutoClosingDb();
       final expander = _FakeOccurrenceExpander();
@@ -346,6 +445,80 @@ void main() {
       expect(results.length, equals(1));
       expect(expander.lastProjectRangeStart, equals(rangeStart));
       expect(expander.lastProjectRangeEnd, equals(rangeEnd));
+    });
+
+    testSafe('watchOccurrences delegates to expander stream', () async {
+      final db = createAutoClosingDb();
+      final expander = _FakeOccurrenceExpander();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: expander,
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      await db
+          .into(db.projectTable)
+          .insert(
+            ProjectTableCompanion.insert(
+              id: const drift.Value('p1'),
+              name: 'Project',
+              completed: false,
+              primaryValueId: const drift.Value('v1'),
+            ),
+          );
+
+      final rangeStart = DateTime.utc(2025, 1, 1);
+      final rangeEnd = DateTime.utc(2025, 1, 2);
+      final projects = await repo
+          .watchOccurrences(
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          )
+          .first;
+
+      expect(projects, hasLength(1));
+      expect(expander.lastProjectRangeStart, equals(rangeStart));
+      expect(expander.lastProjectRangeEnd, equals(rangeEnd));
+    });
+
+    testSafe('project occurrence write helpers are delegated', () async {
+      final db = createAutoClosingDb();
+      final writeHelper = _FakeOccurrenceWriteHelper();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: writeHelper,
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final day = DateTime.utc(2026, 1, 2);
+      await repo.completeOccurrence(projectId: 'p1', occurrenceDate: day);
+      await repo.uncompleteOccurrence(projectId: 'p1', occurrenceDate: day);
+      await repo.skipOccurrence(projectId: 'p1', originalDate: day);
+      await repo.rescheduleOccurrence(
+        projectId: 'p1',
+        originalDate: day,
+        newDate: day.add(const Duration(days: 1)),
+      );
+      await repo.removeException(projectId: 'p1', originalDate: day);
+      await repo.stopSeries('p1');
+      await repo.completeSeries('p1');
+      await repo.convertToOneTime('p1');
+
+      expect(
+        writeHelper.calls,
+        equals([
+          'completeProjectOccurrence',
+          'uncompleteProjectOccurrence',
+          'skipProjectOccurrence',
+          'rescheduleProjectOccurrence',
+          'removeProjectException',
+          'stopProjectSeries',
+          'completeProjectSeries',
+          'convertProjectToOneTime',
+        ]),
+      );
     });
   });
 }
@@ -408,6 +581,10 @@ class _FakeOccurrenceExpander implements OccurrenceStreamExpanderContract {
 }
 
 class _FakeOccurrenceWriteHelper implements OccurrenceWriteHelperContract {
+  final List<String> calls = [];
+
+  void _record(String name) => calls.add(name);
+
   @override
   Future<void> completeProjectOccurrence({
     required String projectId,
@@ -415,13 +592,13 @@ class _FakeOccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     DateTime? originalOccurrenceDate,
     String? notes,
     OperationContext? context,
-  }) async {}
+  }) async => _record('completeProjectOccurrence');
 
   @override
   Future<void> completeProjectSeries(
     String projectId, {
     OperationContext? context,
-  }) async {}
+  }) async => _record('completeProjectSeries');
 
   @override
   Future<void> completeTaskOccurrence({
@@ -430,39 +607,39 @@ class _FakeOccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     DateTime? originalOccurrenceDate,
     String? notes,
     OperationContext? context,
-  }) async {}
+  }) async => _record('completeTaskOccurrence');
 
   @override
   Future<void> completeTaskSeries(
     String taskId, {
     OperationContext? context,
-  }) async {}
+  }) async => _record('completeTaskSeries');
 
   @override
   Future<void> convertProjectToOneTime(
     String projectId, {
     OperationContext? context,
-  }) async {}
+  }) async => _record('convertProjectToOneTime');
 
   @override
   Future<void> convertTaskToOneTime(
     String taskId, {
     OperationContext? context,
-  }) async {}
+  }) async => _record('convertTaskToOneTime');
 
   @override
   Future<void> removeProjectException({
     required String projectId,
     required DateTime originalDate,
     OperationContext? context,
-  }) async {}
+  }) async => _record('removeProjectException');
 
   @override
   Future<void> removeTaskException({
     required String taskId,
     required DateTime originalDate,
     OperationContext? context,
-  }) async {}
+  }) async => _record('removeTaskException');
 
   @override
   Future<void> rescheduleProjectOccurrence({
@@ -471,7 +648,7 @@ class _FakeOccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     required DateTime newDate,
     DateTime? newDeadline,
     OperationContext? context,
-  }) async {}
+  }) async => _record('rescheduleProjectOccurrence');
 
   @override
   Future<void> rescheduleTaskOccurrence({
@@ -480,45 +657,45 @@ class _FakeOccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     required DateTime newDate,
     DateTime? newDeadline,
     OperationContext? context,
-  }) async {}
+  }) async => _record('rescheduleTaskOccurrence');
 
   @override
   Future<void> skipProjectOccurrence({
     required String projectId,
     required DateTime originalDate,
     OperationContext? context,
-  }) async {}
+  }) async => _record('skipProjectOccurrence');
 
   @override
   Future<void> skipTaskOccurrence({
     required String taskId,
     required DateTime originalDate,
     OperationContext? context,
-  }) async {}
+  }) async => _record('skipTaskOccurrence');
 
   @override
   Future<void> stopProjectSeries(
     String projectId, {
     OperationContext? context,
-  }) async {}
+  }) async => _record('stopProjectSeries');
 
   @override
   Future<void> stopTaskSeries(
     String taskId, {
     OperationContext? context,
-  }) async {}
+  }) async => _record('stopTaskSeries');
 
   @override
   Future<void> uncompleteProjectOccurrence({
     required String projectId,
     DateTime? occurrenceDate,
     OperationContext? context,
-  }) async {}
+  }) async => _record('uncompleteProjectOccurrence');
 
   @override
   Future<void> uncompleteTaskOccurrence({
     required String taskId,
     DateTime? occurrenceDate,
     OperationContext? context,
-  }) async {}
+  }) async => _record('uncompleteTaskOccurrence');
 }
