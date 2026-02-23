@@ -873,6 +873,7 @@ class _ProjectDetailBody extends StatelessWidget {
             snapshot: item.snapshot,
             dayKeyUtc: item.dayKeyUtc,
             completionsInPeriod: item.completionsInPeriod,
+            skipsInPeriod: item.skipsInPeriod,
           ),
         )
         .toList(growable: false);

@@ -17,12 +17,14 @@ final class MyDayPlannedItem {
        routine = null,
        routineSnapshot = null,
        completionsInPeriod = const <RoutineCompletion>[],
+       skipsInPeriod = const <RoutineSkip>[],
        completed = task.occurrence?.isCompleted ?? task.completed;
 
   MyDayPlannedItem.routine({
     required Routine this.routine,
     required RoutineCadenceSnapshot this.routineSnapshot,
     required this.completionsInPeriod,
+    required this.skipsInPeriod,
     required this.bucket,
     required this.sortIndex,
     required this.qualifyingValueId,
@@ -40,6 +42,7 @@ final class MyDayPlannedItem {
   final Routine? routine;
   final RoutineCadenceSnapshot? routineSnapshot;
   final List<RoutineCompletion> completionsInPeriod;
+  final List<RoutineSkip> skipsInPeriod;
   final bool completed;
 
   String? get valueId {

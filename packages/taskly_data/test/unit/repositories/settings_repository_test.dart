@@ -43,6 +43,21 @@ void main() {
       expect(loaded, equals(settings));
     });
 
+    testSafe('save and load allocation settings', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+
+      const allocation = AllocationConfig(
+        suggestionsPerBatch: 7,
+        hasSelectedFocusMode: true,
+        suggestionSignal: SuggestionSignal.behaviorBased,
+      );
+
+      await repo.save(SettingsKey.allocation, allocation);
+      final loaded = await repo.load(SettingsKey.allocation);
+      expect(loaded, equals(allocation));
+    });
+
     testSafe('save and load page sort preferences', () async {
       final db = createAutoClosingDb();
       final repo = SettingsRepository(driftDb: db);
@@ -121,6 +136,59 @@ void main() {
       final overrides =
           jsonDecode(row.settingsOverrides!) as Map<String, dynamic>;
       expect(overrides.containsKey('_repairs'), isTrue);
+    });
+
+    testSafe(
+      'invalid singleton/object shapes are repaired and defaulted',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = SettingsRepository(driftDb: db);
+
+        await db
+            .into(db.userProfileTable)
+            .insert(
+              UserProfileTableCompanion.insert(
+                settingsOverrides: const drift.Value(
+                  '{"global":"bad","allocation":{"idleScale":"bad"}}',
+                ),
+                createdAt: drift.Value(DateTime.utc(2024, 1, 1)),
+                updatedAt: drift.Value(DateTime.utc(2024, 1, 1)),
+              ),
+            );
+
+        final global = await repo.load(SettingsKey.global);
+        final allocation = await repo.load(SettingsKey.allocation);
+        expect(global, equals(const GlobalSettings()));
+        expect(allocation, equals(const AllocationConfig()));
+      },
+    );
+
+    testSafe('invalid keyed groups and entries default and repair', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+
+      await db
+          .into(db.userProfileTable)
+          .insert(
+            UserProfileTableCompanion.insert(
+              settingsOverrides: const drift.Value(
+                '{"pageSort":"oops","pageDisplay":{"project_overview":"oops"},'
+                '"microLearningSeen":{"tip":"yes"}}',
+              ),
+              createdAt: drift.Value(DateTime.utc(2024, 1, 1)),
+              updatedAt: drift.Value(DateTime.utc(2024, 1, 1)),
+            ),
+          );
+
+      final sort = await repo.load(SettingsKey.pageSort(PageKey.tasksInbox));
+      final display = await repo.load(
+        SettingsKey.pageDisplay(PageKey.projectOverview),
+      );
+      final tipSeen = await repo.load(SettingsKey.microLearningSeen('tip'));
+
+      expect(sort, isNull);
+      expect(display, isNull);
+      expect(tipSeen, isFalse);
     });
   });
 }

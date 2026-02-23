@@ -172,6 +172,9 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
+          if (await _journalEntryExists(entryId)) {
+            return;
+          }
           throw RepositoryNotFoundException(
             'No journal entry found to update id=$entryId',
           );
@@ -326,12 +329,7 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          final existing =
-              await (_database.selectOnly(_database.trackerDefinitions)
-                    ..addColumns([_database.trackerDefinitions.id])
-                    ..where(_database.trackerDefinitions.id.equals(id)))
-                  .getSingleOrNull();
-          if (existing == null) {
+          if (!await _trackerDefinitionExists(id)) {
             await _database
                 .into(_database.trackerDefinitions)
                 .insert(
@@ -397,12 +395,7 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          final existing =
-              await (_database.selectOnly(_database.trackerGroups)
-                    ..addColumns([_database.trackerGroups.id])
-                    ..where(_database.trackerGroups.id.equals(id)))
-                  .getSingleOrNull();
-          if (existing == null) {
+          if (!await _trackerGroupExists(id)) {
             await _database
                 .into(_database.trackerGroups)
                 .insert(
@@ -514,12 +507,7 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          final existing =
-              await (_database.selectOnly(_database.trackerPreferences)
-                    ..addColumns([_database.trackerPreferences.id])
-                    ..where(_database.trackerPreferences.id.equals(id)))
-                  .getSingleOrNull();
-          if (existing == null) {
+          if (!await _trackerPreferenceExists(id)) {
             await _database
                 .into(_database.trackerPreferences)
                 .insert(
@@ -575,12 +563,7 @@ class JournalRepositoryImpl
             );
 
         if (updated == 0) {
-          final existing =
-              await (_database.selectOnly(_database.trackerDefinitionChoices)
-                    ..addColumns([_database.trackerDefinitionChoices.id])
-                    ..where(_database.trackerDefinitionChoices.id.equals(id)))
-                  .getSingleOrNull();
-          if (existing == null) {
+          if (!await _trackerDefinitionChoiceExists(id)) {
             await _database
                 .into(_database.trackerDefinitionChoices)
                 .insert(
@@ -864,6 +847,51 @@ class JournalRepositoryImpl
       if (trimmed.toLowerCase() == 'false') return false;
       return trimmed;
     }
+  }
+
+  Future<bool> _journalEntryExists(String entryId) async {
+    final existing =
+        await (_database.selectOnly(_database.journalEntries)
+              ..addColumns([_database.journalEntries.id])
+              ..where(_database.journalEntries.id.equals(entryId)))
+            .getSingleOrNull();
+    return existing != null;
+  }
+
+  Future<bool> _trackerDefinitionExists(String trackerId) async {
+    final existing =
+        await (_database.selectOnly(_database.trackerDefinitions)
+              ..addColumns([_database.trackerDefinitions.id])
+              ..where(_database.trackerDefinitions.id.equals(trackerId)))
+            .getSingleOrNull();
+    return existing != null;
+  }
+
+  Future<bool> _trackerGroupExists(String groupId) async {
+    final existing =
+        await (_database.selectOnly(_database.trackerGroups)
+              ..addColumns([_database.trackerGroups.id])
+              ..where(_database.trackerGroups.id.equals(groupId)))
+            .getSingleOrNull();
+    return existing != null;
+  }
+
+  Future<bool> _trackerPreferenceExists(String preferenceId) async {
+    final existing =
+        await (_database.selectOnly(_database.trackerPreferences)
+              ..addColumns([_database.trackerPreferences.id])
+              ..where(_database.trackerPreferences.id.equals(preferenceId)))
+            .getSingleOrNull();
+    return existing != null;
+  }
+
+  Future<bool> _trackerDefinitionChoiceExists(String choiceId) async {
+    final existing =
+        await (_database.selectOnly(_database.trackerDefinitionChoices)
+              ..addColumns([_database.trackerDefinitionChoices.id])
+              ..where(_database.trackerDefinitionChoices.id.equals(choiceId)))
+            .getSingleOrNull();
+    return existing != null;
   }
 
   JournalEntry _mapToJournalEntry(JournalEntryEntity row) {

@@ -361,5 +361,346 @@ void main() {
       expect(await db.select(db.trackerDefinitionChoices).get(), isEmpty);
       expect(await db.select(db.trackerEvents).get(), isEmpty);
     });
+
+    testSafe(
+      'updateJournalEntry validates id and deleteJournalEntry removes row',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = JournalRepositoryImpl(
+          db,
+          IdGenerator.withUserId('user-1'),
+        );
+        final now = DateTime.utc(2025, 1, 1);
+
+        await expectLater(
+          () => repo.updateJournalEntry(
+            JournalEntry(
+              id: '   ',
+              entryDate: now,
+              entryTime: now,
+              occurredAt: now,
+              localDate: now,
+              journalText: 'x',
+              createdAt: now,
+              updatedAt: now,
+              deletedAt: null,
+            ),
+          ),
+          throwsA(isA<Exception>()),
+        );
+
+        final id = await repo.createJournalEntry(
+          JournalEntry(
+            id: '',
+            entryDate: now,
+            entryTime: now,
+            occurredAt: now,
+            localDate: now,
+            journalText: 'x',
+            createdAt: now,
+            updatedAt: now,
+            deletedAt: null,
+          ),
+        );
+        await repo.deleteJournalEntry(id);
+        expect(await repo.getJournalEntryById(id), isNull);
+      },
+    );
+
+    testSafe(
+      'updateJournalEntry allows no-op updates when row exists',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = JournalRepositoryImpl(
+          db,
+          IdGenerator.withUserId('user-1'),
+        );
+        final now = DateTime.utc(2025, 1, 1, 12);
+
+        final id = await repo.createJournalEntry(
+          JournalEntry(
+            id: '',
+            entryDate: now,
+            entryTime: now,
+            occurredAt: now,
+            localDate: now,
+            journalText: 'same',
+            createdAt: now,
+            updatedAt: now,
+            deletedAt: null,
+          ),
+        );
+
+        final before = await repo.getJournalEntryById(id);
+        expect(before, isNotNull);
+
+        await repo.updateJournalEntry(before!);
+
+        final after = await repo.getJournalEntryById(id);
+        expect(after, isNotNull);
+        expect(after!.id, id);
+      },
+    );
+
+    testSafe('updateJournalEntry throws when row does not exist', () async {
+      final db = createAutoClosingDb();
+      final repo = JournalRepositoryImpl(db, IdGenerator.withUserId('user-1'));
+      final now = DateTime.utc(2025, 1, 1, 12);
+
+      await expectLater(
+        () => repo.updateJournalEntry(
+          JournalEntry(
+            id: 'missing-id',
+            entryDate: now,
+            entryTime: now,
+            occurredAt: now,
+            localDate: now,
+            journalText: 'value',
+            createdAt: now,
+            updatedAt: now,
+            deletedAt: null,
+          ),
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    testSafe('saveTrackerPreference and choice update existing rows', () async {
+      final db = createAutoClosingDb();
+      final repo = JournalRepositoryImpl(db, IdGenerator.withUserId('user-1'));
+      final now = DateTime.utc(2025, 1, 1);
+
+      await repo.saveTrackerPreference(
+        TrackerPreference(
+          id: 'pref-1',
+          trackerId: 't1',
+          isActive: true,
+          sortOrder: 1,
+          pinned: false,
+          showInQuickAdd: false,
+          color: null,
+          createdAt: now,
+          updatedAt: now,
+          userId: null,
+        ),
+      );
+      await repo.saveTrackerPreference(
+        TrackerPreference(
+          id: 'pref-1',
+          trackerId: 't1',
+          isActive: false,
+          sortOrder: 2,
+          pinned: true,
+          showInQuickAdd: true,
+          color: '#123456',
+          createdAt: now,
+          updatedAt: now.add(const Duration(minutes: 1)),
+          userId: null,
+        ),
+      );
+
+      await repo.saveTrackerDefinitionChoice(
+        TrackerDefinitionChoice(
+          id: 'choice-1',
+          trackerId: 't1',
+          choiceKey: 'a',
+          label: 'A',
+          sortOrder: 1,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+          userId: null,
+        ),
+      );
+      await repo.saveTrackerDefinitionChoice(
+        TrackerDefinitionChoice(
+          id: 'choice-1',
+          trackerId: 't1',
+          choiceKey: 'a',
+          label: 'AA',
+          sortOrder: 2,
+          isActive: false,
+          createdAt: now,
+          updatedAt: now.add(const Duration(minutes: 1)),
+          userId: null,
+        ),
+      );
+
+      final pref = await db.select(db.trackerPreferences).getSingle();
+      final choice = await db.select(db.trackerDefinitionChoices).getSingle();
+      expect(pref.isActive, isFalse);
+      expect(pref.pinned, isTrue);
+      expect(choice.label, 'AA');
+      expect(choice.isActive, isFalse);
+    });
+
+    testSafe(
+      'deleteTrackerGroup trims input and soft-deletes matching group',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = JournalRepositoryImpl(
+          db,
+          IdGenerator.withUserId('user-1'),
+        );
+        final now = DateTime.utc(2025, 1, 1);
+
+        await db
+            .into(db.trackerGroups)
+            .insert(
+              TrackerGroupsCompanion.insert(
+                id: const drift.Value('g1'),
+                name: 'Health',
+                isActive: const drift.Value(true),
+                sortOrder: const drift.Value(1),
+                createdAt: drift.Value(now),
+                updatedAt: drift.Value(now),
+              ),
+            );
+
+        await repo.deleteTrackerGroup('   ');
+        expect(
+          (await db.select(db.trackerGroups).getSingle()).isActive,
+          isTrue,
+        );
+
+        await repo.deleteTrackerGroup(' g1 ');
+        expect(
+          (await db.select(db.trackerGroups).getSingle()).isActive,
+          isFalse,
+        );
+      },
+    );
+
+    testSafe('watchTrackerEvents applies range and anchor filters', () async {
+      final db = createAutoClosingDb();
+      final repo = JournalRepositoryImpl(db, IdGenerator.withUserId('user-1'));
+
+      await db
+          .into(db.trackerEvents)
+          .insert(
+            TrackerEventsCompanion.insert(
+              id: const drift.Value('e-in'),
+              trackerId: 't1',
+              anchorType: 'entry',
+              entryId: const drift.Value('entry-1'),
+              anchorDate: drift.Value(DateTime.utc(2025, 1, 2)),
+              occurredAt: DateTime.utc(2025, 1, 2, 9, 0),
+              recordedAt: drift.Value(DateTime.utc(2025, 1, 2, 9, 0)),
+              op: 'set',
+              value: const drift.Value('1'),
+            ),
+          );
+      await db
+          .into(db.trackerEvents)
+          .insert(
+            TrackerEventsCompanion.insert(
+              id: const drift.Value('e-out'),
+              trackerId: 't2',
+              anchorType: 'day',
+              entryId: const drift.Value('entry-2'),
+              anchorDate: drift.Value(DateTime.utc(2025, 1, 5)),
+              occurredAt: DateTime.utc(2025, 1, 5, 9, 0),
+              recordedAt: drift.Value(DateTime.utc(2025, 1, 5, 9, 0)),
+              op: 'set',
+              value: const drift.Value('1'),
+            ),
+          );
+
+      final results = await repo
+          .watchTrackerEvents(
+            range: DateRange(
+              start: DateTime.utc(2025, 1, 1),
+              end: DateTime.utc(2025, 1, 3),
+            ),
+            anchorType: 'entry',
+            entryId: 'entry-1',
+            anchorDate: DateTime.utc(2025, 1, 2),
+            trackerId: 't1',
+          )
+          .first;
+      expect(results.map((e) => e.id).toList(), ['e-in']);
+    });
+
+    testSafe('analytics helpers handle empty/legacy tracker values', () async {
+      final db = createAutoClosingDb();
+      final repo = JournalRepositoryImpl(db, IdGenerator.withUserId('user-1'));
+
+      final noMood = await repo.getDailyMoodAverages(
+        range: DateRange(
+          start: DateTime.utc(2025, 1, 1),
+          end: DateTime.utc(2025, 1, 2),
+        ),
+      );
+      expect(noMood, isEmpty);
+
+      await db
+          .into(db.trackerEvents)
+          .insert(
+            TrackerEventsCompanion.insert(
+              id: const drift.Value('bool-false'),
+              trackerId: 't-bool',
+              anchorType: 'entry',
+              anchorDate: drift.Value(DateTime.utc(2025, 1, 1)),
+              occurredAt: DateTime.utc(2025, 1, 1, 8, 0),
+              recordedAt: drift.Value(DateTime.utc(2025, 1, 1, 8, 0)),
+              op: 'set',
+              value: const drift.Value('FALSE'),
+            ),
+          );
+      await db
+          .into(db.trackerEvents)
+          .insert(
+            TrackerEventsCompanion.insert(
+              id: const drift.Value('num-plain'),
+              trackerId: 't-num',
+              anchorType: 'entry',
+              anchorDate: drift.Value(DateTime.utc(2025, 1, 1)),
+              occurredAt: DateTime.utc(2025, 1, 1, 9, 0),
+              recordedAt: drift.Value(DateTime.utc(2025, 1, 1, 9, 0)),
+              op: 'set',
+              value: const drift.Value('7.5'),
+            ),
+          );
+      await db
+          .into(db.trackerEvents)
+          .insert(
+            TrackerEventsCompanion.insert(
+              id: const drift.Value('text-ignored'),
+              trackerId: 't-num',
+              anchorType: 'entry',
+              anchorDate: drift.Value(DateTime.utc(2025, 1, 1)),
+              occurredAt: DateTime.utc(2025, 1, 1, 10, 0),
+              recordedAt: drift.Value(DateTime.utc(2025, 1, 1, 10, 0)),
+              op: 'set',
+              value: const drift.Value('not-a-number'),
+            ),
+          );
+
+      final boolValues = await repo.getTrackerValues(
+        trackerId: 't-bool',
+        range: DateRange(
+          start: DateTime.utc(2025, 1, 1),
+          end: DateTime.utc(2025, 1, 2),
+        ),
+      );
+      final numValues = await repo.getTrackerValues(
+        trackerId: 't-num',
+        range: DateRange(
+          start: DateTime.utc(2025, 1, 1),
+          end: DateTime.utc(2025, 1, 2),
+        ),
+      );
+      final emptyIdValues = await repo.getTrackerValues(
+        trackerId: '  ',
+        range: DateRange(
+          start: DateTime.utc(2025, 1, 1),
+          end: DateTime.utc(2025, 1, 2),
+        ),
+      );
+
+      expect(boolValues.values.single, 0);
+      expect(numValues.values.single, 7.5);
+      expect(emptyIdValues, isEmpty);
+    });
   });
 }

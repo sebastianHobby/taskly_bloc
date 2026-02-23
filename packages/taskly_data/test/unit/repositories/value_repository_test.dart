@@ -147,6 +147,29 @@ void main() {
       expect(values.single.name, equals('Health'));
     });
 
+    testSafe(
+      'getCount, getById and watchById include empty/null branches',
+      () async {
+        final db = createAutoClosingDb();
+        final idGen = IdGenerator.withUserId('user-1');
+        final repo = ValueRepository(driftDb: db, idGenerator: idGen);
+
+        expect(await repo.getCount(), 0);
+        expect(await repo.getById('missing'), isNull);
+        expect(await repo.watchById('missing').first, isNull);
+        expect(await repo.getValuesByIds(const []), isEmpty);
+
+        await repo.create(name: 'Health', color: '#111111');
+        final id = idGen.valueId(name: 'Health');
+
+        expect(await repo.getCount(), 1);
+        expect((await repo.getById(id))?.id, id);
+        expect((await repo.watchById(id).first)?.id, id);
+        final byIds = await repo.getValuesByIds([id, 'missing']);
+        expect(byIds.map((v) => v.id).toList(), [id]);
+      },
+    );
+
     testSafe('delete is blocked when assigned projects exist', () async {
       final db = createAutoClosingDb();
       final idGen = IdGenerator.withUserId('user-1');
@@ -224,5 +247,45 @@ void main() {
         );
       },
     );
+
+    testSafe('reassignProjectsAndDelete validates ids and existence', () async {
+      final db = createAutoClosingDb();
+      final idGen = IdGenerator.withUserId('user-1');
+      final repo = ValueRepository(driftDb: db, idGenerator: idGen);
+
+      await repo.create(name: 'Health', color: '#111111');
+      await repo.create(name: 'Career', color: '#222222');
+      final healthId = idGen.valueId(name: 'Health');
+      final careerId = idGen.valueId(name: 'Career');
+
+      await expectLater(
+        () => repo.reassignProjectsAndDelete(
+          valueId: ' ',
+          replacementValueId: careerId,
+        ),
+        throwsA(isA<InputValidationFailure>()),
+      );
+      await expectLater(
+        () => repo.reassignProjectsAndDelete(
+          valueId: healthId,
+          replacementValueId: healthId,
+        ),
+        throwsA(isA<InputValidationFailure>()),
+      );
+      await expectLater(
+        () => repo.reassignProjectsAndDelete(
+          valueId: 'missing',
+          replacementValueId: careerId,
+        ),
+        throwsA(isA<NotFoundFailure>()),
+      );
+      await expectLater(
+        () => repo.reassignProjectsAndDelete(
+          valueId: healthId,
+          replacementValueId: 'missing',
+        ),
+        throwsA(isA<InputValidationFailure>()),
+      );
+    });
   });
 }

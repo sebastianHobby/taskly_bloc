@@ -6,10 +6,12 @@ final class RoutineListItem {
     required this.snapshot,
     required this.dayKeyUtc,
     required this.completionsInPeriod,
+    required this.skipsInPeriod,
   });
 
   final Routine routine;
   final RoutineCadenceSnapshot snapshot;
   final DateTime dayKeyUtc;
   final List<RoutineCompletion> completionsInPeriod;
+  final List<RoutineSkip> skipsInPeriod;
 }

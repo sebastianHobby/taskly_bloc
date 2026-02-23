@@ -83,6 +83,11 @@ final class MyDayViewModelBuilder {
             routine: routine,
             routineSnapshot: snapshot,
             completionsInPeriod: completionsInPeriod,
+            skipsInPeriod: _skipsForPeriod(
+              routine: routine,
+              snapshot: snapshot,
+              skips: routineSkips,
+            ),
             bucket: pick.bucket,
             sortIndex: pick.sortIndex,
             qualifyingValueId: pick.qualifyingValueId ?? routine.value?.id,
@@ -183,6 +188,23 @@ final class MyDayViewModelBuilder {
     }
 
     return filtered;
+  }
+
+  List<RoutineSkip> _skipsForPeriod({
+    required Routine routine,
+    required RoutineCadenceSnapshot snapshot,
+    required List<RoutineSkip> skips,
+  }) {
+    if (routine.periodType != RoutinePeriodType.week) {
+      return const <RoutineSkip>[];
+    }
+
+    final periodStart = dateOnly(snapshot.periodStartUtc);
+    return skips
+        .where((skip) => skip.routineId == routine.id)
+        .where((skip) => skip.periodType == RoutineSkipPeriodType.week)
+        .where((skip) => dateOnly(skip.periodKeyUtc).isAtSameMomentAs(periodStart))
+        .toList(growable: false);
   }
 
   MyDayViewModel _buildViewModel({

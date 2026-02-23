@@ -116,6 +116,49 @@ void main() {
       );
       expect(projectMatchesAnyEmpty, isA<Constant<bool>>());
 
+      final projectMatchesAnyWithEmptyIds = mapper.predicateToExpression(
+        const TaskProjectPredicate(
+          operator: ProjectOperator.matchesAny,
+          projectIds: <String>['', 'p1'],
+        ),
+        t,
+      );
+      expect(projectMatchesAnyWithEmptyIds, isA<Expression<bool>>());
+
+      final projectIsNotNull = mapper.predicateToExpression(
+        const TaskProjectPredicate(operator: ProjectOperator.isNotNull),
+        t,
+      );
+      expect(projectIsNotNull, isA<Expression<bool>>());
+
+      final valueHasAllTwoInherited = mapper.predicateToExpression(
+        const TaskValuePredicate(
+          operator: ValueOperator.hasAll,
+          valueIds: <String>['v1', 'v2'],
+          includeInherited: true,
+        ),
+        t,
+      );
+      expect(valueHasAllTwoInherited, isA<Expression<bool>>());
+
+      final valueHasAllOne = mapper.predicateToExpression(
+        const TaskValuePredicate(
+          operator: ValueOperator.hasAll,
+          valueIds: <String>['v1'],
+        ),
+        t,
+      );
+      expect(valueHasAllOne, isA<Expression<bool>>());
+
+      final valueIsNullInherited = mapper.predicateToExpression(
+        const TaskValuePredicate(
+          operator: ValueOperator.isNull,
+          includeInherited: true,
+        ),
+        t,
+      );
+      expect(valueIsNullInherited, isA<Expression<bool>>());
+
       final valueIsNotNullInherited = mapper.predicateToExpression(
         const TaskValuePredicate(
           operator: ValueOperator.isNotNull,
@@ -133,6 +176,46 @@ void main() {
         t,
       );
       expect(textDateRelativeMissingArgs, isA<Constant<bool>>());
+
+      final textDateRange = mapper.predicateToExpression(
+        TaskDatePredicate(
+          field: TaskDateField.startDate,
+          operator: DateOperator.between,
+          startDate: DateTime(2025, 1, 1),
+          endDate: DateTime(2025, 1, 31),
+        ),
+        t,
+      );
+      expect(textDateRange, isA<Expression<bool>>());
+
+      final completedAtIsNotNull = mapper.predicateToExpression(
+        const TaskDatePredicate(
+          field: TaskDateField.completedAt,
+          operator: DateOperator.isNotNull,
+        ),
+        t,
+      );
+      expect(completedAtIsNotNull, isA<Expression<bool>>());
+
+      final completedAtRelative = mapper.predicateToExpression(
+        const TaskDatePredicate(
+          field: TaskDateField.completedAt,
+          operator: DateOperator.relative,
+          relativeComparison: RelativeComparison.onOrBefore,
+          relativeDays: 3,
+        ),
+        t,
+      );
+      expect(completedAtRelative, isA<Expression<bool>>());
+
+      final repeatingTrue = mapper.predicateToExpression(
+        const TaskBoolPredicate(
+          field: TaskBoolField.repeating,
+          operator: BoolOperator.isTrue,
+        ),
+        t,
+      );
+      expect(repeatingTrue, isA<Expression<bool>>());
     });
 
     testSafe(
@@ -181,6 +264,26 @@ void main() {
           p,
         );
         expect(textDateRelativeMissingArgs, isA<Constant<bool>>());
+
+        final completedAtRelative = mapper.predicateToExpression(
+          const ProjectDatePredicate(
+            field: ProjectDateField.completedAt,
+            operator: DateOperator.relative,
+            relativeComparison: RelativeComparison.onOrAfter,
+            relativeDays: -3,
+          ),
+          p,
+        );
+        expect(completedAtRelative, isA<Expression<bool>>());
+
+        final completedAtIsNull = mapper.predicateToExpression(
+          const ProjectDatePredicate(
+            field: ProjectDateField.completedAt,
+            operator: DateOperator.isNull,
+          ),
+          p,
+        );
+        expect(completedAtIsNull, isA<Expression<bool>>());
       },
     );
 
@@ -263,6 +366,35 @@ void main() {
             p,
           ),
           isA<Constant<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const ProjectValuePredicate(
+              operator: ValueOperator.isNull,
+            ),
+            p,
+          ),
+          isA<Expression<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            const ProjectValuePredicate(
+              operator: ValueOperator.isNotNull,
+            ),
+            p,
+          ),
+          isA<Expression<bool>>(),
+        );
+        expect(
+          mapper.predicateToExpression(
+            ProjectDatePredicate(
+              field: ProjectDateField.deadlineDate,
+              operator: DateOperator.on,
+              date: DateTime(2025, 1, 1),
+            ),
+            p,
+          ),
+          isA<Expression<bool>>(),
         );
       },
     );

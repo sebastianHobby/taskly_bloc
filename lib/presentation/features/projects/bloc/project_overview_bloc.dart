@@ -200,6 +200,11 @@ class ProjectOverviewBloc
             snapshot: snapshot,
             completions: completions,
           ),
+          skipsInPeriod: _skipsForPeriod(
+            routine: routine,
+            snapshot: snapshot,
+            skips: skips,
+          ),
         ),
       );
     }
@@ -228,6 +233,23 @@ class ProjectOverviewBloc
 
     return filtered;
   }
+
+  List<RoutineSkip> _skipsForPeriod({
+    required Routine routine,
+    required RoutineCadenceSnapshot snapshot,
+    required List<RoutineSkip> skips,
+  }) {
+    if (routine.periodType != RoutinePeriodType.week) {
+      return const <RoutineSkip>[];
+    }
+
+    final periodStart = dateOnly(snapshot.periodStartUtc);
+    return skips
+        .where((skip) => skip.routineId == routine.id)
+        .where((skip) => skip.periodType == RoutineSkipPeriodType.week)
+        .where((skip) => dateOnly(skip.periodKeyUtc).isAtSameMomentAs(periodStart))
+        .toList(growable: false);
+  }
 }
 
 final class _OverviewSnapshot {
@@ -250,10 +272,12 @@ final class ProjectRoutineItem {
     required this.snapshot,
     required this.dayKeyUtc,
     required this.completionsInPeriod,
+    required this.skipsInPeriod,
   });
 
   final Routine routine;
   final RoutineCadenceSnapshot snapshot;
   final DateTime dayKeyUtc;
   final List<RoutineCompletion> completionsInPeriod;
+  final List<RoutineSkip> skipsInPeriod;
 }
