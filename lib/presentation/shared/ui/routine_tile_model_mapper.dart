@@ -17,6 +17,7 @@ TasklyRoutineRowData buildRoutineRowData(
   bool showScheduleRow = false,
   DateTime? dayKeyUtc,
   List<RoutineCompletion>? completionsInPeriod,
+  List<RoutineSkip>? skipsInPeriod,
   List<TasklyBadgeData> badges = const <TasklyBadgeData>[],
   TasklyRoutineRowLabels? labels,
 }) {
@@ -26,12 +27,14 @@ TasklyRoutineRowData buildRoutineRowData(
           routine.scheduleMode == RoutineScheduleMode.scheduled &&
           routine.scheduleDays.isNotEmpty &&
           dayKeyUtc != null &&
-          completionsInPeriod != null)
+          completionsInPeriod != null &&
+          skipsInPeriod != null)
       ? _buildScheduleRow(
           context,
           routine: routine,
           dayKeyUtc: dayKeyUtc,
           completions: completionsInPeriod,
+          skips: skipsInPeriod,
           status: snapshot.status,
         )
       : null;
@@ -141,6 +144,7 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
   required Routine routine,
   required DateTime dayKeyUtc,
   required List<RoutineCompletion> completions,
+  required List<RoutineSkip> skips,
   required RoutineStatus status,
 }) {
   final today = dateOnly(dayKeyUtc);
@@ -161,6 +165,13 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
 
   final completedWeekdays = completionDays.map((day) => day.weekday).toSet();
   final unscheduledWeekdays = completedWeekdays.difference(scheduleDays);
+  final skipCreatedDay = _skipCreatedDayForWeek(
+    routineId: routine.id,
+    weekStart: weekStart,
+    skips: skips,
+  );
+  final hasWeekSkip =
+      skipCreatedDay != null || status == RoutineStatus.restWeek;
 
   final daysToShow = <int>{...scheduleDays, ...unscheduledWeekdays};
   final orderedDays = daysToShow.toList()..sort();
@@ -178,7 +189,14 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
         isScheduled &&
         day.isBefore(today) &&
         !isCompleted &&
+        !hasWeekSkip &&
         status != RoutineStatus.restWeek;
+    final isSkipped =
+        !isBeforeCreation &&
+        isScheduled &&
+        !isCompleted &&
+        hasWeekSkip &&
+        (skipCreatedDay == null || !day.isBefore(skipCreatedDay));
 
     final state = isBeforeCreation
         ? TasklyRoutineScheduleDayState.none
@@ -186,6 +204,8 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
         ? (isScheduled
               ? TasklyRoutineScheduleDayState.loggedScheduled
               : TasklyRoutineScheduleDayState.loggedUnscheduled)
+        : isSkipped
+        ? TasklyRoutineScheduleDayState.skippedScheduled
         : isMissed
         ? TasklyRoutineScheduleDayState.missedScheduled
         : isScheduled
@@ -233,4 +253,22 @@ DateTime _weekStart(DateTime dayKeyUtc) {
   final normalized = dateOnly(dayKeyUtc);
   final delta = normalized.weekday - DateTime.monday;
   return normalized.subtract(Duration(days: delta));
+}
+
+DateTime? _skipCreatedDayForWeek({
+  required String routineId,
+  required DateTime weekStart,
+  required List<RoutineSkip> skips,
+}) {
+  DateTime? earliest;
+  for (final skip in skips) {
+    if (skip.routineId != routineId) continue;
+    if (skip.periodType != RoutineSkipPeriodType.week) continue;
+    if (!dateOnly(skip.periodKeyUtc).isAtSameMomentAs(weekStart)) continue;
+    final createdDay = dateOnly(skip.createdAtUtc);
+    if (earliest == null || createdDay.isBefore(earliest)) {
+      earliest = createdDay;
+    }
+  }
+  return earliest;
 }

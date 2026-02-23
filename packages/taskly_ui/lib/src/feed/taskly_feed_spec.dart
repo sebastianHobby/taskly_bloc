@@ -739,6 +739,7 @@ enum TasklyRoutineScheduleDayState {
   scheduled,
   loggedScheduled,
   loggedUnscheduled,
+  skippedScheduled,
   missedScheduled,
 }
 

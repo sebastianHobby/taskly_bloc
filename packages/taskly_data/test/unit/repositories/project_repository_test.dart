@@ -198,6 +198,59 @@ void main() {
       expect(identical(s1, s2), isFalse);
     });
 
+    testSafe('watchAll executes non-date query path', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final query = ProjectQuery(
+        filter: const QueryFilter<ProjectPredicate>(
+          shared: [
+            ProjectBoolPredicate(
+              field: ProjectBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
+          ],
+        ),
+      );
+
+      final s1 = repo.watchAll(query);
+      final s2 = repo.watchAll(query);
+      expect(await s1.first, isA<List<Project>>());
+      expect(await s2.first, isA<List<Project>>());
+    });
+
+    testSafe('watchAll executes date-filter query path', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final query = ProjectQuery(
+        filter: QueryFilter<ProjectPredicate>(
+          shared: [
+            ProjectDatePredicate(
+              field: ProjectDateField.deadlineDate,
+              operator: DateOperator.onOrAfter,
+              date: DateTime.utc(2026, 1, 1),
+            ),
+          ],
+        ),
+      );
+
+      final s1 = repo.watchAll(query);
+      final s2 = repo.watchAll(query);
+      expect(await s1.first, isA<List<Project>>());
+      expect(await s2.first, isA<List<Project>>());
+    });
+
     testSafe('watchAll/getAll/watchAllCount reject occurrence flags', () async {
       final db = createAutoClosingDb();
       final repo = ProjectRepository(
@@ -410,6 +463,170 @@ void main() {
         )..where((t) => t.id.equals('t1'))).getSingle();
         expect(task.overridePrimaryValueId, equals('v3'));
         expect(task.overrideSecondaryValueId, isNull);
+      },
+    );
+
+    testSafe('update validates valueIds shape and series flags', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      await repo.create(name: 'Project', valueIds: ['v1']);
+      final id = (await db.select(db.projectTable).getSingle()).id;
+
+      await expectLater(
+        () => repo.update(
+          id: id,
+          name: 'Project',
+          completed: false,
+          valueIds: const [],
+        ),
+        throwsA(isA<InputValidationFailure>()),
+      );
+      await expectLater(
+        () => repo.update(
+          id: id,
+          name: 'Project',
+          completed: false,
+          valueIds: const ['v1', 'v2'],
+        ),
+        throwsA(isA<InputValidationFailure>()),
+      );
+
+      await repo.update(
+        id: id,
+        name: 'Project+',
+        completed: false,
+        repeatIcalRrule: 'FREQ=WEEKLY',
+        repeatFromCompletion: true,
+        seriesEnded: true,
+      );
+      final row = await db.select(db.projectTable).getSingle();
+      expect(row.repeatIcalRrule, 'FREQ=WEEKLY');
+      expect(row.repeatFromCompletion, isTrue);
+      expect(row.seriesEnded, isTrue);
+    });
+
+    testSafe(
+      'bulkRescheduleDeadlines throws when some project ids are missing',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = ProjectRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
+
+        await repo.create(name: 'Project', valueIds: ['v1']);
+        final existingId = (await db.select(db.projectTable).getSingle()).id;
+
+        await expectLater(
+          () => repo.bulkRescheduleDeadlines(
+            projectIds: [existingId, 'missing'],
+            deadlineDate: DateTime.utc(2026, 2, 11),
+          ),
+          throwsA(isA<NotFoundFailure>()),
+        );
+      },
+    );
+
+    testSafe(
+      'delete removes project and watch completion/exception mappings',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = ProjectRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
+
+        await repo.create(name: 'Project', valueIds: ['v1']);
+        final projectId = (await db.select(db.projectTable).getSingle()).id;
+
+        final day = DateTime.utc(2026, 1, 1);
+        await db
+            .into(db.projectCompletionHistoryTable)
+            .insert(
+              ProjectCompletionHistoryTableCompanion.insert(
+                id: 'c1',
+                projectId: projectId,
+                occurrenceDate: drift.Value(day),
+                completedAt: drift.Value(day),
+              ),
+            );
+        await db
+            .into(db.projectRecurrenceExceptionsTable)
+            .insert(
+              ProjectRecurrenceExceptionsTableCompanion.insert(
+                id: 'e1',
+                projectId: projectId,
+                originalDate: day,
+                exceptionType: ExceptionType.reschedule,
+                newDate: drift.Value(day.add(const Duration(days: 1))),
+              ),
+            );
+
+        final completions = await repo.watchCompletionHistory().first;
+        final exceptions = await repo.watchRecurrenceExceptions().first;
+        expect(completions.single.entityId, projectId);
+        expect(
+          exceptions.single.exceptionType,
+          RecurrenceExceptionType.reschedule,
+        );
+
+        await repo.delete(projectId);
+        final rows = await db.select(db.projectTable).get();
+        expect(rows, isEmpty);
+      },
+    );
+
+    testSafe(
+      'getOccurrencesForProject filters project-specific rows',
+      () async {
+        final db = createAutoClosingDb();
+        final expander = _FakeOccurrenceExpander();
+        final repo = ProjectRepository(
+          driftDb: db,
+          occurrenceExpander: expander,
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
+
+        await db
+            .into(db.projectTable)
+            .insert(
+              ProjectTableCompanion.insert(
+                id: const drift.Value('p1'),
+                name: 'Project 1',
+                completed: false,
+                primaryValueId: const drift.Value('v1'),
+              ),
+            );
+        await db
+            .into(db.projectTable)
+            .insert(
+              ProjectTableCompanion.insert(
+                id: const drift.Value('p2'),
+                name: 'Project 2',
+                completed: false,
+                primaryValueId: const drift.Value('v1'),
+              ),
+            );
+
+        final out = await repo.getOccurrencesForProject(
+          projectId: 'p1',
+          rangeStart: DateTime.utc(2026, 1, 1),
+          rangeEnd: DateTime.utc(2026, 1, 3),
+        );
+        expect(out.map((p) => p.id).toList(), ['p1']);
+        expect(expander.lastProjectRangeStart, DateTime.utc(2026, 1, 1));
+        expect(expander.lastProjectRangeEnd, DateTime.utc(2026, 1, 3));
       },
     );
 

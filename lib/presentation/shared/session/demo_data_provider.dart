@@ -428,6 +428,7 @@ final class DemoDataProvider {
               routine: routine,
               snapshot: snapshot,
             ),
+            skipsInPeriod: const <RoutineSkip>[],
             bucket: pick.bucket,
             sortIndex: pick.sortIndex,
             qualifyingValueId: pick.qualifyingValueId,
@@ -648,6 +649,7 @@ final class DemoDataProvider {
         routine: routine,
         snapshot: snapshot,
       ),
+      skipsInPeriod: const <RoutineSkip>[],
     );
   }
 

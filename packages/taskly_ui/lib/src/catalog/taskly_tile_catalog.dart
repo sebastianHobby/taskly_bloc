@@ -264,6 +264,11 @@ class TasklyTileCatalog extends StatelessWidget {
                 state: TasklyRoutineScheduleDayState.scheduled,
               ),
               TasklyRoutineScheduleDay(
+                label: 'S',
+                isToday: false,
+                state: TasklyRoutineScheduleDayState.skippedScheduled,
+              ),
+              TasklyRoutineScheduleDay(
                 label: 'T*',
                 isToday: false,
                 state: TasklyRoutineScheduleDayState.loggedUnscheduled,

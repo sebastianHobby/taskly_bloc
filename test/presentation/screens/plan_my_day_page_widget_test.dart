@@ -148,6 +148,7 @@ void main() {
       lastScheduledDayUtc: DateTime.utc(2025, 1, 15),
       lastCompletedAtUtc: DateTime.utc(2025, 1, 12, 10),
       completionsInPeriod: const <RoutineCompletion>[],
+      skipsInPeriod: const <RoutineSkip>[],
     );
   }
 

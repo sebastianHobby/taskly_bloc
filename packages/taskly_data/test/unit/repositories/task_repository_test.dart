@@ -329,53 +329,56 @@ void main() {
       expect(row.reminderMinutesBeforeDue, equals(10080));
     });
 
-    testSafe('create validates project primary requirements and conflicts', () async {
-      final db = createAutoClosingDb();
-      final repo = TaskRepository(
-        driftDb: db,
-        occurrenceExpander: _FakeOccurrenceExpander(),
-        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
-        idGenerator: IdGenerator.withUserId('user-1'),
-      );
+    testSafe(
+      'create validates project primary requirements and conflicts',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = TaskRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
 
-      await db
-          .into(db.projectTable)
-          .insert(
-            ProjectTableCompanion.insert(
-              id: const drift.Value('p-no-primary'),
-              name: 'No primary',
-              completed: false,
-            ),
-          );
-      await db
-          .into(db.projectTable)
-          .insert(
-            ProjectTableCompanion.insert(
-              id: const drift.Value('p-with-primary'),
-              name: 'With primary',
-              completed: false,
-              primaryValueId: const drift.Value('v1'),
-            ),
-          );
+        await db
+            .into(db.projectTable)
+            .insert(
+              ProjectTableCompanion.insert(
+                id: const drift.Value('p-no-primary'),
+                name: 'No primary',
+                completed: false,
+              ),
+            );
+        await db
+            .into(db.projectTable)
+            .insert(
+              ProjectTableCompanion.insert(
+                id: const drift.Value('p-with-primary'),
+                name: 'With primary',
+                completed: false,
+                primaryValueId: const drift.Value('v1'),
+              ),
+            );
 
-      await expectLater(
-        () => repo.create(
-          name: 'Needs primary',
-          projectId: 'p-no-primary',
-          valueIds: const ['v2'],
-        ),
-        throwsA(isA<InputValidationFailure>()),
-      );
+        await expectLater(
+          () => repo.create(
+            name: 'Needs primary',
+            projectId: 'p-no-primary',
+            valueIds: const ['v2'],
+          ),
+          throwsA(isA<InputValidationFailure>()),
+        );
 
-      await expectLater(
-        () => repo.create(
-          name: 'Conflicts with primary',
-          projectId: 'p-with-primary',
-          valueIds: const ['v1'],
-        ),
-        throwsA(isA<InputValidationFailure>()),
-      );
-    });
+        await expectLater(
+          () => repo.create(
+            name: 'Conflicts with primary',
+            projectId: 'p-with-primary',
+            valueIds: const ['v1'],
+          ),
+          throwsA(isA<InputValidationFailure>()),
+        );
+      },
+    );
 
     testSafe('getAll applies sort criteria', () async {
       final db = createAutoClosingDb();
@@ -470,37 +473,40 @@ void main() {
       expect(tasks, isEmpty);
     });
 
-    testSafe('watchByIds preserves requested order for non-empty ids', () async {
-      final db = createAutoClosingDb();
-      final repo = TaskRepository(
-        driftDb: db,
-        occurrenceExpander: _FakeOccurrenceExpander(),
-        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
-        idGenerator: IdGenerator.withUserId('user-1'),
-      );
+    testSafe(
+      'watchByIds preserves requested order for non-empty ids',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = TaskRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
 
-      await db
-          .into(db.taskTable)
-          .insert(
-            TaskTableCompanion.insert(
-              id: const drift.Value('t1'),
-              name: 'One',
-              completed: const drift.Value(false),
-            ),
-          );
-      await db
-          .into(db.taskTable)
-          .insert(
-            TaskTableCompanion.insert(
-              id: const drift.Value('t2'),
-              name: 'Two',
-              completed: const drift.Value(false),
-            ),
-          );
+        await db
+            .into(db.taskTable)
+            .insert(
+              TaskTableCompanion.insert(
+                id: const drift.Value('t1'),
+                name: 'One',
+                completed: const drift.Value(false),
+              ),
+            );
+        await db
+            .into(db.taskTable)
+            .insert(
+              TaskTableCompanion.insert(
+                id: const drift.Value('t2'),
+                name: 'Two',
+                completed: const drift.Value(false),
+              ),
+            );
 
-      final tasks = await repo.watchByIds(['t2', 'missing', 't1']).first;
-      expect(tasks.map((t) => t.id).toList(), equals(['t2', 't1']));
-    });
+        final tasks = await repo.watchByIds(['t2', 'missing', 't1']).first;
+        expect(tasks.map((t) => t.id).toList(), equals(['t2', 't1']));
+      },
+    );
 
     testSafe('watchAll uses shared cache for generic stable query', () async {
       final db = createAutoClosingDb();
@@ -527,31 +533,34 @@ void main() {
       expect(identical(s1, s2), isTrue);
     });
 
-    testSafe('watchAll bypasses shared cache when date filter is present', () async {
-      final db = createAutoClosingDb();
-      final repo = TaskRepository(
-        driftDb: db,
-        occurrenceExpander: _FakeOccurrenceExpander(),
-        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
-        idGenerator: IdGenerator.withUserId('user-1'),
-      );
+    testSafe(
+      'watchAll bypasses shared cache when date filter is present',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = TaskRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
 
-      final query = TaskQuery(
-        filter: QueryFilter<TaskPredicate>(
-          shared: [
-            TaskDatePredicate(
-              field: TaskDateField.deadlineDate,
-              operator: DateOperator.onOrAfter,
-              date: DateTime.utc(2026, 1, 1),
-            ),
-          ],
-        ),
-      );
+        final query = TaskQuery(
+          filter: QueryFilter<TaskPredicate>(
+            shared: [
+              TaskDatePredicate(
+                field: TaskDateField.deadlineDate,
+                operator: DateOperator.onOrAfter,
+                date: DateTime.utc(2026, 1, 1),
+              ),
+            ],
+          ),
+        );
 
-      final s1 = repo.watchAll(query);
-      final s2 = repo.watchAll(query);
-      expect(identical(s1, s2), isFalse);
-    });
+        final s1 = repo.watchAll(query);
+        final s2 = repo.watchAll(query);
+        expect(identical(s1, s2), isFalse);
+      },
+    );
 
     testSafe('occurrence query flags are rejected', () async {
       final db = createAutoClosingDb();
@@ -682,10 +691,11 @@ void main() {
       );
       final taskId = (await db.select(db.taskTable).getSingle()).id;
 
-      var items = await (db.select(db.taskChecklistItemsTable)
-            ..where((t) => t.taskId.equals(taskId))
-            ..orderBy([(t) => drift.OrderingTerm(expression: t.sortIndex)]))
-          .get();
+      var items =
+          await (db.select(db.taskChecklistItemsTable)
+                ..where((t) => t.taskId.equals(taskId))
+                ..orderBy([(t) => drift.OrderingTerm(expression: t.sortIndex)]))
+              .get();
       expect(items.length, 20);
       expect(items.first.title, 'item-0');
       expect(items.last.title, 'item-19');
@@ -697,10 +707,11 @@ void main() {
         checklistTitles: const [' ', 'x', ' y '],
       );
 
-      items = await (db.select(db.taskChecklistItemsTable)
-            ..where((t) => t.taskId.equals(taskId))
-            ..orderBy([(t) => drift.OrderingTerm(expression: t.sortIndex)]))
-          .get();
+      items =
+          await (db.select(db.taskChecklistItemsTable)
+                ..where((t) => t.taskId.equals(taskId))
+                ..orderBy([(t) => drift.OrderingTerm(expression: t.sortIndex)]))
+              .get();
       expect(items.map((e) => e.title).toList(), equals(['x', 'y']));
     });
 
@@ -732,45 +743,51 @@ void main() {
       );
     });
 
-    testSafe('watch completion history and recurrence exceptions map rows', () async {
-      final db = createAutoClosingDb();
-      final repo = TaskRepository(
-        driftDb: db,
-        occurrenceExpander: _FakeOccurrenceExpander(),
-        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
-        idGenerator: IdGenerator.withUserId('user-1'),
-      );
+    testSafe(
+      'watch completion history and recurrence exceptions map rows',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = TaskRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
 
-      final day = DateTime.utc(2026, 1, 1);
-      await db
-          .into(db.taskCompletionHistoryTable)
-          .insert(
-            TaskCompletionHistoryTableCompanion.insert(
-              id: const drift.Value('c1'),
-              taskId: 't1',
-              occurrenceDate: day,
-              completedAt: day,
-              originalOccurrenceDate: const drift.Value.absent(),
-            ),
-          );
-      await db
-          .into(db.taskRecurrenceExceptionsTable)
-          .insert(
-            TaskRecurrenceExceptionsTableCompanion.insert(
-              id: const drift.Value('e1'),
-              taskId: 't1',
-              originalDate: day,
-              exceptionType: ExceptionType.reschedule,
-              newDate: drift.Value(day.add(const Duration(days: 1))),
-              newDeadline: const drift.Value.absent(),
-            ),
-          );
+        final day = DateTime.utc(2026, 1, 1);
+        await db
+            .into(db.taskCompletionHistoryTable)
+            .insert(
+              TaskCompletionHistoryTableCompanion.insert(
+                id: 'c1',
+                taskId: 't1',
+                occurrenceDate: drift.Value(day),
+                completedAt: drift.Value(day),
+                originalOccurrenceDate: const drift.Value.absent(),
+              ),
+            );
+        await db
+            .into(db.taskRecurrenceExceptionsTable)
+            .insert(
+              TaskRecurrenceExceptionsTableCompanion.insert(
+                id: 'e1',
+                taskId: 't1',
+                originalDate: day,
+                exceptionType: ExceptionType.reschedule,
+                newDate: drift.Value(day.add(const Duration(days: 1))),
+                newDeadline: const drift.Value.absent(),
+              ),
+            );
 
-      final completions = await repo.watchCompletionHistory().first;
-      final exceptions = await repo.watchRecurrenceExceptions().first;
-      expect(completions.single.entityId, 't1');
-      expect(exceptions.single.exceptionType, RecurrenceExceptionType.reschedule);
-    });
+        final completions = await repo.watchCompletionHistory().first;
+        final exceptions = await repo.watchRecurrenceExceptions().first;
+        expect(completions.single.entityId, 't1');
+        expect(
+          exceptions.single.exceptionType,
+          RecurrenceExceptionType.reschedule,
+        );
+      },
+    );
 
     testSafe(
       'setMyDaySnoozedUntil records events and computes snooze stats',

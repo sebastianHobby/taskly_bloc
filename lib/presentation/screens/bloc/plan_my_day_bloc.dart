@@ -173,6 +173,7 @@ final class PlanMyDayRoutineItem {
     required this.lastScheduledDayUtc,
     required this.lastCompletedAtUtc,
     required this.completionsInPeriod,
+    required this.skipsInPeriod,
   });
 
   final Routine routine;
@@ -185,6 +186,7 @@ final class PlanMyDayRoutineItem {
   final DateTime? lastScheduledDayUtc;
   final DateTime? lastCompletedAtUtc;
   final List<RoutineCompletion> completionsInPeriod;
+  final List<RoutineSkip> skipsInPeriod;
 
   PlanMyDayRoutineItem copyWith({
     bool? selected,
@@ -200,6 +202,7 @@ final class PlanMyDayRoutineItem {
       lastScheduledDayUtc: lastScheduledDayUtc,
       lastCompletedAtUtc: lastCompletedAtUtc,
       completionsInPeriod: completionsInPeriod,
+      skipsInPeriod: skipsInPeriod,
     );
   }
 }
@@ -1585,6 +1588,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
         lastScheduledDayUtc: policy.lastScheduledDayUtc,
         lastCompletedAtUtc: _lastCompletionForRoutine(routine.id),
         completionsInPeriod: completionsInPeriod,
+        skipsInPeriod: _skipsForPeriod(routine, snapshot),
       );
 
       if (item.isEligibleToday) {
@@ -2019,6 +2023,24 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     }
 
     return completions;
+  }
+
+  List<RoutineSkip> _skipsForPeriod(
+    Routine routine,
+    RoutineCadenceSnapshot snapshot,
+  ) {
+    if (routine.periodType != RoutinePeriodType.week) {
+      return const <RoutineSkip>[];
+    }
+
+    final periodStart = dateOnly(snapshot.periodStartUtc);
+    return _routineSkips
+        .where((skip) => skip.routineId == routine.id)
+        .where((skip) => skip.periodType == RoutineSkipPeriodType.week)
+        .where(
+          (skip) => dateOnly(skip.periodKeyUtc).isAtSameMomentAs(periodStart),
+        )
+        .toList(growable: false);
   }
 
   DateTime? _deadlineDateOnly(Task task) {

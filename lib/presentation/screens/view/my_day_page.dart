@@ -716,6 +716,7 @@ List<TasklyRowSpec> _buildRoutineRows(
         completed: item.completed,
         dayKeyUtc: dayKeyUtc,
         completionsInPeriod: item.completionsInPeriod,
+        skipsInPeriod: item.skipsInPeriod,
         style: const TasklyRoutineRowStyle.standard(),
         depthOffset: 0,
       ),
@@ -909,6 +910,7 @@ TasklyRowSpec _buildRoutineRow(
   required bool completed,
   required DateTime dayKeyUtc,
   required List<RoutineCompletion> completionsInPeriod,
+  required List<RoutineSkip> skipsInPeriod,
   required TasklyRoutineRowStyle style,
   int depthOffset = 0,
 }) {
@@ -923,6 +925,7 @@ TasklyRowSpec _buildRoutineRow(
         routine.scheduleMode == RoutineScheduleMode.scheduled,
     dayKeyUtc: dayKeyUtc,
     completionsInPeriod: completionsInPeriod,
+    skipsInPeriod: skipsInPeriod,
     labels: buildRoutineExecutionLabels(
       context,
       completed: completed,

@@ -503,9 +503,8 @@ class _ScheduleDayPill extends StatelessWidget {
     final isScheduledState =
         state == TasklyRoutineScheduleDayState.scheduled ||
         state == TasklyRoutineScheduleDayState.loggedScheduled ||
+        state == TasklyRoutineScheduleDayState.skippedScheduled ||
         state == TasklyRoutineScheduleDayState.missedScheduled;
-
-    final showIcon = state == TasklyRoutineScheduleDayState.missedScheduled;
 
     final baseBackground = isToday
         ? accent.withValues(alpha: 0.08)
@@ -518,22 +517,39 @@ class _ScheduleDayPill extends StatelessWidget {
     var foreground = isScheduledState
         ? onSurface
         : onSurfaceVariant.withValues(alpha: 0.6);
-    IconData? icon;
+    IconData? markerIcon;
+    Color? markerBackground;
+    Color? markerForeground;
 
     switch (state) {
       case TasklyRoutineScheduleDayState.loggedScheduled:
         borderColor = accent.withValues(alpha: 0.7);
         background = accent.withValues(alpha: 0.16);
         foreground = accent;
+        markerIcon = Icons.check_rounded;
+        markerBackground = accent;
+        markerForeground = Colors.white;
       case TasklyRoutineScheduleDayState.loggedUnscheduled:
         borderColor = accent.withValues(alpha: 0.6);
         background = accent.withValues(alpha: 0.1);
         foreground = accent;
+        markerIcon = Icons.check_rounded;
+        markerBackground = accent;
+        markerForeground = Colors.white;
+      case TasklyRoutineScheduleDayState.skippedScheduled:
+        borderColor = outline.withValues(alpha: 0.9);
+        background = onSurfaceVariant.withValues(alpha: 0.1);
+        foreground = onSurfaceVariant;
+        markerIcon = Icons.skip_next_rounded;
+        markerBackground = onSurfaceVariant;
+        markerForeground = Colors.white;
       case TasklyRoutineScheduleDayState.missedScheduled:
         borderColor = error.withValues(alpha: 0.4);
         background = errorContainer.withValues(alpha: 0.2);
         foreground = error.withValues(alpha: 0.8);
-        icon = Icons.remove_rounded;
+        markerIcon = Icons.priority_high_rounded;
+        markerBackground = error;
+        markerForeground = Colors.white;
       case TasklyRoutineScheduleDayState.scheduled:
       case TasklyRoutineScheduleDayState.none:
         break;
@@ -548,18 +564,40 @@ class _ScheduleDayPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radiusPill),
         border: Border.all(color: borderColor),
       ),
-      child: showIcon
-          ? Icon(icon, size: tokens.spaceMd, color: foreground)
-          : Text(
-              day.label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: foreground,
-                fontWeight: isScheduledState
-                    ? FontWeight.w700
-                    : FontWeight.w500,
-                height: 1,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Text(
+            day.label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: foreground,
+              fontWeight: isScheduledState ? FontWeight.w700 : FontWeight.w500,
+              height: 1,
+            ),
+          ),
+          if (markerIcon != null &&
+              markerBackground != null &&
+              markerForeground != null)
+            Positioned(
+              top: 1,
+              right: 1,
+              child: Container(
+                width: tokens.spaceXs2,
+                height: tokens.spaceXs2,
+                decoration: BoxDecoration(
+                  color: markerBackground,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  markerIcon,
+                  size: tokens.spaceXxs2 + 1,
+                  color: markerForeground,
+                ),
               ),
             ),
+        ],
+      ),
     );
   }
 }

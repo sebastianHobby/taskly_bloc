@@ -203,7 +203,9 @@ final class MyDayViewModelBuilder {
     return skips
         .where((skip) => skip.routineId == routine.id)
         .where((skip) => skip.periodType == RoutineSkipPeriodType.week)
-        .where((skip) => dateOnly(skip.periodKeyUtc).isAtSameMomentAs(periodStart))
+        .where(
+          (skip) => dateOnly(skip.periodKeyUtc).isAtSameMomentAs(periodStart),
+        )
         .toList(growable: false);
   }
 

@@ -1205,6 +1205,7 @@ TasklyRowSpec _buildRoutineRow(
         routine.scheduleMode == RoutineScheduleMode.scheduled,
     dayKeyUtc: data.dayKeyUtc,
     completionsInPeriod: item.completionsInPeriod,
+    skipsInPeriod: item.skipsInPeriod,
     labels: labels,
   );
 

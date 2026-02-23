@@ -326,6 +326,7 @@ TasklyRowSpec _buildRow(
       highlightCompleted: false,
       dayKeyUtc: item.dayKeyUtc,
       completionsInPeriod: item.completionsInPeriod,
+      skipsInPeriod: item.skipsInPeriod,
       labels: selectionMode
           ? null
           : buildRoutineExecutionLabels(
