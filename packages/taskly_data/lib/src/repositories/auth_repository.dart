@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_core/env.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/auth.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -10,9 +11,14 @@ import 'package:taskly_data/src/errors/app_failure_mapper.dart';
 
 /// Implementation of authentication repository using Supabase.
 class AuthRepository implements AuthRepositoryContract {
-  AuthRepository({required supabase.SupabaseClient client}) : _client = client;
+  AuthRepository({
+    required supabase.SupabaseClient client,
+    String? Function()? redirectUrlResolver,
+  }) : _client = client,
+       _redirectUrlResolver = redirectUrlResolver;
 
   final supabase.SupabaseClient _client;
+  final String? Function()? _redirectUrlResolver;
 
   late final Stream<AuthStateChange> _authStateStream = _client
       .auth
@@ -75,6 +81,7 @@ class AuthRepository implements AuthRepositoryContract {
       final response = await _client.auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: _resolveAuthRedirectUrl(),
       );
       AppLog.info('data.auth', 'signUp: success');
       return _mapAuthResponse(response);
@@ -120,7 +127,10 @@ class AuthRepository implements AuthRepositoryContract {
       'resetPasswordForEmail: email=${AppLog.maskEmail(email)}',
     );
     try {
-      await _client.auth.resetPasswordForEmail(email);
+      await _client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: _resolveAuthRedirectUrl(),
+      );
       AppLog.info('data.auth', 'resetPasswordForEmail: success');
     } catch (e, st) {
       final failure = AppFailureMapper.fromException(e);
@@ -253,5 +263,41 @@ class AuthRepository implements AuthRepositoryContract {
       'data.auth',
       'tokenRefreshed event observed (expiresAtUtc=$expiresAt)',
     );
+  }
+
+  String _resolveAuthRedirectUrl() {
+    final override = _redirectUrlResolver?.call()?.trim();
+    if (override != null && override.isNotEmpty) return override;
+
+    if (kIsWeb) return _webRedirectFallback();
+
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.iOS => _appRedirectFallback(),
+      TargetPlatform.android => _appRedirectFallback(),
+      TargetPlatform.macOS => _appRedirectFallback(),
+      TargetPlatform.fuchsia => _webRedirectFallback(),
+      TargetPlatform.linux => _webRedirectFallback(),
+      TargetPlatform.windows => _webRedirectFallback(),
+    };
+  }
+
+  String _webRedirectFallback() {
+    try {
+      final configured = Env.authWebRedirectUrl.trim();
+      if (configured.isNotEmpty) return configured;
+    } catch (_) {
+      // Test/non-configured entrypoints can safely use the default below.
+    }
+    return 'https://sebastianhobby.github.io/taskly_bloc/';
+  }
+
+  String _appRedirectFallback() {
+    try {
+      final configured = Env.authAppRedirectUrl.trim();
+      if (configured.isNotEmpty) return configured;
+    } catch (_) {
+      // Test/non-configured entrypoints can safely use the default below.
+    }
+    return 'taskly://auth-callback';
   }
 }

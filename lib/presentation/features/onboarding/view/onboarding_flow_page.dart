@@ -303,7 +303,7 @@ class _WelcomeStep extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const TasklyBrandLogo(size: 84),
+          const TasklyBrandLogo.hero(),
           SizedBox(height: tokens.spaceLg),
           Text(
             context.l10n.onboardingWelcomeTitle,

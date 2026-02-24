@@ -4149,10 +4149,6 @@
     "@planMyDayRescheduleAction": {
         "description": "Etiqueta de acción de fila para mover una tarea comprometida fuera de hoy"
     },
-    "planMyDayChangeAction": "Cambiar",
-    "@planMyDayChangeAction": {
-        "description": "Etiqueta de acción de fila para cambiar una rutina programada"
-    },
     "planMyDayRescheduleDueTaskTitle": "Mover tarea vencida",
     "@planMyDayRescheduleDueTaskTitle": {
         "description": "Título para mover una tarea vencida fuera del plan de hoy"
@@ -4176,15 +4172,6 @@
     "planMyDayRescheduleAllAction": "Reprogramar todo",
     "@planMyDayRescheduleAllAction": {
         "description": "Etiqueta de acción para reprogramar todas las tareas en la sección de planificadas"
-    },
-    "planMyDaySummaryLabel": "{count, plural, =1{1 elemento planificado} other{{count} elementos planificados}}",
-    "@planMyDaySummaryLabel": {
-        "description": "Etiqueta de resumen con el conteo planificado en Planificar mi día",
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
     },
     "planMyDayDecreaseLimitTooltip": "Disminuir limite",
     "@planMyDayDecreaseLimitTooltip": {

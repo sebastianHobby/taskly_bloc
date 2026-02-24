@@ -12,6 +12,8 @@ class EnvConfig {
     required this.supabaseUrl,
     required this.supabasePublishableKey,
     required this.powersyncUrl,
+    this.authWebRedirectUrl = '',
+    this.authAppRedirectUrl = 'taskly://auth-callback',
     this.appVersion = '',
     this.buildSha = '',
   });
@@ -22,6 +24,8 @@ class EnvConfig {
   final String supabaseUrl;
   final String supabasePublishableKey;
   final String powersyncUrl;
+  final String authWebRedirectUrl;
+  final String authAppRedirectUrl;
 
   /// Optional app version for sync/app telemetry.
   ///

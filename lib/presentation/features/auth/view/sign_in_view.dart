@@ -64,7 +64,7 @@ class _SignInViewState extends State<SignInView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const TasklyBrandLogo(size: 80),
+                    const TasklyBrandLogo.hero(),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
                       context.l10n.authWelcomeTitle,

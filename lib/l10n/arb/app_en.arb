@@ -4263,10 +4263,6 @@
     "@planMyDayRescheduleAction": {
         "description": "Row action label for moving a committed task out of today"
     },
-    "planMyDayChangeAction": "Change",
-    "@planMyDayChangeAction": {
-        "description": "Row action label for changing a scheduled routine"
-    },
     "planMyDayRescheduleDueTaskTitle": "Move due task",
     "@planMyDayRescheduleDueTaskTitle": {
         "description": "Title for moving a due task out of today's plan"
@@ -4290,15 +4286,6 @@
     "planMyDayRescheduleAllAction": "Reschedule all",
     "@planMyDayRescheduleAllAction": {
         "description": "Action label to reschedule all tasks in the planned section"
-    },
-    "planMyDaySummaryLabel": "{count, plural, =1{1 planned item} other{{count} planned items}}",
-    "@planMyDaySummaryLabel": {
-        "description": "Summary label showing planned count in Plan My Day",
-        "placeholders": {
-            "count": {
-                "type": "int"
-            }
-        }
     },
     "planMyDayDecreaseLimitTooltip": "Decrease limit",
     "@planMyDayDecreaseLimitTooltip": {

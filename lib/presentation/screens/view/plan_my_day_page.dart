@@ -180,6 +180,7 @@ class _PlanMyDayBody extends StatefulWidget {
 
 class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
   double? _lastChildHeight;
+  bool _isInfoCardDismissed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -231,12 +232,12 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
         ),
       ),
       SizedBox(height: tokens.spaceSm),
-      _PlanInfoCard(
-        title: l10n.planMyDayInfoCardTitle,
-        body: l10n.planMyDayInfoCardBody,
-      ),
-      SizedBox(height: tokens.spaceSm),
-      _PlanSummaryBar(data: data),
+      if (!_isInfoCardDismissed)
+        _PlanInfoCard(
+          title: l10n.planMyDayInfoCardTitle,
+          body: l10n.planMyDayInfoCardBody,
+          onDismiss: () => setState(() => _isInfoCardDismissed = true),
+        ),
       SizedBox(height: tokens.spaceLg),
       if (data.dueTodayTasks.isNotEmpty)
         _TaskShelf(
@@ -510,48 +511,16 @@ class _MeasureSizeRenderObject extends RenderProxyBox {
   }
 }
 
-class _PlanSummaryBar extends StatelessWidget {
-  const _PlanSummaryBar({required this.data});
-
-  final PlanMyDayReady data;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-    final l10n = context.l10n;
-
-    return Container(
-      padding: EdgeInsets.all(tokens.spaceMd),
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              l10n.planMyDaySummaryLabel(data.plannedCount),
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _PlanInfoCard extends StatelessWidget {
   const _PlanInfoCard({
     required this.title,
     required this.body,
+    required this.onDismiss,
   });
 
   final String title;
   final String body;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -568,13 +537,24 @@ class _PlanInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                onPressed: onDismiss,
+                icon: const Icon(Icons.close),
+              ),
+            ],
           ),
-          SizedBox(height: tokens.spaceXs2),
           Text(
             body,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -1289,7 +1269,7 @@ TasklyRowSpec _buildRoutineRow(
     data: dataRow,
     style: item.isScheduled
         ? TasklyRoutineRowStyle.planAction(
-            actionLabel: l10n.planMyDayChangeAction,
+            actionLabel: l10n.skipLabel,
           )
         : const TasklyRoutineRowStyle.planPick(),
     actions: TasklyRoutineRowActions(

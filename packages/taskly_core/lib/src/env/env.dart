@@ -56,6 +56,16 @@ class Env {
     return _requireConfig().powersyncUrl;
   }
 
+  /// Auth redirect URL for web callbacks.
+  static String get authWebRedirectUrl {
+    return _requireConfig().authWebRedirectUrl;
+  }
+
+  /// Auth redirect URL for native deep-link callbacks.
+  static String get authAppRedirectUrl {
+    return _requireConfig().authAppRedirectUrl;
+  }
+
   /// App version used for telemetry metadata.
   ///
   /// Uses configured value when provided, otherwise falls back to build-time

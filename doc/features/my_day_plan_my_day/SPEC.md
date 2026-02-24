@@ -26,7 +26,7 @@ Defines plan building and execution surfaces, inclusion rules, ordering, over-ca
   - Row action: `Reschedule`
   - Bulk shelf action: `Reschedule all`
 - Scheduled routine rows use explicit action labels (not add/remove picker):
-  - Row action: `Change`
+  - Row action: `Skip`
   - Bottom-sheet actions: skip / period skip / pause / keep.
 - Flexible routines and suggestion tasks keep picker behavior:
   - Add/remove affordance remains `Add` / `Added`.

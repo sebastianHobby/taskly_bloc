@@ -418,6 +418,57 @@ void main() {
   });
 
   testWidgetsSafe(
+    'plan my day info card is dismissible and planned summary card is hidden',
+    (tester) async {
+      final state = buildReady(
+        valueGroups: const [],
+        plannedTasks: [
+          TestData.task(
+            id: 'task-plan',
+            name: 'Prep meeting notes',
+            startDate: DateTime(2025, 1, 15),
+          ),
+        ],
+      );
+      const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+      when(() => planBloc.state).thenReturn(state);
+      whenListen(planBloc, Stream.value(state), initialState: state);
+      when(() => gateBloc.state).thenReturn(gateState);
+      whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+      await tester.pumpWidgetWithBlocs(
+        providers: [
+          BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+          BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+        ],
+        child: RepositoryProvider<NowService>.value(
+          value: nowService,
+          child: PlanMyDayPage(onCloseRequested: () {}),
+        ),
+      );
+      await tester.pumpForStream();
+
+      final l10n = l10nFor(tester);
+      expect(find.text(l10n.planMyDayInfoCardTitle), findsOneWidget);
+      expect(find.text('Prep meeting notes'), findsOneWidget);
+
+      await tester.tap(
+        find
+            .byTooltip(
+              MaterialLocalizations.of(
+                tester.element(find.byType(PlanMyDayPage)),
+              ).closeButtonTooltip,
+            )
+            .first,
+      );
+      await tester.pumpForStream();
+
+      expect(find.text(l10n.planMyDayInfoCardTitle), findsNothing);
+    },
+  );
+
+  testWidgetsSafe(
     'plan my day limits sections on compact and expands on show more',
     (tester) async {
       setTestSurfaceSize(tester, const Size(375, 1200));
@@ -516,7 +567,7 @@ void main() {
       expect(find.text(l10n.routinePanelScheduledTitle), findsOneWidget);
       expect(find.text(l10n.routinePanelFlexibleTitle), findsOneWidget);
 
-      await tester.tap(find.text(l10n.planMyDayChangeAction).first);
+      await tester.tap(find.text(l10n.skipLabel).first);
       await tester.pumpForStream();
       final foundSkipAction = await tester.pumpUntilFound(
         find.text(l10n.planMyDayRoutineSkipInstanceAction),
