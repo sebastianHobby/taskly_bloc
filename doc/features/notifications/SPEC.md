@@ -29,6 +29,10 @@ Defines local reminder and notification planning behavior, including Plan My Day
 - `At date/time` reminders are fixed absolute timestamps and do not shift with
   recurrence occurrences.
 
+Shared recurrence display contract:
+
+- `doc/features/recurrence/RECURRENCE_DISPLAY_POLICY_SPEC.md`
+
 ## Testing minimums
 
 - Reminder scheduling windows.

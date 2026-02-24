@@ -18,6 +18,10 @@ Defines timeline/date-lens behavior for scheduled entities, grouping, sorting, r
 - Grouping and sorting remain deterministic and stable.
 - Performance and stream lifecycle follow architecture invariants.
 
+Shared recurrence display contract:
+
+- `doc/features/recurrence/RECURRENCE_DISPLAY_POLICY_SPEC.md`
+
 ## Testing minimums
 
 - Correct grouping by local day.

@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/plan_my_day_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_domain/allocation.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/errors.dart';
 import 'package:taskly_domain/my_day.dart' as my_day;
@@ -50,6 +51,7 @@ void main() {
   late MockHomeDayKeyService dayKeyService;
   late MockTemporalTriggerService temporalTriggerService;
   late MockNowService nowService;
+  late OccurrenceReadService occurrenceReadService;
   late DemoModeService demoModeService;
   late DemoDataProvider demoDataProvider;
   late BehaviorSubject<TemporalTriggerEvent> temporalSubject;
@@ -102,7 +104,26 @@ void main() {
     when(() => taskRepository.getAll(any())).thenAnswer((_) async => []);
     when(() => taskRepository.getByIds(any())).thenAnswer((_) async => []);
     when(() => taskRepository.watchAll(any())).thenAnswer(
-      (_) => Stream.value(const <Task>[]),
+      (_) => Stream.value(const <Task>[]).asBroadcastStream(),
+    );
+    when(() => taskRepository.watchCompletionHistory()).thenAnswer(
+      (_) => Stream.value(const <CompletionHistoryData>[]),
+    );
+    when(() => taskRepository.watchRecurrenceExceptions()).thenAnswer(
+      (_) => Stream.value(const <RecurrenceExceptionData>[]),
+    );
+    when(
+      () => taskRepository.getOccurrencesForTask(
+        taskId: any(named: 'taskId'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => const <Task>[]);
+
+    occurrenceReadService = OccurrenceReadService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      dayKeyService: dayKeyService,
     );
     when(
       () => routineRepository.getAll(includeInactive: true),
@@ -181,6 +202,7 @@ void main() {
       dayKeyService: dayKeyService,
       temporalTriggerService: temporalTriggerService,
       nowService: nowService,
+      occurrenceReadService: occurrenceReadService,
       valueRatingsRepository: valueRatingsRepository,
       demoModeService: demoModeService,
       demoDataProvider: demoDataProvider,
@@ -236,7 +258,11 @@ void main() {
         (_) async => [dueTask, plannedTask, suggestedTask],
       );
       when(() => taskRepository.watchAll(any())).thenAnswer(
-        (_) => Stream.value([dueTask, plannedTask, suggestedTask]),
+        (_) => Stream.value([
+          dueTask,
+          plannedTask,
+          suggestedTask,
+        ]).asBroadcastStream(),
       );
 
       final allocation = AllocationResult(
@@ -404,7 +430,7 @@ void main() {
         (_) async => [lowTask, highTask],
       );
       when(() => taskRepository.watchAll(any())).thenAnswer(
-        (_) => Stream.value([lowTask, highTask]),
+        (_) => Stream.value([lowTask, highTask]).asBroadcastStream(),
       );
 
       final weekStart = DateTime.utc(2025, 1, 13);
@@ -519,7 +545,7 @@ void main() {
         (_) async => [dueTask],
       );
       when(() => taskRepository.watchAll(any())).thenAnswer(
-        (_) => Stream.value([dueTask]),
+        (_) => Stream.value([dueTask]).asBroadcastStream(),
       );
       when(
         () => taskRepository.bulkRescheduleDeadlines(

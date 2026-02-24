@@ -531,50 +531,49 @@ class _ScheduleDayPill extends StatelessWidget {
         ? accent.withValues(alpha: 0.08)
         : Colors.transparent;
 
-    var background = baseBackground;
-    var borderColor = isScheduledState
+    final defaultBorderColor = isScheduledState
         ? outline.withValues(alpha: 0.8)
         : outline.withValues(alpha: 0.5);
-    var foreground = isScheduledState
+    final defaultForeground = isScheduledState
         ? onSurface
         : onSurfaceVariant.withValues(alpha: 0.6);
-    IconData? markerIcon;
-    Color? markerBackground;
-    Color? markerForeground;
-
-    switch (state) {
-      case TasklyRoutineScheduleDayState.loggedScheduled:
-        borderColor = accent.withValues(alpha: 0.7);
-        background = accent.withValues(alpha: 0.16);
-        foreground = accent;
-        markerIcon = Icons.check_rounded;
-        markerBackground = accent;
-        markerForeground = Colors.white;
-      case TasklyRoutineScheduleDayState.loggedUnscheduled:
-        borderColor = accent.withValues(alpha: 0.6);
-        background = accent.withValues(alpha: 0.1);
-        foreground = accent;
-        markerIcon = Icons.check_rounded;
-        markerBackground = accent;
-        markerForeground = Colors.white;
-      case TasklyRoutineScheduleDayState.skippedScheduled:
-        borderColor = outline.withValues(alpha: 0.9);
-        background = onSurfaceVariant.withValues(alpha: 0.1);
-        foreground = onSurfaceVariant;
-        markerIcon = Icons.skip_next_rounded;
-        markerBackground = onSurfaceVariant;
-        markerForeground = Colors.white;
-      case TasklyRoutineScheduleDayState.missedScheduled:
-        borderColor = error.withValues(alpha: 0.4);
-        background = errorContainer.withValues(alpha: 0.2);
-        foreground = error.withValues(alpha: 0.8);
-        markerIcon = Icons.priority_high_rounded;
-        markerBackground = error;
-        markerForeground = Colors.white;
-      case TasklyRoutineScheduleDayState.scheduled:
-      case TasklyRoutineScheduleDayState.none:
-        break;
-    }
+    final (
+      Color background,
+      Color borderColor,
+      Color foreground,
+      IconData? centeredIcon,
+      bool showLabel,
+    ) = switch (state) {
+      TasklyRoutineScheduleDayState.loggedScheduled => (
+        accent.withValues(alpha: 0.18),
+        accent.withValues(alpha: 0.75),
+        accent,
+        Icons.check_rounded,
+        false,
+      ),
+      TasklyRoutineScheduleDayState.skippedScheduled => (
+        onSurfaceVariant.withValues(alpha: 0.1),
+        outline.withValues(alpha: 0.95),
+        onSurfaceVariant,
+        Icons.skip_next_rounded,
+        false,
+      ),
+      TasklyRoutineScheduleDayState.missedScheduled => (
+        errorContainer.withValues(alpha: 0.2),
+        error.withValues(alpha: 0.55),
+        error.withValues(alpha: 0.8),
+        Icons.remove_rounded,
+        false,
+      ),
+      TasklyRoutineScheduleDayState.scheduled ||
+      TasklyRoutineScheduleDayState.none => (
+        baseBackground,
+        defaultBorderColor,
+        defaultForeground,
+        null,
+        true,
+      ),
+    };
 
     return Container(
       width: size,
@@ -585,37 +584,25 @@ class _ScheduleDayPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radiusPill),
         border: Border.all(color: borderColor),
       ),
-      child: Stack(
-        alignment: Alignment.center,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            day.label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: foreground,
-              fontWeight: isScheduledState ? FontWeight.w700 : FontWeight.w500,
-              height: 1,
-            ),
-          ),
-          if (markerIcon != null &&
-              markerBackground != null &&
-              markerForeground != null)
-            Positioned(
-              top: 1,
-              right: 1,
-              child: Container(
-                width: tokens.spaceXs2,
-                height: tokens.spaceXs2,
-                decoration: BoxDecoration(
-                  color: markerBackground,
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Icon(
-                  markerIcon,
-                  size: tokens.spaceXxs2 + 1,
-                  color: markerForeground,
-                ),
+          if (showLabel)
+            Text(
+              day.label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: foreground,
+                fontWeight: isScheduledState
+                    ? FontWeight.w700
+                    : FontWeight.w500,
+                height: 1,
               ),
+            )
+          else if (centeredIcon != null)
+            Icon(
+              centeredIcon,
+              size: tokens.spaceSm2 + 2,
+              color: foreground,
             ),
         ],
       ),

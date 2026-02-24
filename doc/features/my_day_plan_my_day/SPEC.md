@@ -13,6 +13,9 @@ Defines plan building and execution surfaces, inclusion rules, ordering, over-ca
 - Deselecting due/planned/scheduled items requires explicit alternate action (reschedule/skip/pause flow).
 - Recurring tasks are occurrence-aware in planning reads. Occurrence start is
   treated as planned/start date for bucketing.
+- Plan My Day recurring display policy is always single-next preview for
+  recurring entities, regardless of `repeatFromCompletion`.
+- Plan My Day does not render multi-occurrence expansion.
 
 ## PMD committed-items UX
 
@@ -55,3 +58,4 @@ Defines plan building and execution surfaces, inclusion rules, ordering, over-ca
 Detailed implementation spec:
 
 - `doc/features/my_day_plan_my_day/PMD_DECISION_EVENTS_DEBUG_STATS_SPEC.md`
+- `doc/features/recurrence/RECURRENCE_DISPLAY_POLICY_SPEC.md`

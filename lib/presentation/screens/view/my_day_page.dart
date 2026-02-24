@@ -177,6 +177,7 @@ class _MyDayPageState extends State<MyDayPage> {
             dayKeyService: context.read<HomeDayKeyService>(),
             temporalTriggerService: context.read<TemporalTriggerService>(),
             nowService: context.read<NowService>(),
+            occurrenceReadService: context.read<OccurrenceReadService>(),
             valueRatingsRepository: context
                 .read<ValueRatingsRepositoryContract>(),
             demoModeService: context.read<DemoModeService>(),

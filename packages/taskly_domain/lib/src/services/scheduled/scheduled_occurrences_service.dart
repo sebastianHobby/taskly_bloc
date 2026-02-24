@@ -5,6 +5,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/time.dart';
 
+import 'package:taskly_domain/src/services/occurrence/occurrence_policy.dart';
 import 'package:taskly_domain/src/services/occurrence/occurrence_read_service.dart';
 
 import 'package:taskly_domain/src/models/scheduled/scheduled_date_tag.dart';
@@ -356,7 +357,10 @@ final class ScheduledOccurrencesService {
     final afterCompletionById = <String, List<Task>>{};
 
     for (final task in recurringTasks) {
-      if (task.repeatFromCompletion) {
+      if (OccurrencePolicy.showsSingleNextOnly(
+        surface: RecurrenceDisplaySurface.scheduled,
+        repeatFromCompletion: task.repeatFromCompletion,
+      )) {
         afterCompletionById.putIfAbsent(task.id, () => <Task>[]).add(task);
       } else {
         retained.add(task);
@@ -386,7 +390,10 @@ final class ScheduledOccurrencesService {
     final afterCompletionById = <String, List<Project>>{};
 
     for (final project in recurringProjects) {
-      if (project.repeatFromCompletion) {
+      if (OccurrencePolicy.showsSingleNextOnly(
+        surface: RecurrenceDisplaySurface.scheduled,
+        repeatFromCompletion: project.repeatFromCompletion,
+      )) {
         afterCompletionById
             .putIfAbsent(project.id, () => <Project>[])
             .add(

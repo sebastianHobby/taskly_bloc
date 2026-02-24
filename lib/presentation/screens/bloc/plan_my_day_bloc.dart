@@ -419,9 +419,9 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
     required NowService nowService,
+    required OccurrenceReadService occurrenceReadService,
     required DemoModeService demoModeService,
     required DemoDataProvider demoDataProvider,
-    OccurrenceReadService? occurrenceReadService,
     RoutineScheduleService scheduleService = const RoutineScheduleService(),
   }) : _settingsRepository = settingsRepository,
        _myDayRepository = myDayRepository,
@@ -473,7 +473,7 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   final NowService _nowService;
   final DemoModeService _demoModeService;
   final DemoDataProvider _demoDataProvider;
-  final OccurrenceReadService? _occurrenceReadService;
+  final OccurrenceReadService _occurrenceReadService;
   final RoutineScheduleService _scheduleService;
 
   final OperationContextFactory _contextFactory =
@@ -1383,22 +1383,14 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   }
 
   Stream<List<Task>> _watchIncompleteTasksForCurrentDay() {
-    final service = _occurrenceReadService;
-    if (service == null) {
-      return _taskRepository.watchAll(TaskQuery.incomplete());
-    }
-    return service.watchTasksWithOccurrencePreview(
+    return _occurrenceReadService.watchTasksWithOccurrencePreview(
       query: TaskQuery.incomplete(),
       preview: OccurrencePolicy.projectsPreview(asOfDayKey: _dayKeyUtc),
     );
   }
 
   Future<List<Task>> _loadIncompleteTasks() {
-    final service = _occurrenceReadService;
-    if (service == null) {
-      return _taskRepository.getAll(TaskQuery.incomplete());
-    }
-    return service.getTasksWithOccurrencePreview(
+    return _occurrenceReadService.getTasksWithOccurrencePreview(
       query: TaskQuery.incomplete(),
       preview: OccurrencePolicy.projectsPreview(asOfDayKey: _dayKeyUtc),
     );

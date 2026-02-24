@@ -36,8 +36,11 @@ final class OccurrenceReadService {
   final TaskFilterEvaluator _taskFilterEvaluator;
   final ProjectFilterEvaluator _projectFilterEvaluator;
 
-  /// Watches tasks and decorates repeating tasks with a single “next” occurrence
-  /// based on [preview].
+  /// Watches tasks and decorates repeating tasks with a single "next"
+  /// occurrence based on [preview].
+  ///
+  /// This preview policy is independent of `repeatFromCompletion` and is used
+  /// by single-next surfaces (e.g. Plan My Day, My Day, Projects).
   Stream<List<Task>> watchTasksWithOccurrencePreview({
     required TaskQuery query,
     required OccurrencePreview preview,
@@ -96,6 +99,9 @@ final class OccurrenceReadService {
   /// Unlike [watchTasksWithOccurrencePreview], this resolves a one-time
   /// snapshot and ensures recurring rows are normalized to virtual
   /// start/deadline values derived from occurrence data.
+  ///
+  /// This preview policy is independent of `repeatFromCompletion` and is used
+  /// by single-next surfaces (e.g. Plan My Day, My Day, Projects).
   Future<List<Task>> getTasksWithOccurrencePreview({
     required TaskQuery query,
     required OccurrencePreview preview,

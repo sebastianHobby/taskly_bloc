@@ -1,6 +1,15 @@
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/time.dart';
 
+/// Surfaces that render recurring entities with explicit display policy.
+enum RecurrenceDisplaySurface {
+  planMyDay,
+  myDay,
+  projects,
+  scheduled,
+  notifications,
+}
+
 /// Centralized recurrence/occurrence policy.
 ///
 /// This keeps cross-screen behavior consistent while allowing Data to remain
@@ -51,5 +60,22 @@ abstract final class OccurrencePolicy {
       ),
       rangeEnd: dayKey.add(const Duration(days: commandResolutionFutureDays)),
     );
+  }
+
+  /// Returns whether this surface should render only the next active
+  /// occurrence for a recurring entity.
+  ///
+  /// Scheduled intentionally remains hybrid and depends on recurrence mode.
+  static bool showsSingleNextOnly({
+    required RecurrenceDisplaySurface surface,
+    required bool repeatFromCompletion,
+  }) {
+    return switch (surface) {
+      RecurrenceDisplaySurface.planMyDay => true,
+      RecurrenceDisplaySurface.myDay => true,
+      RecurrenceDisplaySurface.projects => true,
+      RecurrenceDisplaySurface.notifications => true,
+      RecurrenceDisplaySurface.scheduled => repeatFromCompletion,
+    };
   }
 }
