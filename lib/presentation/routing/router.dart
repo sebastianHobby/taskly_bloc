@@ -80,6 +80,27 @@ bool _shouldBlockOnSync(InitialSyncGateState state) {
   };
 }
 
+@visibleForTesting
+String? authGateRedirectTarget({
+  required AuthStatus authStatus,
+  required bool isSplashRoute,
+  required bool isAuthRoute,
+}) {
+  if (authStatus == AuthStatus.initial) {
+    return isSplashRoute ? null : _splashPath;
+  }
+
+  if (authStatus == AuthStatus.loading) {
+    return (isSplashRoute || isAuthRoute) ? null : _splashPath;
+  }
+
+  if (authStatus == AuthStatus.unauthenticated) {
+    return isAuthRoute ? null : _signInPath;
+  }
+
+  return null;
+}
+
 /// Router for the app, including auth/sync gating and the authenticated shell.
 ///
 /// Uses convention-based routing with a small set of patterns:
@@ -115,13 +136,13 @@ GoRouter createRouter({
       final isInitialSyncRoute = path == _initialSyncPath;
       final isOnboardingRoute = path == _onboardingPath;
 
-      if (authState.status == AuthStatus.initial ||
-          authState.status == AuthStatus.loading) {
-        return isSplashRoute ? null : _splashPath;
-      }
-
-      if (authState.status == AuthStatus.unauthenticated) {
-        return isAuthRoute ? null : _signInPath;
+      final authGateTarget = authGateRedirectTarget(
+        authStatus: authState.status,
+        isSplashRoute: isSplashRoute,
+        isAuthRoute: isAuthRoute,
+      );
+      if (authGateTarget != null) {
+        return authGateTarget;
       }
 
       if (_shouldBlockOnSync(syncState)) {

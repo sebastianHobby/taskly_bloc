@@ -787,18 +787,12 @@ List<TasklyRowSpec> _buildGroupedRows(
         title: group.value.name,
         leadingIcon: group.value.toChipData(context).icon,
         leadingIconColor: group.value.toChipData(context).color,
-        subtitle: expanded
-            ? _buildValueHeaderSubtitle(
-                context,
-                summary: summary,
-                nowUtc: nowUtc,
-              )
-            : null,
+        subtitle: null,
         trailingLabel: _buildValueHeaderTrailingLabel(
           context,
           summary: summary,
+          nowUtc: nowUtc,
           projectCount: visibleCount,
-          expanded: expanded,
         ),
         trailingIcon: expanded
             ? Icons.expand_less_rounded
@@ -1131,42 +1125,32 @@ int _compareValues(
 String _buildValueHeaderTrailingLabel(
   BuildContext context, {
   required _ProjectsValueRatingSummary? summary,
-  required int projectCount,
-  required bool expanded,
-}) {
-  final l10n = context.l10n;
-  return l10n.projectsValueProjectCountLabel(projectCount);
-}
-
-String? _buildValueHeaderSubtitle(
-  BuildContext context, {
-  required _ProjectsValueRatingSummary? summary,
   required DateTime nowUtc,
+  required int projectCount,
 }) {
   final l10n = context.l10n;
-  final lastRatingDate = summary?.lastRatingWeekStartUtc;
-  if (lastRatingDate == null) {
-    return null;
-  }
-  final averageValue = summary?.averageRating?.toStringAsFixed(1);
-  final averageLabel = averageValue == null
-      ? null
-      : l10n.projectsAverageRatingLabel(averageValue);
+  final parts = <String>[];
+
+  final averageRating = summary?.averageRating;
   final lastRatingValue = summary?.lastRatingValue;
-  final ratingLabel = lastRatingValue == null
-      ? null
-      : l10n.projectsRatingLabel(lastRatingValue.toDouble().toStringAsFixed(1));
-  final lastRatedLabel = l10n.projectsAverageRatingLastRatedLabel(
-    l10n.dateDaysAgo(
-      dateOnly(
-        nowUtc,
-      ).difference(dateOnly(lastRatingDate)).inDays.clamp(0, 9999),
-    ),
-  );
-  final primaryLabel = averageLabel ?? ratingLabel;
-  return primaryLabel == null
-      ? lastRatedLabel
-      : [primaryLabel, lastRatedLabel].join(l10n.projectsValueHeaderSeparator);
+  final displayRating = averageRating ?? lastRatingValue?.toDouble();
+  if (displayRating != null) {
+    parts.add('★ ${displayRating.toStringAsFixed(1)}');
+  }
+
+  final lastRatingDate = summary?.lastRatingWeekStartUtc;
+  if (lastRatingDate != null) {
+    final daysAgo = dateOnly(
+      nowUtc,
+    ).difference(dateOnly(lastRatingDate)).inDays.clamp(0, 9999);
+    final ageLabel = daysAgo == 0
+        ? l10n.dateToday
+        : l10n.rangeDaysShort(daysAgo);
+    parts.add(ageLabel);
+  }
+
+  parts.add(l10n.projectsValueProjectCountLabel(projectCount));
+  return parts.join(l10n.projectsValueHeaderSeparator);
 }
 
 DateTime _weekStartFor(DateTime dateUtc) {

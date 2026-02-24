@@ -431,8 +431,12 @@ class _RoutineScheduleRow extends StatelessWidget {
                   onSurfaceVariant: scheme.onSurfaceVariant,
                   outline: scheme.outlineVariant,
                   accent: scheme.primary,
+                  accentContainer: scheme.tertiaryContainer,
+                  onAccentContainer: scheme.onTertiaryContainer,
                   error: scheme.error,
                   errorContainer: scheme.errorContainer,
+                  onErrorContainer: scheme.onErrorContainer,
+                  surfaceContainerHighest: scheme.surfaceContainerHighest,
                 ),
             ],
           ),
@@ -502,8 +506,12 @@ class _ScheduleDayPill extends StatelessWidget {
     required this.onSurfaceVariant,
     required this.outline,
     required this.accent,
+    required this.accentContainer,
+    required this.onAccentContainer,
     required this.error,
     required this.errorContainer,
+    required this.onErrorContainer,
+    required this.surfaceContainerHighest,
   });
 
   final TasklyRoutineScheduleDay day;
@@ -511,8 +519,12 @@ class _ScheduleDayPill extends StatelessWidget {
   final Color onSurfaceVariant;
   final Color outline;
   final Color accent;
+  final Color accentContainer;
+  final Color onAccentContainer;
   final Color error;
   final Color errorContainer;
+  final Color onErrorContainer;
+  final Color surfaceContainerHighest;
 
   @override
   Widget build(BuildContext context) {
@@ -541,37 +553,27 @@ class _ScheduleDayPill extends StatelessWidget {
       Color background,
       Color borderColor,
       Color foreground,
-      IconData? centeredIcon,
-      bool showLabel,
     ) = switch (state) {
       TasklyRoutineScheduleDayState.loggedScheduled => (
-        accent.withValues(alpha: 0.18),
-        accent.withValues(alpha: 0.75),
-        accent,
-        Icons.check_rounded,
-        false,
+        accentContainer,
+        accent.withValues(alpha: 0.9),
+        onAccentContainer,
       ),
       TasklyRoutineScheduleDayState.skippedScheduled => (
-        onSurfaceVariant.withValues(alpha: 0.1),
-        outline.withValues(alpha: 0.95),
+        surfaceContainerHighest,
+        outline.withValues(alpha: 0.9),
         onSurfaceVariant,
-        Icons.skip_next_rounded,
-        false,
       ),
       TasklyRoutineScheduleDayState.missedScheduled => (
-        errorContainer.withValues(alpha: 0.2),
-        error.withValues(alpha: 0.55),
-        error.withValues(alpha: 0.8),
-        Icons.remove_rounded,
-        false,
+        errorContainer,
+        error.withValues(alpha: 0.9),
+        onErrorContainer,
       ),
       TasklyRoutineScheduleDayState.scheduled ||
       TasklyRoutineScheduleDayState.none => (
         baseBackground,
         defaultBorderColor,
         defaultForeground,
-        null,
-        true,
       ),
     };
 
@@ -587,23 +589,14 @@ class _ScheduleDayPill extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (showLabel)
-            Text(
-              day.label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: foreground,
-                fontWeight: isScheduledState
-                    ? FontWeight.w700
-                    : FontWeight.w500,
-                height: 1,
-              ),
-            )
-          else if (centeredIcon != null)
-            Icon(
-              centeredIcon,
-              size: tokens.spaceSm2 + 2,
+          Text(
+            day.label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: foreground,
+              fontWeight: isScheduledState ? FontWeight.w700 : FontWeight.w500,
+              height: 1,
             ),
+          ),
         ],
       ),
     );

@@ -10,13 +10,12 @@ class TasklyBrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(size * 0.22),
+    return SizedBox.square(
+      dimension: size,
       child: Image.asset(
         'assets/branding/logo_l1.png',
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
+        alignment: Alignment.center,
         errorBuilder: (context, error, stackTrace) {
           return Icon(
             Icons.check_circle_outline,
