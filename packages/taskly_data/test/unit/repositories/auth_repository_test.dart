@@ -73,6 +73,7 @@ void main() {
       () => authClient.signUp(
         email: any(named: 'email'),
         password: any(named: 'password'),
+        emailRedirectTo: any(named: 'emailRedirectTo'),
       ),
     ).thenAnswer((_) async => supabase.AuthResponse());
 
@@ -100,13 +101,21 @@ void main() {
 
   testSafe('resetPasswordForEmail delegates to supabase auth', () async {
     when(
-      () => authClient.resetPasswordForEmail(any()),
+      () => authClient.resetPasswordForEmail(
+        any(),
+        redirectTo: any(named: 'redirectTo'),
+      ),
     ).thenAnswer((_) async {});
 
     final repo = AuthRepository(client: client);
     await repo.resetPasswordForEmail('reset@test.com');
 
-    verify(() => authClient.resetPasswordForEmail('reset@test.com')).called(1);
+    verify(
+      () => authClient.resetPasswordForEmail(
+        'reset@test.com',
+        redirectTo: any(named: 'redirectTo'),
+      ),
+    ).called(1);
   });
 
   testSafe('updatePassword maps user response', () async {
@@ -227,13 +236,17 @@ void main() {
       () => authClient.signUp(
         email: any(named: 'email'),
         password: any(named: 'password'),
+        emailRedirectTo: any(named: 'emailRedirectTo'),
       ),
     ).thenThrow(Exception('signup-fail'));
     when(
       () => authClient.signOut(scope: supabase.SignOutScope.local),
     ).thenThrow(Exception('signout-fail'));
     when(
-      () => authClient.resetPasswordForEmail(any()),
+      () => authClient.resetPasswordForEmail(
+        any(),
+        redirectTo: any(named: 'redirectTo'),
+      ),
     ).thenThrow(Exception('reset-fail'));
     when(
       () => authClient.updateUser(any(that: isA<supabase.UserAttributes>())),

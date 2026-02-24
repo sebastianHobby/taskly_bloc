@@ -4,8 +4,10 @@ class TasklyBrandLogo extends StatelessWidget {
   const TasklyBrandLogo.compact({
     this.size = 80,
     super.key,
-  }) : _maxHeroSize = null,
-       _minHeroSize = null;
+  }) : _maxHeroSize = 220,
+       _minHeroSize = 140,
+       maxHeroSize = 220,
+       minHeroSize = 140;
 
   const TasklyBrandLogo.hero({
     this.maxHeroSize = 220,
@@ -34,8 +36,7 @@ class TasklyBrandLogo extends StatelessWidget {
         final availableWidth = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : maxHeroSize;
-        final dimension =
-            availableWidth.clamp(minHeroSize, maxHeroSize) as double;
+        final dimension = availableWidth.clamp(minHeroSize, maxHeroSize);
         return Center(
           child: _LogoAsset(size: dimension),
         );
