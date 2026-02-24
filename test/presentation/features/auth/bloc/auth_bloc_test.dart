@@ -55,10 +55,18 @@ void main() {
   });
 
   blocTestSafe<AuthBloc, AppAuthState>(
-    'subscription emits authenticated when session exists',
+    'subscription emits authenticated when auth stream carries session',
     build: () {
       when(() => authRepository.currentSession).thenReturn(
         const AuthSession(user: AuthUser(id: 'user-1')),
+      );
+      when(() => authRepository.watchAuthState()).thenAnswer(
+        (_) => Stream.value(
+          const AuthStateChange(
+            event: AuthEventKind.initialSession,
+            session: AuthSession(user: AuthUser(id: 'user-1')),
+          ),
+        ),
       );
       return buildBloc();
     },
@@ -67,6 +75,27 @@ void main() {
       isA<AppAuthState>()
           .having((s) => s.status, 'status', AuthStatus.authenticated)
           .having((s) => s.user?.id, 'user.id', 'user-1'),
+    ],
+  );
+
+  blocTestSafe<AuthBloc, AppAuthState>(
+    'regression: stale recovered session should not emit transient authenticated',
+    build: () {
+      when(() => authRepository.currentSession).thenReturn(
+        const AuthSession(user: AuthUser(id: 'stale-user')),
+      );
+      when(() => authRepository.watchAuthState()).thenAnswer(
+        (_) => Stream.value(
+          const AuthStateChange(
+            event: AuthEventKind.initialSession,
+            session: null,
+          ),
+        ),
+      );
+      return buildBloc();
+    },
+    act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
+    expect: () => [
       isA<AppAuthState>().having(
         (s) => s.status,
         'status',
@@ -88,11 +117,6 @@ void main() {
       );
     },
     expect: () => [
-      isA<AppAuthState>().having(
-        (s) => s.status,
-        'status',
-        AuthStatus.unauthenticated,
-      ),
       isA<AppAuthState>()
           .having((s) => s.status, 'status', AuthStatus.authenticated)
           .having((s) => s.user?.id, 'user.id', 'user-2'),

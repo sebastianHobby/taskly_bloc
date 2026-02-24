@@ -67,32 +67,11 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     AuthSubscriptionRequested event,
     Emitter<AppAuthState> emit,
   ) async {
-    // Check for existing session
     final session = _authRepository.currentSession;
     talker.blocLog(
       'Auth',
-      '_onSubscriptionRequested: session=${session != null ? "exists" : "null"}',
+      '_onSubscriptionRequested: currentSession=${session != null ? "exists" : "null"}',
     );
-
-    if (session != null) {
-      talker.blocLog('Auth', 'Initial session found, emitting authenticated');
-      emit(
-        state.copyWith(
-          status: AuthStatus.authenticated,
-          user: session.user,
-          error: null,
-          message: null,
-          pendingEmailConfirmation: null,
-          requiresPasswordUpdate: false,
-        ),
-      );
-    } else {
-      talker.blocLog(
-        'Auth',
-        'No initial session, emitting unauthenticated state',
-      );
-      emit(state.copyWith(status: AuthStatus.unauthenticated));
-    }
 
     await emit.forEach<AuthStateChange>(
       _authRepository.watchAuthState(),

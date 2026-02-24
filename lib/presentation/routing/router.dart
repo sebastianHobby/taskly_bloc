@@ -1,5 +1,5 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,6 +10,7 @@ import 'package:taskly_bloc/presentation/features/micro_learning/view/micro_lear
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/route_codec.dart';
+import 'package:taskly_bloc/presentation/routing/session_entry_policy.dart';
 import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
 import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
@@ -52,86 +53,10 @@ import 'package:taskly_bloc/presentation/features/settings/view/settings_notific
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
 import 'package:taskly_bloc/presentation/features/onboarding/view/onboarding_flow_page.dart';
 
-const _splashPath = '/splash';
-const _signInPath = '/sign-in';
-const _signUpPath = '/sign-up';
-const _checkEmailPath = '/check-email';
-const _forgotPasswordPath = '/forgot-password';
-const _authCallbackPath = '/auth/callback';
-const _resetPasswordPath = '/reset-password';
-const _initialSyncPath = '/initial-sync';
-const _onboardingPath = '/onboarding';
-
 Widget buildSettingsStatsRoutePage() {
   return kDebugMode
       ? const DebugStatsPage()
       : const NotFoundRoutePage(message: 'Not found');
-}
-
-bool _isAuthRoute(String path) {
-  return path == _signInPath ||
-      path == _signUpPath ||
-      path == _checkEmailPath ||
-      path == _forgotPasswordPath ||
-      path == _authCallbackPath;
-}
-
-@visibleForTesting
-bool isAuthRoutePath(String path) => _isAuthRoute(path);
-
-bool _shouldBlockOnSync(InitialSyncGateState state) {
-  return switch (state) {
-    InitialSyncGateReady() => false,
-    InitialSyncGateFailure() => true,
-    InitialSyncGateInProgress(:final progress) =>
-      !(progress?.hasSynced ?? false) && progress?.lastSyncedAt == null,
-  };
-}
-
-@visibleForTesting
-bool shouldEvaluateSyncGate(AuthStatus authStatus) =>
-    authStatus == AuthStatus.authenticated;
-
-@visibleForTesting
-String? authGateRedirectTarget({
-  required AuthStatus authStatus,
-  required bool isSplashRoute,
-  required bool isAuthRoute,
-}) {
-  if (authStatus == AuthStatus.initial) {
-    return isSplashRoute ? null : _splashPath;
-  }
-
-  if (authStatus == AuthStatus.loading) {
-    return (isSplashRoute || isAuthRoute) ? null : _splashPath;
-  }
-
-  if (authStatus == AuthStatus.unauthenticated) {
-    return isAuthRoute ? null : _signInPath;
-  }
-
-  return null;
-}
-
-@visibleForTesting
-String? passwordUpdateRedirectTarget({
-  required AuthStatus authStatus,
-  required bool requiresPasswordUpdate,
-  required bool isResetPasswordRoute,
-}) {
-  if (authStatus == AuthStatus.unauthenticated && isResetPasswordRoute) {
-    return _signInPath;
-  }
-
-  if (requiresPasswordUpdate) {
-    return isResetPasswordRoute ? null : _resetPasswordPath;
-  }
-
-  if (isResetPasswordRoute && authStatus == AuthStatus.authenticated) {
-    return Routing.screenPath('my_day');
-  }
-
-  return null;
 }
 
 /// Router for the app, including auth/sync gating and the authenticated shell.
@@ -146,10 +71,23 @@ String? passwordUpdateRedirectTarget({
 GoRouter createRouter({
   GlobalKey<NavigatorState>? navigatorKey,
   Listenable? refreshListenable,
+  AppAuthState Function(BuildContext context)? authStateSelector,
+  GlobalSettingsState Function(BuildContext context)? settingsStateSelector,
+  InitialSyncGateState Function(BuildContext context)? syncStateSelector,
 }) {
+  final authSelector =
+      authStateSelector ??
+      (BuildContext context) => context.read<AuthBloc>().state;
+  final settingsSelector =
+      settingsStateSelector ??
+      (BuildContext context) => context.read<GlobalSettingsBloc>().state;
+  final syncSelector =
+      syncStateSelector ??
+      (BuildContext context) => context.read<InitialSyncGateBloc>().state;
+
   return GoRouter(
     navigatorKey: navigatorKey,
-    initialLocation: _splashPath,
+    initialLocation: splashPath,
     observers: [
       TalkerRouteObserver(talkerRaw),
       appRouteObserver,
@@ -160,96 +98,54 @@ GoRouter createRouter({
     refreshListenable: refreshListenable,
     redirect: (context, state) {
       final path = state.uri.path;
-      final authState = context.read<AuthBloc>().state;
-      final settingsState = context.read<GlobalSettingsBloc>().state;
-      final syncState = context.read<InitialSyncGateBloc>().state;
+      final authState = authSelector(context);
+      final settingsState = settingsSelector(context);
+      final syncState = syncSelector(context);
 
-      final isSplashRoute = path == _splashPath;
-      final isAuthRoute = _isAuthRoute(path);
-      final isInitialSyncRoute = path == _initialSyncPath;
-      final isOnboardingRoute = path == _onboardingPath;
-      final isResetPasswordRoute = path == _resetPasswordPath;
-
-      final authGateTarget = authGateRedirectTarget(
-        authStatus: authState.status,
-        isSplashRoute: isSplashRoute,
-        isAuthRoute: isAuthRoute || isResetPasswordRoute,
+      return sessionEntryRedirectTarget(
+        path: path,
+        authState: authState,
+        settingsState: settingsState,
+        syncState: syncState,
+        allowOnboardingDebug: state.uri.queryParameters['debug'] == '1',
+        appHomePath: Routing.screenPath('my_day'),
       );
-      if (authGateTarget != null) {
-        return authGateTarget;
-      }
-
-      final passwordUpdateTarget = passwordUpdateRedirectTarget(
-        authStatus: authState.status,
-        requiresPasswordUpdate: authState.requiresPasswordUpdate,
-        isResetPasswordRoute: isResetPasswordRoute,
-      );
-      if (passwordUpdateTarget != null) {
-        return passwordUpdateTarget;
-      }
-
-      if (shouldEvaluateSyncGate(authState.status) &&
-          _shouldBlockOnSync(syncState)) {
-        return isInitialSyncRoute ? null : _initialSyncPath;
-      }
-
-      if (settingsState.isLoading) {
-        return isSplashRoute ? null : _splashPath;
-      }
-
-      final forceOnboarding = !settingsState.settings.onboardingCompleted;
-      final allowOnboarding =
-          forceOnboarding || state.uri.queryParameters['debug'] == '1';
-
-      if (allowOnboarding) {
-        return isOnboardingRoute ? null : _onboardingPath;
-      }
-
-      if (isOnboardingRoute) {
-        return Routing.screenPath('projects');
-      }
-
-      if (isSplashRoute || isAuthRoute || isInitialSyncRoute) {
-        return Routing.screenPath('my_day');
-      }
-
-      return null;
     },
     routes: [
       GoRoute(
-        path: _splashPath,
+        path: splashPath,
         builder: (_, __) => const SplashScreen(),
       ),
       GoRoute(
-        path: _signInPath,
+        path: signInPath,
         builder: (_, __) => const SignInView(),
       ),
       GoRoute(
-        path: _signUpPath,
+        path: signUpPath,
         builder: (_, __) => const SignUpView(),
       ),
       GoRoute(
-        path: _checkEmailPath,
+        path: checkEmailPath,
         builder: (_, __) => const CheckEmailView(),
       ),
       GoRoute(
-        path: _forgotPasswordPath,
+        path: forgotPasswordPath,
         builder: (_, __) => const ForgotPasswordView(),
       ),
       GoRoute(
-        path: _authCallbackPath,
+        path: authCallbackPath,
         builder: (_, __) => const AuthCallbackView(),
       ),
       GoRoute(
-        path: _resetPasswordPath,
+        path: resetPasswordPath,
         builder: (_, __) => const ResetPasswordView(),
       ),
       GoRoute(
-        path: _initialSyncPath,
+        path: initialSyncPath,
         builder: (_, __) => const InitialSyncGateScreen(),
       ),
       GoRoute(
-        path: _onboardingPath,
+        path: onboardingPath,
         builder: (_, __) => const OnboardingFlowPage(),
       ),
       ShellRoute(

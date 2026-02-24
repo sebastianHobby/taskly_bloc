@@ -29,13 +29,14 @@ Defines auth states, onboarding progression, startup synchronization gates, and 
 - `unauthenticated` auth status:
   - allowed: `/sign-in`, `/sign-up`, `/forgot-password`, `/check-email`,
     `/auth/callback`
-  - all other routes redirect to `/sign-in`
+  - all other routes redirect to `/sign-in` (including `/onboarding`,
+    `/reset-password`, and `/initial-sync`)
 - `authenticated` auth status:
   - if `requiresPasswordUpdate == true`: force `/reset-password`
   - else apply initial sync gate
   - after sync gate:
     - onboarding incomplete: force `/onboarding`
-    - onboarding complete: route to app shell
+    - onboarding complete: default to `/my-day` as the canonical app entry
 
 ## Callback and redirect URLs
 
