@@ -43,3 +43,15 @@ class AuthPasswordResetRequested extends AuthEvent {
 
   final String email;
 }
+
+/// Event fired when an auth callback indicates recovery flow.
+class AuthPasswordRecoveryDetected extends AuthEvent {
+  const AuthPasswordRecoveryDetected();
+}
+
+/// Event to set a new password from recovery flow.
+class AuthPasswordUpdateRequested extends AuthEvent {
+  const AuthPasswordUpdateRequested({required this.newPassword});
+
+  final String newPassword;
+}

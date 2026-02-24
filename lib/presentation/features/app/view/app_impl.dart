@@ -473,6 +473,8 @@ class _DebugBootstrapperState extends State<_DebugBootstrapper> {
     '/sign-up',
     '/check-email',
     '/forgot-password',
+    '/auth/callback',
+    '/reset-password',
     '/initial-sync',
   };
 

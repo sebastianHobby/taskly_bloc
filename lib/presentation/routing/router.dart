@@ -16,6 +16,8 @@ import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/check_email_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
+import 'package:taskly_bloc/presentation/features/auth/view/auth_callback_view.dart';
+import 'package:taskly_bloc/presentation/features/auth/view/reset_password_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_in_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
@@ -55,6 +57,8 @@ const _signInPath = '/sign-in';
 const _signUpPath = '/sign-up';
 const _checkEmailPath = '/check-email';
 const _forgotPasswordPath = '/forgot-password';
+const _authCallbackPath = '/auth/callback';
+const _resetPasswordPath = '/reset-password';
 const _initialSyncPath = '/initial-sync';
 const _onboardingPath = '/onboarding';
 
@@ -68,8 +72,12 @@ bool _isAuthRoute(String path) {
   return path == _signInPath ||
       path == _signUpPath ||
       path == _checkEmailPath ||
-      path == _forgotPasswordPath;
+      path == _forgotPasswordPath ||
+      path == _authCallbackPath;
 }
+
+@visibleForTesting
+bool isAuthRoutePath(String path) => _isAuthRoute(path);
 
 bool _shouldBlockOnSync(InitialSyncGateState state) {
   return switch (state) {
@@ -100,6 +108,27 @@ String? authGateRedirectTarget({
 
   if (authStatus == AuthStatus.unauthenticated) {
     return isAuthRoute ? null : _signInPath;
+  }
+
+  return null;
+}
+
+@visibleForTesting
+String? passwordUpdateRedirectTarget({
+  required AuthStatus authStatus,
+  required bool requiresPasswordUpdate,
+  required bool isResetPasswordRoute,
+}) {
+  if (authStatus == AuthStatus.unauthenticated && isResetPasswordRoute) {
+    return _signInPath;
+  }
+
+  if (requiresPasswordUpdate) {
+    return isResetPasswordRoute ? null : _resetPasswordPath;
+  }
+
+  if (isResetPasswordRoute && authStatus == AuthStatus.authenticated) {
+    return Routing.screenPath('my_day');
   }
 
   return null;
@@ -139,14 +168,24 @@ GoRouter createRouter({
       final isAuthRoute = _isAuthRoute(path);
       final isInitialSyncRoute = path == _initialSyncPath;
       final isOnboardingRoute = path == _onboardingPath;
+      final isResetPasswordRoute = path == _resetPasswordPath;
 
       final authGateTarget = authGateRedirectTarget(
         authStatus: authState.status,
         isSplashRoute: isSplashRoute,
-        isAuthRoute: isAuthRoute,
+        isAuthRoute: isAuthRoute || isResetPasswordRoute,
       );
       if (authGateTarget != null) {
         return authGateTarget;
+      }
+
+      final passwordUpdateTarget = passwordUpdateRedirectTarget(
+        authStatus: authState.status,
+        requiresPasswordUpdate: authState.requiresPasswordUpdate,
+        isResetPasswordRoute: isResetPasswordRoute,
+      );
+      if (passwordUpdateTarget != null) {
+        return passwordUpdateTarget;
       }
 
       if (shouldEvaluateSyncGate(authState.status) &&
@@ -196,6 +235,14 @@ GoRouter createRouter({
       GoRoute(
         path: _forgotPasswordPath,
         builder: (_, __) => const ForgotPasswordView(),
+      ),
+      GoRoute(
+        path: _authCallbackPath,
+        builder: (_, __) => const AuthCallbackView(),
+      ),
+      GoRoute(
+        path: _resetPasswordPath,
+        builder: (_, __) => const ResetPasswordView(),
       ),
       GoRoute(
         path: _initialSyncPath,

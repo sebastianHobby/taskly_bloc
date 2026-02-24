@@ -35,6 +35,11 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       _onPasswordResetRequested,
       transformer: restartable(),
     );
+    on<AuthPasswordRecoveryDetected>(_onPasswordRecoveryDetected);
+    on<AuthPasswordUpdateRequested>(
+      _onPasswordUpdateRequested,
+      transformer: restartable(),
+    );
     talker.blocLog(
       'Auth',
       'AuthBloc CONSTRUCTOR done, event handlers registered',
@@ -78,6 +83,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           error: null,
           message: null,
           pendingEmailConfirmation: null,
+          requiresPasswordUpdate: false,
         ),
       );
     } else {
@@ -109,6 +115,9 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
             error: null,
             message: null,
             pendingEmailConfirmation: null,
+            requiresPasswordUpdate:
+                state.requiresPasswordUpdate ||
+                authState.event == AuthEventKind.passwordRecovery,
           );
         }
         talker.blocLog(
@@ -120,6 +129,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           user: null,
           error: null,
           message: null,
+          requiresPasswordUpdate: false,
         );
       },
       onError: (error, stackTrace) {
@@ -127,6 +137,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         return state.copyWith(
           status: AuthStatus.unauthenticated,
           error: 'Auth stream failed',
+          requiresPasswordUpdate: false,
         );
       },
     );
@@ -142,6 +153,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         error: null,
         message: null,
         pendingEmailConfirmation: null,
+        requiresPasswordUpdate: false,
       ),
     );
 
@@ -169,6 +181,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
             status: AuthStatus.unauthenticated,
             error: 'Sign in failed - no session',
             pendingEmailConfirmation: null,
+            requiresPasswordUpdate: false,
           ),
         );
       }
@@ -197,6 +210,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           status: AuthStatus.unauthenticated,
           error: error is AppFailure ? error.uiMessage() : 'Sign in failed',
           pendingEmailConfirmation: null,
+          requiresPasswordUpdate: false,
         ),
       );
     }
@@ -212,6 +226,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         error: null,
         message: null,
         pendingEmailConfirmation: null,
+        requiresPasswordUpdate: false,
       ),
     );
 
@@ -242,6 +257,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           state.copyWith(
             status: AuthStatus.unauthenticated,
             pendingEmailConfirmation: event.email,
+            requiresPasswordUpdate: false,
           ),
         );
       }
@@ -269,6 +285,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           status: AuthStatus.unauthenticated,
           error: error is AppFailure ? error.uiMessage() : 'Sign up failed',
           pendingEmailConfirmation: null,
+          requiresPasswordUpdate: false,
         ),
       );
     }
@@ -290,6 +307,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         state.copyWith(
           status: AuthStatus.unauthenticated,
           pendingEmailConfirmation: null,
+          requiresPasswordUpdate: false,
         ),
       );
     } catch (error, stackTrace) {
@@ -331,6 +349,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         error: null,
         message: null,
         pendingEmailConfirmation: null,
+        requiresPasswordUpdate: false,
       ),
     );
 
@@ -352,6 +371,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
               : AuthStatus.unauthenticated,
           message: 'Password reset email sent',
           pendingEmailConfirmation: null,
+          requiresPasswordUpdate: false,
         ),
       );
     } catch (error, stackTrace) {
@@ -382,6 +402,92 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
               ? error.uiMessage()
               : 'Password reset failed',
           pendingEmailConfirmation: null,
+          requiresPasswordUpdate: false,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onPasswordRecoveryDetected(
+    AuthPasswordRecoveryDetected event,
+    Emitter<AppAuthState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        requiresPasswordUpdate: true,
+        error: null,
+        message: null,
+        pendingEmailConfirmation: null,
+      ),
+    );
+  }
+
+  Future<void> _onPasswordUpdateRequested(
+    AuthPasswordUpdateRequested event,
+    Emitter<AppAuthState> emit,
+  ) async {
+    final previousStatus = state.status;
+    emit(
+      state.copyWith(
+        status: AuthStatus.loading,
+        error: null,
+        message: null,
+        pendingEmailConfirmation: null,
+      ),
+    );
+
+    final ctx = _newContext(
+      screen: 'reset_password',
+      intent: 'password_update_requested',
+      operation: 'auth.update_password',
+    );
+
+    try {
+      await _authRepository.updatePassword(
+        event.newPassword,
+        context: ctx,
+      );
+      await _authRepository.signOut(
+        context: ctx.copyWith(operation: 'auth.sign_out'),
+      );
+
+      emit(
+        state.copyWith(
+          status: AuthStatus.unauthenticated,
+          user: null,
+          error: null,
+          message: 'Password updated. Please sign in.',
+          pendingEmailConfirmation: null,
+          requiresPasswordUpdate: false,
+        ),
+      );
+    } catch (error, stackTrace) {
+      talker.handle(error, stackTrace, '[AuthBloc] Password update failed');
+
+      if (error is AppFailure && error.reportAsUnexpected) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth password update failed (unexpected failure)',
+        );
+      } else if (error is! AppFailure) {
+        _errorReporter.reportUnexpected(
+          error,
+          stackTrace,
+          context: ctx,
+          message: 'Auth password update failed (unmapped exception)',
+        );
+      }
+
+      emit(
+        state.copyWith(
+          status: previousStatus,
+          error: error is AppFailure
+              ? error.uiMessage()
+              : 'Password update failed',
+          pendingEmailConfirmation: null,
+          requiresPasswordUpdate: true,
         ),
       );
     }

@@ -181,4 +181,67 @@ void main() {
       expect(ctx.screen, 'settings');
     },
   );
+
+  blocTestSafe<AuthBloc, AppAuthState>(
+    'password recovery detection marks requiresPasswordUpdate',
+    build: buildBloc,
+    act: (bloc) => bloc.add(const AuthPasswordRecoveryDetected()),
+    expect: () => [
+      isA<AppAuthState>().having(
+        (s) => s.requiresPasswordUpdate,
+        'requiresPasswordUpdate',
+        isTrue,
+      ),
+    ],
+  );
+
+  blocTestSafe<AuthBloc, AppAuthState>(
+    'password update signs out and clears recovery flag',
+    build: () {
+      when(
+        () => authRepository.updatePassword(
+          any(),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async => const UserUpdateResponse());
+      when(
+        () => authRepository.signOut(context: any(named: 'context')),
+      ).thenAnswer((_) async {});
+      return buildBloc();
+    },
+    seed: () => const AppAuthState(
+      status: AuthStatus.authenticated,
+      requiresPasswordUpdate: true,
+      user: AuthUser(id: 'user-1'),
+    ),
+    act: (bloc) => bloc.add(
+      const AuthPasswordUpdateRequested(newPassword: 'new-password'),
+    ),
+    expect: () => [
+      isA<AppAuthState>().having((s) => s.status, 'status', AuthStatus.loading),
+      isA<AppAuthState>()
+          .having((s) => s.status, 'status', AuthStatus.unauthenticated)
+          .having(
+            (s) => s.requiresPasswordUpdate,
+            'requiresPasswordUpdate',
+            isFalse,
+          )
+          .having(
+            (s) => s.message,
+            'message',
+            'Password updated. Please sign in.',
+          ),
+    ],
+    verify: (_) {
+      verify(
+        () => authRepository.updatePassword(
+          'new-password',
+          context: any(named: 'context'),
+        ),
+      ).called(1);
+      verify(
+        () => authRepository.signOut(context: any(named: 'context')),
+      ).called(1);
+    },
+  );
 }

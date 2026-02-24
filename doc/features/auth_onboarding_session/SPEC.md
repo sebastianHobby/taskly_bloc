@@ -14,6 +14,37 @@ Defines auth states, onboarding progression, startup synchronization gates, and 
   "check email" confirmation state (not a transient snackbar-only message).
 - Onboarding values setup requires at least 3 values before progression to
   ratings.
+- Unauthenticated users must never be routed to onboarding or authenticated app
+  routes.
+- Auth callback links must land on a dedicated callback route and then converge
+  into the same deterministic auth/onboarding state machine.
+- Password recovery callbacks must force a reset-password step before accessing
+  app content.
+
+## Routing state machine
+
+- `initial` or `loading` auth status:
+  - allowed: `/splash`, auth routes
+  - protected routes redirect to `/splash`
+- `unauthenticated` auth status:
+  - allowed: `/sign-in`, `/sign-up`, `/forgot-password`, `/check-email`,
+    `/auth/callback`
+  - all other routes redirect to `/sign-in`
+- `authenticated` auth status:
+  - if `requiresPasswordUpdate == true`: force `/reset-password`
+  - else apply initial sync gate
+  - after sync gate:
+    - onboarding incomplete: force `/onboarding`
+    - onboarding complete: route to app shell
+
+## Callback and redirect URLs
+
+- Canonical callback route: `/auth/callback`
+- Web (GitHub Pages hash routing):
+  - `https://sebastianhobby.github.io/taskly_bloc/#/auth/callback`
+- Native deep-link callback:
+  - `taskly://auth-callback`
+- Supabase Auth settings must allow both web and native redirect URLs.
 
 ## Sync observability contract
 

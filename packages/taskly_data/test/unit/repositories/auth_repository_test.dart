@@ -86,6 +86,34 @@ void main() {
     expect(response, isA<AuthResponse>());
   });
 
+  testSafe('signUp prefers injected redirect resolver', () async {
+    when(
+      () => authClient.signUp(
+        email: any(named: 'email'),
+        password: any(named: 'password'),
+        emailRedirectTo: any(named: 'emailRedirectTo'),
+      ),
+    ).thenAnswer((_) async => supabase.AuthResponse());
+
+    final repo = AuthRepository(
+      client: client,
+      redirectUrlResolver: () => 'https://example.com/#/auth/callback',
+    );
+
+    await repo.signUp(
+      email: 'new@test.com',
+      password: 'secret',
+    );
+
+    verify(
+      () => authClient.signUp(
+        email: 'new@test.com',
+        password: 'secret',
+        emailRedirectTo: 'https://example.com/#/auth/callback',
+      ),
+    ).called(1);
+  });
+
   testSafe('signOut calls local sign out scope', () async {
     when(
       () => authClient.signOut(scope: supabase.SignOutScope.local),

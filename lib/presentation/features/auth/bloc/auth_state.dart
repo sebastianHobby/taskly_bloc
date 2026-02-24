@@ -21,6 +21,7 @@ class AppAuthState extends Equatable {
     this.error,
     this.message,
     this.pendingEmailConfirmation,
+    this.requiresPasswordUpdate = false,
   });
 
   static const Object _unset = Object();
@@ -30,6 +31,7 @@ class AppAuthState extends Equatable {
   final String? error;
   final String? message;
   final String? pendingEmailConfirmation;
+  final bool requiresPasswordUpdate;
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isUnauthenticated => status == AuthStatus.unauthenticated;
@@ -41,6 +43,7 @@ class AppAuthState extends Equatable {
     Object? error = _unset,
     Object? message = _unset,
     Object? pendingEmailConfirmation = _unset,
+    bool? requiresPasswordUpdate,
   }) {
     return AppAuthState(
       status: status ?? this.status,
@@ -50,6 +53,8 @@ class AppAuthState extends Equatable {
       pendingEmailConfirmation: identical(pendingEmailConfirmation, _unset)
           ? this.pendingEmailConfirmation
           : pendingEmailConfirmation as String?,
+      requiresPasswordUpdate:
+          requiresPasswordUpdate ?? this.requiresPasswordUpdate,
     );
   }
 
@@ -60,5 +65,6 @@ class AppAuthState extends Equatable {
     error,
     message,
     pendingEmailConfirmation,
+    requiresPasswordUpdate,
   ];
 }
