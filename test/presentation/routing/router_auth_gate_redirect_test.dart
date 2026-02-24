@@ -38,4 +38,13 @@ void main() {
 
     expect(target, '/sign-in');
   });
+
+  testSafe(
+    'regression: unauthenticated users should not be evaluated by sync gate',
+    () async {
+      final shouldGate = shouldEvaluateSyncGate(AuthStatus.unauthenticated);
+
+      expect(shouldGate, isFalse);
+    },
+  );
 }

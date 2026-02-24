@@ -81,6 +81,10 @@ bool _shouldBlockOnSync(InitialSyncGateState state) {
 }
 
 @visibleForTesting
+bool shouldEvaluateSyncGate(AuthStatus authStatus) =>
+    authStatus == AuthStatus.authenticated;
+
+@visibleForTesting
 String? authGateRedirectTarget({
   required AuthStatus authStatus,
   required bool isSplashRoute,
@@ -145,7 +149,8 @@ GoRouter createRouter({
         return authGateTarget;
       }
 
-      if (_shouldBlockOnSync(syncState)) {
+      if (shouldEvaluateSyncGate(authState.status) &&
+          _shouldBlockOnSync(syncState)) {
         return isInitialSyncRoute ? null : _initialSyncPath;
       }
 
