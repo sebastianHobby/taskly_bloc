@@ -20,12 +20,16 @@ class AppAuthState extends Equatable {
     this.user,
     this.error,
     this.message,
+    this.pendingEmailConfirmation,
   });
+
+  static const Object _unset = Object();
 
   final AuthStatus status;
   final AuthUser? user;
   final String? error;
   final String? message;
+  final String? pendingEmailConfirmation;
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isUnauthenticated => status == AuthStatus.unauthenticated;
@@ -33,18 +37,28 @@ class AppAuthState extends Equatable {
 
   AppAuthState copyWith({
     AuthStatus? status,
-    AuthUser? user,
-    String? error,
-    String? message,
+    Object? user = _unset,
+    Object? error = _unset,
+    Object? message = _unset,
+    Object? pendingEmailConfirmation = _unset,
   }) {
     return AppAuthState(
       status: status ?? this.status,
-      user: user ?? this.user,
-      error: error,
-      message: message,
+      user: identical(user, _unset) ? this.user : user as AuthUser?,
+      error: identical(error, _unset) ? this.error : error as String?,
+      message: identical(message, _unset) ? this.message : message as String?,
+      pendingEmailConfirmation: identical(pendingEmailConfirmation, _unset)
+          ? this.pendingEmailConfirmation
+          : pendingEmailConfirmation as String?,
     );
   }
 
   @override
-  List<Object?> get props => [status, user, error, message];
+  List<Object?> get props => [
+    status,
+    user,
+    error,
+    message,
+    pendingEmailConfirmation,
+  ];
 }

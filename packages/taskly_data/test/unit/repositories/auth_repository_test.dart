@@ -13,6 +13,10 @@ class _MockSupabaseClient extends Mock implements supabase.SupabaseClient {}
 
 class _MockGoTrueClient extends Mock implements supabase.GoTrueClient {}
 
+class _MockSession extends Mock implements supabase.Session {}
+
+class _MockUser extends Mock implements supabase.User {}
+
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUpAll(() {
@@ -168,6 +172,90 @@ void main() {
 
     expect(
       () => repo.signInWithPassword(email: 'x@test.com', password: 'bad'),
+      throwsA(isA<UnknownFailure>()),
+    );
+  });
+
+  testSafe('watchAuthState maps additional auth events', () async {
+    when(
+      () => authClient.onAuthStateChange,
+    ).thenAnswer(
+      (_) => Stream.fromIterable([
+        supabase.AuthState(supabase.AuthChangeEvent.passwordRecovery, null),
+        supabase.AuthState(supabase.AuthChangeEvent.tokenRefreshed, null),
+        supabase.AuthState(supabase.AuthChangeEvent.userUpdated, null),
+      ]),
+    );
+
+    final repo = AuthRepository(client: client);
+    final events = await repo.watchAuthState().take(3).toList();
+
+    expect(events[0].event, AuthEventKind.passwordRecovery);
+    expect(events[1].event, AuthEventKind.tokenRefreshed);
+    expect(events[2].event, AuthEventKind.userUpdated);
+  });
+
+  testSafe('currentSession maps supabase session data', () async {
+    final session = _MockSession();
+    final user = _MockUser();
+    when(() => user.id).thenReturn('user-10');
+    when(() => user.email).thenReturn('user10@test.com');
+    when(() => user.userMetadata).thenReturn(const {'role': 'tester'});
+    when(() => session.user).thenReturn(user);
+    when(() => session.expiresAt).thenReturn(1735689600);
+    when(() => authClient.currentSession).thenReturn(session);
+
+    final repo = AuthRepository(client: client);
+
+    expect(repo.currentSession, isNotNull);
+    expect(repo.currentSession!.user.id, 'user-10');
+    expect(repo.currentSession!.expiresAt, isNotNull);
+  });
+
+  testSafe('currentSession/currentUser return null when absent', () async {
+    when(() => authClient.currentSession).thenReturn(null);
+    when(() => authClient.currentUser).thenReturn(null);
+
+    final repo = AuthRepository(client: client);
+
+    expect(repo.currentSession, isNull);
+    expect(repo.currentUser, isNull);
+  });
+
+  testSafe('maps failures for all write auth methods', () async {
+    when(
+      () => authClient.signUp(
+        email: any(named: 'email'),
+        password: any(named: 'password'),
+      ),
+    ).thenThrow(Exception('signup-fail'));
+    when(
+      () => authClient.signOut(scope: supabase.SignOutScope.local),
+    ).thenThrow(Exception('signout-fail'));
+    when(
+      () => authClient.resetPasswordForEmail(any()),
+    ).thenThrow(Exception('reset-fail'));
+    when(
+      () => authClient.updateUser(any(that: isA<supabase.UserAttributes>())),
+    ).thenThrow(Exception('update-fail'));
+
+    final repo = AuthRepository(client: client);
+
+    await expectLater(
+      () => repo.signUp(email: 'x@test.com', password: 'p'),
+      throwsA(isA<UnknownFailure>()),
+    );
+    await expectLater(() => repo.signOut(), throwsA(isA<UnknownFailure>()));
+    await expectLater(
+      () => repo.resetPasswordForEmail('x@test.com'),
+      throwsA(isA<UnknownFailure>()),
+    );
+    await expectLater(
+      () => repo.updatePassword('new'),
+      throwsA(isA<UnknownFailure>()),
+    );
+    await expectLater(
+      () => repo.updateUserProfile(displayName: null),
       throwsA(isA<UnknownFailure>()),
     );
   });

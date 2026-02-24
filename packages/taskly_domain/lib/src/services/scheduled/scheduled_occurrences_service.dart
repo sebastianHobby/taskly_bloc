@@ -112,6 +112,17 @@ final class ScheduledOccurrencesService {
         scheduledRecurringTasks,
         scheduledRecurringProjects,
       ) {
+        final recurringTasksForDisplay = _applyTaskRecurringDisplayPolicy(
+          scheduledRecurringTasks,
+          rangeStart: startDay,
+          rangeEnd: endDay,
+        );
+        final recurringProjectsForDisplay = _applyProjectRecurringDisplayPolicy(
+          scheduledRecurringProjects,
+          rangeStart: startDay,
+          rangeEnd: endDay,
+        );
+
         final overdue = <ScheduledOccurrence>[
           ...overdueTasks.map((t) => _overdueTask(t, today: today)),
           ...overdueProjects.map((p) => _overdueProject(p, today: today)),
@@ -129,7 +140,7 @@ final class ScheduledOccurrencesService {
           );
         }
 
-        for (final task in scheduledRecurringTasks) {
+        for (final task in recurringTasksForDisplay) {
           occurrences.addAll(
             _expandTask(
               task,
@@ -149,7 +160,7 @@ final class ScheduledOccurrencesService {
           );
         }
 
-        for (final project in scheduledRecurringProjects) {
+        for (final project in recurringProjectsForDisplay) {
           occurrences.addAll(
             _expandProject(
               project,
@@ -298,9 +309,10 @@ final class ScheduledOccurrencesService {
         startDay != null && deadlineDay != null && startDay == deadlineDay;
 
     if (isRepeating) {
-      // Keep parity with the existing Scheduled feed:
-      // - after-completion: show only the next start/deadline
-      // - fixed interval: each expanded occurrence is its own entity instance
+      // Recurring row date-tags are built from the selected occurrence
+      // instance:
+      // - after-completion series are pre-collapsed to the next occurrence
+      // - schedule-anchored series keep all in-window occurrences
       if (startDay != null && _isInRange(startDay, rangeStart, rangeEnd)) {
         dates[startDay] = ScheduledDateTag.starts;
       }
@@ -333,6 +345,132 @@ final class ScheduledOccurrencesService {
   bool _isInRange(DateTime day, DateTime start, DateTime end) {
     final d = dateOnly(day);
     return !d.isBefore(dateOnly(start)) && !d.isAfter(dateOnly(end));
+  }
+
+  List<Task> _applyTaskRecurringDisplayPolicy(
+    List<Task> recurringTasks, {
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    final retained = <Task>[];
+    final afterCompletionById = <String, List<Task>>{};
+
+    for (final task in recurringTasks) {
+      if (task.repeatFromCompletion) {
+        afterCompletionById.putIfAbsent(task.id, () => <Task>[]).add(task);
+      } else {
+        retained.add(task);
+      }
+    }
+
+    for (final candidates in afterCompletionById.values) {
+      final next = _selectNextTaskOccurrence(
+        candidates,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+      if (next != null) {
+        retained.add(next);
+      }
+    }
+
+    return retained;
+  }
+
+  List<Project> _applyProjectRecurringDisplayPolicy(
+    List<Project> recurringProjects, {
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    final retained = <Project>[];
+    final afterCompletionById = <String, List<Project>>{};
+
+    for (final project in recurringProjects) {
+      if (project.repeatFromCompletion) {
+        afterCompletionById
+            .putIfAbsent(project.id, () => <Project>[])
+            .add(
+              project,
+            );
+      } else {
+        retained.add(project);
+      }
+    }
+
+    for (final candidates in afterCompletionById.values) {
+      final next = _selectNextProjectOccurrence(
+        candidates,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+      if (next != null) {
+        retained.add(next);
+      }
+    }
+
+    return retained;
+  }
+
+  Task? _selectNextTaskOccurrence(
+    List<Task> candidates, {
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    if (candidates.isEmpty) return null;
+    final sorted = candidates.toList(growable: false)
+      ..sort((a, b) {
+        final aKey = _taskOccurrenceSortKey(a);
+        final bKey = _taskOccurrenceSortKey(b);
+        if (aKey == null && bKey == null) return 0;
+        if (aKey == null) return 1;
+        if (bKey == null) return -1;
+        return aKey.compareTo(bKey);
+      });
+
+    for (final task in sorted) {
+      final key = _taskOccurrenceSortKey(task);
+      if (key == null) continue;
+      if (_isInRange(key, rangeStart, rangeEnd)) return task;
+    }
+    return sorted.first;
+  }
+
+  Project? _selectNextProjectOccurrence(
+    List<Project> candidates, {
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) {
+    if (candidates.isEmpty) return null;
+    final sorted = candidates.toList(growable: false)
+      ..sort((a, b) {
+        final aKey = _projectOccurrenceSortKey(a);
+        final bKey = _projectOccurrenceSortKey(b);
+        if (aKey == null && bKey == null) return 0;
+        if (aKey == null) return 1;
+        if (bKey == null) return -1;
+        return aKey.compareTo(bKey);
+      });
+
+    for (final project in sorted) {
+      final key = _projectOccurrenceSortKey(project);
+      if (key == null) continue;
+      if (_isInRange(key, rangeStart, rangeEnd)) return project;
+    }
+    return sorted.first;
+  }
+
+  DateTime? _taskOccurrenceSortKey(Task task) {
+    final start = task.occurrence?.date ?? task.startDate;
+    if (start != null) return dateOnly(start);
+    final deadline = task.occurrence?.deadline ?? task.deadlineDate;
+    return deadline == null ? null : dateOnly(deadline);
+  }
+
+  DateTime? _projectOccurrenceSortKey(Project project) {
+    final start = project.occurrence?.date ?? project.startDate;
+    if (start != null) return dateOnly(start);
+    final deadline = project.occurrence?.deadline ?? project.deadlineDate;
+    return deadline == null ? null : dateOnly(deadline);
   }
 
   List<TaskPredicate> _taskScopePredicates(ScheduledScope? scope) {

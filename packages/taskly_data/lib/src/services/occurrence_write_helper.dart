@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/id.dart';
+import 'package:taskly_data/src/infrastructure/powersync/crud_metadata.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/errors.dart';
+import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart';
 
@@ -15,11 +19,13 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
   OccurrenceWriteHelper({
     required this.driftDb,
     required this.idGenerator,
+    this.decisionEventsRepository,
     Clock clock = systemClock,
   }) : _clock = clock;
 
   final AppDatabase driftDb;
   final IdGenerator idGenerator;
+  final MyDayDecisionEventRepositoryContract? decisionEventsRepository;
   final Clock _clock;
 
   Future<T> _runGuarded<T>(
@@ -158,6 +164,29 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
         );
       }
 
+      final checklistMetrics = await _computeTaskChecklistMetrics(
+        taskId: taskId,
+        occurrenceDate: normalizedOccurrenceDate,
+      );
+      if (checklistMetrics != null) {
+        final psMetadata = encodeCrudMetadata(context, clock: _clock);
+        await driftDb
+            .into(driftDb.checklistEventsTable)
+            .insert(
+              ChecklistEventsTableCompanion.insert(
+                id: idGenerator.checklistEventId(),
+                parentType: 'task',
+                parentId: taskId,
+                scopeDate: Value(normalizedOccurrenceDate),
+                eventType: 'parent_completed',
+                metricsJson: jsonEncode(checklistMetrics),
+                createdAt: Value(now),
+                psMetadata: Value(psMetadata),
+              ),
+              mode: InsertMode.insert,
+            );
+      }
+
       if (projectId != null) {
         await (driftDb.update(
           driftDb.projectTable,
@@ -167,6 +196,32 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
             updatedAt: Value(now),
           ),
         );
+      }
+
+      if (decisionEventsRepository != null) {
+        final completedDayKeyUtc = dateOnly(now.toUtc());
+        final dayId = idGenerator.myDayDayId(dayUtc: completedDayKeyUtc);
+        final pick =
+            await (driftDb.select(driftDb.myDayPicksTable)
+                  ..where(
+                    (p) => p.dayId.equals(dayId) & p.taskId.equals(taskId),
+                  ))
+                .getSingleOrNull();
+        if (pick != null) {
+          await decisionEventsRepository!.append(
+            MyDayDecisionEvent(
+              id: idGenerator.myDayDecisionEventId(),
+              dayKeyUtc: completedDayKeyUtc,
+              entityType: MyDayDecisionEntityType.task,
+              entityId: taskId,
+              shelf: _shelfFromTaskPickBucket(pick.bucket),
+              action: MyDayDecisionAction.completed,
+              actionAtUtc: now.toUtc(),
+              suggestionRank: pick.suggestionRank,
+            ),
+            context: context,
+          );
+        }
       }
     });
   }
@@ -629,5 +684,50 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
   /// Normalize date to midnight (date-only).
   DateTime _normalizeDate(DateTime date) {
     return DateTime.utc(date.year, date.month, date.day);
+  }
+
+  Future<Map<String, Object>?> _computeTaskChecklistMetrics({
+    required String taskId,
+    required DateTime? occurrenceDate,
+  }) async {
+    final items = await (driftDb.select(
+      driftDb.taskChecklistItemsTable,
+    )..where((t) => t.taskId.equals(taskId))).get();
+    if (items.isEmpty) return null;
+
+    final itemIds = items.map((item) => item.id).toList(growable: false);
+    final statesQuery = driftDb.select(driftDb.taskChecklistItemStateTable)
+      ..where((s) => s.taskId.equals(taskId))
+      ..where((s) => s.checklistItemId.isIn(itemIds))
+      ..where((s) => s.isChecked.equals(true));
+
+    if (occurrenceDate == null) {
+      statesQuery.where((s) => s.occurrenceDate.isNull());
+    } else {
+      statesQuery.where(
+        (s) => s.occurrenceDate.equals(encodeDateOnly(occurrenceDate)),
+      );
+    }
+
+    final checkedStates = await statesQuery.get();
+    final checkedItems = checkedStates.length;
+    final totalItems = items.length;
+    final completionRatio = totalItems == 0 ? 0.0 : checkedItems / totalItems;
+
+    return <String, Object>{
+      'checked_items': checkedItems,
+      'total_items': totalItems,
+      'completion_ratio': completionRatio,
+      'completed_with_all_items': checkedItems == totalItems,
+    };
+  }
+
+  MyDayDecisionShelf _shelfFromTaskPickBucket(String bucket) {
+    return switch (bucket) {
+      'due' => MyDayDecisionShelf.due,
+      'starts' => MyDayDecisionShelf.planned,
+      'values' || 'valueSuggestions' => MyDayDecisionShelf.suggestion,
+      _ => MyDayDecisionShelf.planned,
+    };
   }
 }

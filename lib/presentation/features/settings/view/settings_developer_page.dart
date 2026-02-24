@@ -24,6 +24,8 @@ class SettingsDeveloperPage extends StatelessWidget {
             if (kDebugMode) ...[
               SizedBox(height: TasklyTokens.of(context).spaceSm),
               _buildSyncIssuesItem(context),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
+              _buildStatsItem(context),
             ],
             SizedBox(height: TasklyTokens.of(context).spaceSm),
           ],
@@ -55,6 +57,16 @@ class SettingsDeveloperPage extends StatelessWidget {
       subtitle: Text(context.l10n.settingsSyncIssuesSubtitle),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => Routing.pushSettingsSyncIssues(context),
+    );
+  }
+
+  Widget _buildStatsItem(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.bar_chart_outlined),
+      title: Text(context.l10n.settingsStatsTitle),
+      subtitle: Text(context.l10n.settingsStatsSubtitle),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Routing.pushSettingsStats(context),
     );
   }
 }

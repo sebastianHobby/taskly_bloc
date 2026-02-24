@@ -77,6 +77,7 @@ class IdGenerator {
     'task_checklist_items',
     'routine_checklist_items',
     'checklist_events',
+    'my_day_decision_events',
     'tracker_events',
     'tracker_state_day',
     'tracker_state_entry',
@@ -139,6 +140,7 @@ class IdGenerator {
   String taskChecklistItemId() => _uuid.v4();
   String routineChecklistItemId() => _uuid.v4();
   String checklistEventId() => _uuid.v4();
+  String myDayDecisionEventId() => _uuid.v4();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // V5 DETERMINISTIC IDs - Natural Key → Same ID

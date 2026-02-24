@@ -190,5 +190,116 @@ void main() {
       expect(display, isNull);
       expect(tipSeen, isFalse);
     });
+
+    testSafe('watch emits saved values for singleton settings', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+
+      final stream = repo.watch(SettingsKey.global);
+      expect(await stream.first, equals(const GlobalSettings()));
+
+      const updated = GlobalSettings(themeMode: AppThemeMode.dark);
+      await repo.save(SettingsKey.global, updated);
+      expect(await stream.firstWhere((v) => v == updated), equals(updated));
+    });
+
+    testSafe('repairs invalid map shape and throttles repeated repair writes', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+
+      await db
+          .into(db.userProfileTable)
+          .insert(
+            UserProfileTableCompanion.insert(
+              settingsOverrides: const drift.Value('[]'),
+              createdAt: drift.Value(DateTime.utc(2024, 1, 1)),
+              updatedAt: drift.Value(DateTime.utc(2024, 1, 1)),
+            ),
+          );
+
+      final first = await repo.load(SettingsKey.global);
+      final second = await repo.load(SettingsKey.global);
+      expect(first, equals(const GlobalSettings()));
+      expect(second, equals(const GlobalSettings()));
+
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      final row = await db.select(db.userProfileTable).getSingle();
+      final overrides =
+          jsonDecode(row.settingsOverrides!) as Map<String, dynamic>;
+      expect(overrides['_repairs'], isA<Map<String, dynamic>>());
+    });
+
+    testSafe('long invalid JSON stores truncated repair preview', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+
+      final veryLongInvalid = '${List.filled(900, 'x').join()}{';
+      await db
+          .into(db.userProfileTable)
+          .insert(
+            UserProfileTableCompanion.insert(
+              settingsOverrides: drift.Value(veryLongInvalid),
+              createdAt: drift.Value(DateTime.utc(2024, 1, 2)),
+              updatedAt: drift.Value(DateTime.utc(2024, 1, 2)),
+            ),
+          );
+
+      await repo.load(SettingsKey.global);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      final row = await db.select(db.userProfileTable).getSingle();
+      final overrides =
+          jsonDecode(row.settingsOverrides!) as Map<String, dynamic>;
+      final repairs = overrides['_repairs'] as Map<String, dynamic>;
+      final repair = repairs['settings_overrides'] as Map<String, dynamic>;
+      final preview = repair['repaired_from'] as String;
+      expect(preview.length, lessThanOrEqualTo(501));
+    });
+
+    testSafe('singleton decode fromJson failure falls back to defaults', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+
+      await db
+          .into(db.userProfileTable)
+          .insert(
+            UserProfileTableCompanion.insert(
+              settingsOverrides: const drift.Value(
+                '{"global":{"themeMode":"BAD_ENUM"},"allocation":{"suggestionSignal":"BAD_SIGNAL"}}',
+              ),
+              createdAt: drift.Value(DateTime.utc(2024, 1, 3)),
+              updatedAt: drift.Value(DateTime.utc(2024, 1, 3)),
+            ),
+          );
+
+      final global = await repo.load(SettingsKey.global);
+      final allocation = await repo.load(SettingsKey.allocation);
+      expect(global, equals(const GlobalSettings()));
+      expect(allocation, equals(const AllocationConfig()));
+    });
+
+    testSafe('keyed entry-not-map branches are repaired and defaulted', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+
+      await db
+          .into(db.userProfileTable)
+          .insert(
+            UserProfileTableCompanion.insert(
+              settingsOverrides: const drift.Value(
+                '{"pageSort":{"tasks_inbox":"oops"},'
+                '"pageDisplay":"oops"}',
+              ),
+              createdAt: drift.Value(DateTime.utc(2024, 1, 4)),
+              updatedAt: drift.Value(DateTime.utc(2024, 1, 4)),
+            ),
+          );
+
+      final sort = await repo.load(SettingsKey.pageSort(PageKey.tasksInbox));
+      final display = await repo.load(
+        SettingsKey.pageDisplay(PageKey.projectOverview),
+      );
+      expect(sort, isNull);
+      expect(display, isNull);
+    });
   });
 }

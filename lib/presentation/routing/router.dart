@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -13,6 +14,7 @@ import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_blo
 import 'package:taskly_bloc/presentation/features/app/view/initial_sync_gate_screen.dart';
 import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/features/auth/view/check_email_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_in_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
@@ -42,6 +44,7 @@ import 'package:taskly_bloc/presentation/features/settings/view/settings_languag
 import 'package:taskly_bloc/presentation/features/settings/view/settings_account_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_developer_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_sync_issues_page.dart';
+import 'package:taskly_bloc/presentation/features/statistics/view/debug_stats_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_micro_learning_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_notifications_page.dart';
 import 'package:taskly_bloc/presentation/debug/taskly_tile_catalog_page.dart';
@@ -50,13 +53,21 @@ import 'package:taskly_bloc/presentation/features/onboarding/view/onboarding_flo
 const _splashPath = '/splash';
 const _signInPath = '/sign-in';
 const _signUpPath = '/sign-up';
+const _checkEmailPath = '/check-email';
 const _forgotPasswordPath = '/forgot-password';
 const _initialSyncPath = '/initial-sync';
 const _onboardingPath = '/onboarding';
 
+Widget buildSettingsStatsRoutePage() {
+  return kDebugMode
+      ? const DebugStatsPage()
+      : const NotFoundRoutePage(message: 'Not found');
+}
+
 bool _isAuthRoute(String path) {
   return path == _signInPath ||
       path == _signUpPath ||
+      path == _checkEmailPath ||
       path == _forgotPasswordPath;
 }
 
@@ -151,6 +162,10 @@ GoRouter createRouter({
       GoRoute(
         path: _signUpPath,
         builder: (_, __) => const SignUpView(),
+      ),
+      GoRoute(
+        path: _checkEmailPath,
+        builder: (_, __) => const CheckEmailView(),
       ),
       GoRoute(
         path: _forgotPasswordPath,
@@ -485,6 +500,10 @@ GoRouter createRouter({
           GoRoute(
             path: '${Routing.screenPath('settings')}/developer/sync-issues',
             builder: (_, __) => const SettingsSyncIssuesPage(),
+          ),
+          GoRoute(
+            path: '${Routing.screenPath('settings')}/developer/stats',
+            builder: (_, __) => buildSettingsStatsRoutePage(),
           ),
           GoRoute(
             path: '${Routing.screenPath('settings')}/micro-learning',

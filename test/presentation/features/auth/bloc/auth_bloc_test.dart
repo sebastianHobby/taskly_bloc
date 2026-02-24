@@ -127,6 +127,35 @@ void main() {
   );
 
   blocTestSafe<AuthBloc, AppAuthState>(
+    'sign up without session stores pending confirmation email',
+    build: () {
+      when(
+        () => authRepository.signUp(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async => const AuthResponse(session: null, user: null));
+      return buildBloc();
+    },
+    act: (bloc) {
+      bloc.add(
+        const AuthSignUpRequested(email: 'new@taskly.app', password: 'pw'),
+      );
+    },
+    expect: () => [
+      isA<AppAuthState>().having((s) => s.status, 'status', AuthStatus.loading),
+      isA<AppAuthState>()
+          .having((s) => s.status, 'status', AuthStatus.unauthenticated)
+          .having(
+            (s) => s.pendingEmailConfirmation,
+            'pendingEmailConfirmation',
+            'new@taskly.app',
+          ),
+    ],
+  );
+
+  blocTestSafe<AuthBloc, AppAuthState>(
     'sign out forwards operation context',
     build: () {
       when(

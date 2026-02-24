@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_brand_logo.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Sign in view with custom form using AuthBloc.
@@ -63,11 +64,7 @@ class _SignInViewState extends State<SignInView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.check_circle_outline,
-                      size: 80,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    const TasklyBrandLogo(size: 80),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
                       context.l10n.authWelcomeTitle,

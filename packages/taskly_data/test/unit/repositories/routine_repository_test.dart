@@ -1,14 +1,18 @@
 @Tags(['unit'])
 library;
 
+import 'dart:convert';
+
 import '../../helpers/test_imports.dart';
 import '../../helpers/test_db.dart';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/id.dart';
+import 'package:taskly_data/src/features/my_day/repositories/my_day_decision_event_repository_impl.dart';
 import 'package:taskly_data/src/repositories/routine_repository.dart';
 import 'package:taskly_domain/routines.dart';
+import 'package:taskly_domain/time.dart';
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
@@ -55,10 +59,43 @@ void main() {
         targetCount: 2,
       );
       final routineId = (await db.select(db.routinesTable).getSingle()).id;
+      await db
+          .into(db.routineChecklistItemsTable)
+          .insert(
+            RoutineChecklistItemsTableCompanion.insert(
+              id: 'item-1',
+              routineId: routineId,
+              title: 'step 1',
+              sortIndex: 0,
+            ),
+          );
+      await db
+          .into(db.routineChecklistItemsTable)
+          .insert(
+            RoutineChecklistItemsTableCompanion.insert(
+              id: 'item-2',
+              routineId: routineId,
+              title: 'step 2',
+              sortIndex: 1,
+            ),
+          );
+      await db
+          .into(db.routineChecklistItemStateTable)
+          .insert(
+            RoutineChecklistItemStateTableCompanion.insert(
+              id: 'state-1',
+              routineId: routineId,
+              checklistItemId: 'item-1',
+              periodType: 'week',
+              windowKey: DateTime.utc(2025, 1, 13),
+              isChecked: const drift.Value(true),
+            ),
+          );
 
       await repo.recordCompletion(
         routineId: routineId,
         completedAtUtc: DateTime.utc(2025, 1, 15, 12),
+        completedDayLocal: DateTime.utc(2025, 1, 15),
       );
       final removed = await repo.removeLatestCompletionForDay(
         routineId: routineId,
@@ -68,6 +105,21 @@ void main() {
       expect(removed, isTrue);
       final completions = await repo.getCompletions();
       expect(completions, isEmpty);
+
+      final events = await db.select(db.checklistEventsTable).get();
+      expect(events, hasLength(1));
+      final event = events.single;
+      expect(event.parentType, 'routine');
+      expect(event.parentId, routineId);
+      expect(event.scopePeriodType, 'week');
+      expect(event.scopeDate, DateTime.utc(2025, 1, 13));
+      expect(event.eventType, 'parent_logged');
+
+      final metrics = jsonDecode(event.metricsJson) as Map<String, dynamic>;
+      expect(metrics['checked_items'], 1);
+      expect(metrics['total_items'], 2);
+      expect(metrics['completion_ratio'], 0.5);
+      expect(metrics['completed_with_all_items'], false);
     });
 
     testSafe('routine value is inherited from project primary value', () async {
@@ -223,6 +275,82 @@ void main() {
       final skips = await repo.getSkips();
       expect(skips, hasLength(1));
     });
+
+    testSafe(
+      'recordCompletion emits PMD completed event when routine is in today picks',
+      () async {
+        final db = createAutoClosingDb();
+        final ids = IdGenerator.withUserId('user-1');
+        await _seedProject(db);
+        final decisionRepo = MyDayDecisionEventRepositoryImpl(
+          driftDb: db,
+          ids: ids,
+        );
+        final repo = RoutineRepository(
+          driftDb: db,
+          idGenerator: ids,
+          decisionEventsRepository: decisionRepo,
+        );
+
+        await repo.create(
+          name: 'Gym',
+          projectId: 'project-1',
+          periodType: RoutinePeriodType.week,
+          scheduleMode: RoutineScheduleMode.scheduled,
+          targetCount: 2,
+        );
+        final routineId = (await db.select(db.routinesTable).getSingle()).id;
+
+        final completedAt = DateTime.utc(2026, 2, 24, 8, 0);
+        final dayKey = dateOnly(completedAt);
+        final dayId = ids.myDayDayId(dayUtc: dayKey);
+
+        await db
+            .into(db.myDayDaysTable)
+            .insert(
+              MyDayDaysTableCompanion.insert(
+                id: dayId,
+                dayUtc: dayKey,
+              ),
+            );
+        await db
+            .into(db.myDayPicksTable)
+            .insert(
+              MyDayPicksTableCompanion.insert(
+                id: ids.myDayPickId(
+                  dayId: dayId,
+                  targetType: 'routine',
+                  targetId: routineId,
+                ),
+                dayId: dayId,
+                routineId: drift.Value(routineId),
+                bucket: 'routine',
+                sortIndex: 0,
+                pickedAt: completedAt,
+              ),
+            );
+
+        await repo.recordCompletion(
+          routineId: routineId,
+          completedAtUtc: completedAt,
+          completedDayLocal: DateTime.utc(2026, 2, 24),
+        );
+
+        final completion = await db
+            .select(db.routineCompletionsTable)
+            .getSingle();
+        expect(completion.completedWeekdayLocal, 2);
+        expect(completion.timezoneOffsetMinutes, isNotNull);
+
+        final events = await db.select(db.myDayDecisionEventsTable).get();
+        expect(events, hasLength(1));
+        final event = events.single;
+        expect(event.entityType, 'routine');
+        expect(event.entityId, routineId);
+        expect(event.action, 'completed');
+        expect(event.shelf, 'routine_scheduled');
+      },
+    );
 
     testSafe('removeLatestCompletionForDay returns false when none', () async {
       final db = createAutoClosingDb();

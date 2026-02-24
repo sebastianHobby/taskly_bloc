@@ -10,6 +10,7 @@ import 'package:taskly_bloc/presentation/features/review/widgets/weekly_value_ch
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_brand_logo.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
@@ -130,7 +131,7 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
             builder: (context, state) {
               final showFooter = state.step != OnboardingStep.ratings;
               final canGoBack = state.step != OnboardingStep.welcome;
-              final primaryLabel = _primaryLabelFor(state.step);
+              final primaryLabel = _primaryLabelFor(state);
               final isPrimaryBusy = state.isCreatingValue || state.isCompleting;
 
               return Column(
@@ -207,6 +208,22 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
                                   : Text(primaryLabel),
                             ),
                           ),
+                          if (state.step == OnboardingStep.valuesSetup &&
+                              !state.hasMinimumValues) ...[
+                            SizedBox(height: tokens.spaceXs),
+                            Text(
+                              context.l10n.onboardingValuesMinimumHint(
+                                kOnboardingMinimumValuesRequired,
+                              ),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
                           if (canGoBack) ...[
                             SizedBox(height: tokens.spaceSm),
                             TextButton(
@@ -238,10 +255,16 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
     };
   }
 
-  String _primaryLabelFor(OnboardingStep step) {
+  String _primaryLabelFor(OnboardingState state) {
+    final step = state.step;
     return switch (step) {
       OnboardingStep.welcome => context.l10n.onboardingGetStartedLabel,
-      OnboardingStep.valuesSetup => context.l10n.onboardingContinueLabel,
+      OnboardingStep.valuesSetup =>
+        state.hasMinimumValues
+            ? context.l10n.onboardingContinueLabel
+            : context.l10n.onboardingContinueValuesRemaining(
+                kOnboardingMinimumValuesRequired - state.selectedValues.length,
+              ),
       OnboardingStep.reviewSettings => context.l10n.onboardingFinishLabel,
       OnboardingStep.ratings => context.l10n.onboardingContinueLabel,
     };
@@ -280,11 +303,7 @@ class _WelcomeStep extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 84,
-            color: theme.colorScheme.primary,
-          ),
+          const TasklyBrandLogo(size: 84),
           SizedBox(height: tokens.spaceLg),
           Text(
             context.l10n.onboardingWelcomeTitle,

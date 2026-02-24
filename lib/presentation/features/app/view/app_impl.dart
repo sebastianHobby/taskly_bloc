@@ -93,6 +93,9 @@ class App extends StatelessWidget {
           Provider<MyDayRepositoryContract>(
             create: (_) => getIt<MyDayRepositoryContract>(),
           ),
+          Provider<MyDayDecisionEventRepositoryContract>(
+            create: (_) => getIt<MyDayDecisionEventRepositoryContract>(),
+          ),
           Provider<TaskSuggestionService>(
             create: (_) => getIt<TaskSuggestionService>(),
           ),
@@ -468,6 +471,7 @@ class _DebugBootstrapperState extends State<_DebugBootstrapper> {
     '/splash',
     '/sign-in',
     '/sign-up',
+    '/check-email',
     '/forgot-password',
     '/initial-sync',
   };

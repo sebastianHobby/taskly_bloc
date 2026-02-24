@@ -37,19 +37,30 @@ class RoutineEntityTile extends StatelessWidget {
         ? selectionAddedLabelRaw
         : 'Added';
     final isPlanPickStyle = style is TasklyRoutineRowStylePlanPick;
+    final isPlanActionStyle = style is TasklyRoutineRowStylePlanAction;
     final isBulkSelectionStyle = style is TasklyRoutineRowStyleBulkSelection;
     final showSelectionRail = isBulkSelectionStyle;
     final showSelectionToggle =
         !isPlanPickStyle &&
+        !isPlanActionStyle &&
         !showSelectionRail &&
         actions.onToggleSelected != null;
     final showPrimary =
         !isPlanPickStyle &&
+        !isPlanActionStyle &&
         !showSelectionRail &&
         !showSelectionToggle &&
         primaryLabelText.isNotEmpty &&
         (actions.onPrimaryAction != null || model.completed);
     final showPicker = isPlanPickStyle && actions.onToggleSelected != null;
+    final planActionLabel = switch (style) {
+      TasklyRoutineRowStylePlanAction(:final actionLabel) => actionLabel.trim(),
+      _ => '',
+    };
+    final showPlanActionButton =
+        isPlanActionStyle &&
+        planActionLabel.isNotEmpty &&
+        actions.onToggleSelected != null;
     final badges = model.badges;
 
     final showScheduleRow = model.scheduleRow != null;
@@ -181,6 +192,13 @@ class RoutineEntityTile extends StatelessWidget {
                           ? selectionAddedLabel
                           : selectionAddLabel,
                     ),
+                  ] else if (showPlanActionButton) ...[
+                    SizedBox(width: tokens.spaceSm),
+                    _PrimaryActionButton(
+                      label: planActionLabel,
+                      completed: false,
+                      onPressed: actions.onToggleSelected,
+                    ),
                   ] else if (showSelectionToggle) ...[
                     SizedBox(width: tokens.spaceSm),
                     _SelectionToggleButton(
@@ -311,6 +329,9 @@ class _PrimaryActionButton extends StatelessWidget {
           fontWeight: FontWeight.w700,
           color: fg,
         ),
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.fade,
       ),
     );
   }

@@ -1,4 +1,4 @@
-﻿{
+{
     "selectedCountLabel": "{count, plural, one{1 seleccionado} other{{count} seleccionados}}",
     "moveToProjectAction": "Mover al proyecto",
     "completeSeriesAction": "Completar serie",
@@ -26,8 +26,6 @@
         "description": "Recurrence basis option: anchored from completion date"
     },
     "recurrenceSeriesEndedLabel": "Finalizar serie",
-
-    
     "valuesAlignedToTitle": "AlineaciÃ³n de valores",
     "valuesNoneSelected": "No hay valores seleccionados.",
     "valuesNoneInherited": "No hay valores heredados.",
@@ -53,18 +51,18 @@
     "valuesMaxTwoHelper": "Elige hasta dos valores.",
     "taskTagsOptionalTitle": "Etiquetas de tarea (opcional)",
     "taskTagsRequireProject": "Elige un proyecto para heredar su valor.",
-    "taskTagsProjectNeedsValue": "Este proyecto no tiene un valor principal todav\u00eda.",
-    "taskTagsProjectValueUnknown": "El valor heredado a\u00fan no est\u00e1 disponible.",
+    "taskTagsProjectNeedsValue": "Este proyecto no tiene un valor principal todavía.",
+    "taskTagsProjectValueUnknown": "El valor heredado aún no está disponible.",
     "taskTagsInheritedValue": "Valor heredado: {valueName}",
     "taskTagPrimaryLabel": "Etiqueta 1",
     "taskTagSecondaryLabel": "Etiqueta 2",
     "taskTagsSelectPrimaryTitle": "Selecciona la etiqueta 1",
     "taskTagsSelectSecondaryTitle": "Selecciona la etiqueta 2",
-    "taskTagsMaxTwoHelper": "A\u00f1ade hasta dos etiquetas.",
+    "taskTagsMaxTwoHelper": "Añade hasta dos etiquetas.",
     "projectValueTitle": "Por que es importante?",
     "projectValueHelper": "Selecciona un valor principal...",
     "projectFormSingleValueOnly": "Elige un solo valor.",
-    "taskProjectValueTitle": "Por quÃ© es importante?",
+    "taskProjectValueTitle": "Por qué es importante?",
     "taskProjectValueNotSet": "AÃºn no hay valor principal.",
     "taskProjectValueRowLabel": "Valor principal (del proyecto)",
     "taskProjectPickerValueSupport": "Las tareas de este proyecto apoyan {valueName}",
@@ -138,7 +136,7 @@
         "description": "Helper text indicating the max number of values."
     },
     "@taskTagsOptionalTitle": {
-        "description": "T\u00edtulo de secci\u00f3n para etiquetas opcionales de tareas."
+        "description": "Título de sección para etiquetas opcionales de tareas."
     },
     "@taskTagsRequireProject": {
         "description": "Texto de ayuda cuando no se selecciona un proyecto para etiquetas."
@@ -147,7 +145,7 @@
         "description": "Texto de ayuda cuando el proyecto seleccionado no tiene valor principal."
     },
     "@taskTagsProjectValueUnknown": {
-        "description": "Texto de ayuda cuando el nombre del valor heredado no est\u00e1 disponible."
+        "description": "Texto de ayuda cuando el nombre del valor heredado no está disponible."
     },
     "@taskTagsInheritedValue": {
         "description": "Texto de ayuda que muestra el valor heredado del proyecto.",
@@ -162,25 +160,25 @@
         "description": "Etiqueta para la segunda etiqueta de tarea."
     },
     "@taskTagsSelectPrimaryTitle": {
-        "description": "T\u00edtulo para seleccionar la primera etiqueta de tarea."
+        "description": "Título para seleccionar la primera etiqueta de tarea."
     },
     "@taskTagsSelectSecondaryTitle": {
-        "description": "T\u00edtulo para seleccionar la segunda etiqueta de tarea."
+        "description": "Título para seleccionar la segunda etiqueta de tarea."
     },
     "@taskTagsMaxTwoHelper": {
-        "description": "Texto de ayuda que indica el m\u00e1ximo de etiquetas de tarea."
+        "description": "Texto de ayuda que indica el máximo de etiquetas de tarea."
     },
     "@projectValueTitle": {
-        "description": "T\u00edtulo de secci\u00f3n para seleccionar el valor del proyecto."
+        "description": "Título de sección para seleccionar el valor del proyecto."
     },
     "@projectValueHelper": {
-        "description": "Texto de ayuda para la selecci\u00f3n del valor del proyecto."
+        "description": "Texto de ayuda para la selección del valor del proyecto."
     },
     "@projectFormSingleValueOnly": {
-        "description": "Error de validaci\u00f3n cuando se selecciona m\u00e1s de un valor en el proyecto."
+        "description": "Error de validación cuando se selecciona más de un valor en el proyecto."
     },
     "@taskProjectValueTitle": {
-        "description": "T\u00edtulo de secci\u00f3n para el valor bloqueado del proyecto en la tarea."
+        "description": "Título de sección para el valor bloqueado del proyecto en la tarea."
     },
     "@taskProjectValueNotSet": {
         "description": "Texto mostrado cuando el proyecto no tiene valor."
@@ -198,11 +196,11 @@
     "@taskFormValuesRequired": {
         "description": "Validation error shown when a task requires a primary value."
     },
-    "taskFormValuesRequireProject": "Elige un proyecto antes de a\u00f1adir etiquetas.",
+    "taskFormValuesRequireProject": "Elige un proyecto antes de añadir etiquetas.",
     "@taskFormValuesRequireProject": {
-        "description": "Error de validaci\u00f3n cuando las etiquetas de tarea se eligen sin proyecto."
+        "description": "Error de validación cuando las etiquetas de tarea se eligen sin proyecto."
     },
-    "taskFormValuesRequireProjectPrimary": "Establece un valor del proyecto antes de a\u00f1adir etiquetas.",
+    "taskFormValuesRequireProjectPrimary": "Establece un valor del proyecto antes de añadir etiquetas.",
     "@taskFormValuesRequireProjectPrimary": {
         "description": "Validation error shown when a task has tags but the project has no primary value."
     },
@@ -210,7 +208,7 @@
     "@taskFormValuesMaxTwo": {
         "description": "Validation error shown when more than two task tags are selected."
     },
-    "taskFormValuesMustBeUnique": "Las etiquetas deben ser \u00fanicas.",
+    "taskFormValuesMustBeUnique": "Las etiquetas deben ser únicas.",
     "@taskFormValuesMustBeUnique": {
         "description": "Validation error shown when task tags are duplicated."
     },
@@ -394,7 +392,7 @@
     "@deleteTaskAction": {
         "description": "Etiqueta de acciÃ³n para eliminar una tarea"
     },
-    "deleteConfirmationQuestion": "Â¿Seguro que quieres eliminar \"{itemName}\"?",
+    "deleteConfirmationQuestion": "¿Seguro que quieres eliminar \"{itemName}\"?",
     "@deleteConfirmationQuestion": {
         "description": "Pregunta de confirmaciÃ³n mostrada en los diÃ¡logos de eliminaciÃ³n.",
         "placeholders": {
@@ -868,11 +866,10 @@
     "@addTaskAction": {
         "description": "Texto del botÃ³n de acciÃ³n para aÃ±adir una tarea"
     },
-    "addProjectAction": "AÃ±adir proyecto",
     "@addProjectAction": {
         "description": "Texto del botÃ³n de acciÃ³n para aÃ±adir un proyecto"
     },
-    "taskFormNameHint": "Â¿QuÃ© hay que hacer?",
+    "taskFormNameHint": "¿Qué hay que hacer?",
     "@taskFormNameHint": {
         "description": "Texto de sugerencia para el campo de nombre de tarea"
     },
@@ -916,12 +913,12 @@
     "@moreOptionsLabel": {
         "description": "Etiqueta de tooltip para menÃºs de mÃ¡s opciones"
     },
-
     "taskFormStartDateHint": "DÃ­a planificado",
     "@taskFormStartDateHint": {
         "description": "Texto de sugerencia para el campo de fecha de inicio de tarea"
     },
-    "taskFormDeadlineDateHint": "Fecha de entrega",    "@taskFormDeadlineDateHint": {
+    "taskFormDeadlineDateHint": "Fecha de entrega",
+    "@taskFormDeadlineDateHint": {
         "description": "Texto de sugerencia para el campo de fecha lÃ­mite de tarea"
     },
     "taskFormProjectHint": "Proyecto (opcional)",
@@ -996,7 +993,7 @@
     "@myDayWhatMattersSectionTitle": {
         "description": "Section title for value-aligned suggestions in the My Day ritual (B1)."
     },
-    "myDayWhatsWaitingSectionTitle": "Lo que est\u00e1 esperando",
+    "myDayWhatsWaitingSectionTitle": "Lo que está esperando",
     "@myDayWhatsWaitingSectionTitle": {
         "description": "Section title for scheduled/review tasks in the My Day ritual (B1)."
     },
@@ -1004,7 +1001,7 @@
     "@myDayTimeSensitiveOutsideValuesSubtitle": {
         "description": "Subtitle clarifying the Time sensitive section excludes value suggestions."
     },
-    "myDayTimeSensitiveBannerBoth": "{dueCount} pr\u00f3ximas a vencer \u2022 {plannedCount} planificadas fuera de tus sugerencias",
+    "myDayTimeSensitiveBannerBoth": "{dueCount} próximas a vencer • {plannedCount} planificadas fuera de tus sugerencias",
     "@myDayTimeSensitiveBannerBoth": {
         "description": "Banner title showing due soon and planned counts outside value suggestions.",
         "placeholders": {
@@ -1012,7 +1009,7 @@
             "plannedCount": {}
         }
     },
-    "myDayTimeSensitiveBannerDueOnly": "{dueCount} pr\u00f3ximas a vencer fuera de tus sugerencias",
+    "myDayTimeSensitiveBannerDueOnly": "{dueCount} próximas a vencer fuera de tus sugerencias",
     "@myDayTimeSensitiveBannerDueOnly": {
         "description": "Banner title showing due soon count outside value suggestions.",
         "placeholders": {
@@ -1030,7 +1027,7 @@
     "@myDayTimeSensitiveBannerHelper": {
         "description": "Helper line under the time-sensitive banner."
     },
-    "myDayTimeSensitiveSheetSubtitle": "Tareas pr\u00f3ximas a vencer y planificadas que no est\u00e1n en tu lista de valores.",
+    "myDayTimeSensitiveSheetSubtitle": "Tareas próximas a vencer y planificadas que no están en tu lista de valores.",
     "@myDayTimeSensitiveSheetSubtitle": {
         "description": "Subtitle for the time-sensitive bottom sheet."
     },
@@ -1050,7 +1047,7 @@
     "@myDayValuesPlannedEmptyTitle": {
         "description": "Empty state title for the Values aligned planned subsection."
     },
-    "myDayValuesPlannedEmptyBody": "Ninguna selecci\u00f3n de valores est\u00e1 lista para empezar hoy.",
+    "myDayValuesPlannedEmptyBody": "Ninguna selección de valores está lista para empezar hoy.",
     "@myDayValuesPlannedEmptyBody": {
         "description": "Empty state body for the Values aligned planned subsection."
     },
@@ -1150,7 +1147,7 @@
     "@myDayChooseAction": {
         "description": "Action label used for value-aligned options in the My Day ritual (S1)."
     },
-  "myDayDoTodayAction": "Registrar hoy",
+    "myDayDoTodayAction": "Registrar hoy",
     "@myDayDoTodayAction": {
         "description": "Action label used to commit a waiting task to today in the My Day ritual (S1)."
     },
@@ -1170,11 +1167,11 @@
     "@myDaySnoozeAction": {
         "description": "Action label for snoozing a task in the My Day ritual (S1)."
     },
-    "myDayWhyTheseAction": "Â¿Por quÃ© estas?",
+    "myDayWhyTheseAction": "¿Por qué estas?",
     "@myDayWhyTheseAction": {
         "description": "Button label that opens a sheet explaining why items are shown in a section."
     },
-    "myDayWhyTheseTitle": "Â¿Por quÃ© estas?",
+    "myDayWhyTheseTitle": "¿Por qué estas?",
     "@myDayWhyTheseTitle": {
         "description": "Title for the explainability bottom sheet in the My Day ritual."
     },
@@ -1796,7 +1793,7 @@
     "@editProjectLabel": {
         "description": "Etiqueta de tooltip para editar un proyecto"
     },
-    "discardChangesTitle": "Â¿Descartar cambios?",
+    "discardChangesTitle": "¿Descartar cambios?",
     "@discardChangesTitle": {
         "description": "Titulo para la confirmacion de descartar cambios"
     },
@@ -2134,7 +2131,7 @@
     "@settingsResetTitle": {
         "description": "TÃ­tulo del diÃ¡logo de confirmaciÃ³n de restablecimiento"
     },
-    "settingsResetConfirmation": "Â¿EstÃ¡s seguro de que quieres restablecer toda la configuraciÃ³n a sus valores predeterminados?",
+    "settingsResetConfirmation": "¿Estás seguro de que quieres restablecer toda la configuración a sus valores predeterminados?",
     "@settingsResetConfirmation": {
         "description": "Mensaje de confirmaciÃ³n de restablecimiento"
     },
@@ -2174,7 +2171,7 @@
     "@confirmButton": {
         "description": "BotÃ³n de acciÃ³n confirmar"
     },
-    "focusModeSectionTitle": "Â¿CÃ³mo deberÃ­a Enfoque priorizar las tareas?",
+    "focusModeSectionTitle": "¿Cómo debería Enfoque priorizar las tareas?",
     "@focusModeSectionTitle": {
         "description": "TÃ­tulo de secciÃ³n para selecciÃ³n de modo de enfoque"
     },
@@ -2582,7 +2579,7 @@
             }
         }
     },
-        "myDayPlanMyDayTitle": "Crea el plan de hoy",
+    "myDayPlanMyDayTitle": "Crea el plan de hoy",
     "@myDayPlanMyDayTitle": {
         "description": "Titulo/etiqueta usada para iniciar Planificar mi dia desde Mi dia cuando no hay un plan."
     },
@@ -2704,7 +2701,7 @@
             }
         }
     },
-    "myDayClearPlanDialogTitle": "Â¿Borrar el plan de hoy?",
+    "myDayClearPlanDialogTitle": "¿Borrar el plan de hoy?",
     "@myDayClearPlanDialogTitle": {
         "description": "TÃ­tulo del diÃ¡logo de confirmaciÃ³n al borrar el plan de hoy."
     },
@@ -2726,15 +2723,15 @@
     "@myDayPickAllButton": {
         "description": "Etiqueta del botÃ³n para confirmar 'elegir todo' en una secciÃ³n del ritual de Mi dÃ­a."
     },
-    "myDayPickAllDueTitle": "Â¿Elegir todas las tareas vencidas y por vencer?",
+    "myDayPickAllDueTitle": "¿Elegir todas las tareas vencidas y por vencer?",
     "@myDayPickAllDueTitle": {
         "description": "TÃ­tulo de la hoja de confirmaciÃ³n para elegir todas las tareas vencidas/por vencer en el ritual de Mi dÃ­a."
     },
-    "myDayPickAllAvailableTitle": "Â¿Elegir todas las tareas disponibles?",
+    "myDayPickAllAvailableTitle": "¿Elegir todas las tareas disponibles?",
     "@myDayPickAllAvailableTitle": {
         "description": "TÃ­tulo de la hoja de confirmaciÃ³n para elegir todas las tareas disponibles en el ritual de Mi dÃ­a."
     },
-    "myDayPickAllSuggestedTitle": "Â¿Elegir todas las sugerencias?",
+    "myDayPickAllSuggestedTitle": "¿Elegir todas las sugerencias?",
     "@myDayPickAllSuggestedTitle": {
         "description": "TÃ­tulo de la hoja de confirmaciÃ³n para elegir todas las sugerencias en el ritual de Mi dÃ­a."
     },
@@ -2742,7 +2739,7 @@
     "@myDayCompletedSectionTitle": {
         "description": "TÃ­tulo de secciÃ³n para selecciones completadas en el ritual de Mi dÃ­a."
     },
-    "myDayCompletedSectionEmptyBody": "Las selecciones completadas aparecer\u00e1n aqu\u00ed.",
+    "myDayCompletedSectionEmptyBody": "Las selecciones completadas aparecerán aquí.",
     "@myDayCompletedSectionEmptyBody": {
         "description": "Empty state body for the completed picks section."
     },
@@ -3004,7 +3001,7 @@
             }
         }
     },
-    "snoozePastDueDateTitle": "Â¿Posponer despuÃ©s de la fecha de entrega?",
+    "snoozePastDueDateTitle": "¿Posponer después de la fecha de entrega?",
     "@snoozePastDueDateTitle": {
         "description": "TÃ­tulo del diÃ¡logo de confirmaciÃ³n al posponer mÃ¡s allÃ¡ de la fecha de entrega."
     },
@@ -3119,78 +3116,78 @@
             }
         }
     },
-  "routineProgressCaptionMonthly": "{completed}/{target} este mes",
-  "@routineProgressCaptionMonthly": {
-    "description": "Progress caption for monthly routines.",
-    "placeholders": {
-      "completed": {
-        "type": "int"
-      },
-      "target": {
-        "type": "int"
-      }
-    }
-  },
-  "routineActionLineFlexible": "{completed}/{target} completado - quedan {daysLeft} dias",
-  "@routineActionLineFlexible": {
-    "description": "Action line for flexible weekly/monthly routines.",
-    "placeholders": {
-      "completed": {
-        "type": "int"
-      },
-      "target": {
-        "type": "int"
-      },
-      "daysLeft": {
-        "type": "int"
-      }
-    }
-  },
-  "routineActionLineMonthlyScheduled": "{completed}/{target} este mes - Proximo: {nextDayLabel}",
-  "@routineActionLineMonthlyScheduled": {
-    "description": "Action line for scheduled monthly routines when next date is available.",
-    "placeholders": {
-      "completed": {
-        "type": "int"
-      },
-      "target": {
-        "type": "int"
-      },
-      "nextDayLabel": {
-        "type": "String"
-      }
-    }
-  },
-  "routineActionLineMonthlyScheduledNoNext": "{completed}/{target} este mes",
-  "@routineActionLineMonthlyScheduledNoNext": {
-    "description": "Action line for scheduled monthly routines when no next date is available.",
-    "placeholders": {
-      "completed": {
-        "type": "int"
-      },
-      "target": {
-        "type": "int"
-      }
-    }
-  },
-  "routineDailyGoalLabel": "Meta diaria: {count}x",
-  "@routineDailyGoalLabel": {
-    "description": "Label for daily routine goal text in dot row.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "routineDayOfMonthOrdinal": "{day}",
-  "@routineDayOfMonthOrdinal": {
-    "description": "Ordinal day-of-month label for monthly scheduled routines.",
-    "placeholders": {
-      "day": {
-        "type": "int"
-      }
-    }
-  },
+    "routineProgressCaptionMonthly": "{completed}/{target} este mes",
+    "@routineProgressCaptionMonthly": {
+        "description": "Progress caption for monthly routines.",
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "target": {
+                "type": "int"
+            }
+        }
+    },
+    "routineActionLineFlexible": "{completed}/{target} completado - quedan {daysLeft} dias",
+    "@routineActionLineFlexible": {
+        "description": "Action line for flexible weekly/monthly routines.",
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "target": {
+                "type": "int"
+            },
+            "daysLeft": {
+                "type": "int"
+            }
+        }
+    },
+    "routineActionLineMonthlyScheduled": "{completed}/{target} este mes - Proximo: {nextDayLabel}",
+    "@routineActionLineMonthlyScheduled": {
+        "description": "Action line for scheduled monthly routines when next date is available.",
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "target": {
+                "type": "int"
+            },
+            "nextDayLabel": {
+                "type": "String"
+            }
+        }
+    },
+    "routineActionLineMonthlyScheduledNoNext": "{completed}/{target} este mes",
+    "@routineActionLineMonthlyScheduledNoNext": {
+        "description": "Action line for scheduled monthly routines when no next date is available.",
+        "placeholders": {
+            "completed": {
+                "type": "int"
+            },
+            "target": {
+                "type": "int"
+            }
+        }
+    },
+    "routineDailyGoalLabel": "Meta diaria: {count}x",
+    "@routineDailyGoalLabel": {
+        "description": "Label for daily routine goal text in dot row.",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "routineDayOfMonthOrdinal": "{day}",
+    "@routineDayOfMonthOrdinal": {
+        "description": "Ordinal day-of-month label for monthly scheduled routines.",
+        "placeholders": {
+            "day": {
+                "type": "int"
+            }
+        }
+    },
     "routineWindowWeekly": "{daysLeft} days left ({startLabel}-{endLabel})",
     "@routineWindowWeekly": {
         "description": "Window label for weekly routines.",
@@ -3206,25 +3203,25 @@
             }
         }
     },
-  "routineWindowScheduledDays": "Esta semana ({daysLabel})",
-  "@routineWindowScheduledDays": {
-    "description": "Etiqueta de ventana para rutinas semanales programadas; incluye la lista de dÃ­as seleccionados.",
-    "placeholders": {
-      "daysLabel": {
-        "type": "String"
-      }
-    }
-  },
-  "routineWindowMonthlyEnds": "La ventana termina {endLabel}",
-  "@routineWindowMonthlyEnds": {
-    "description": "Etiqueta de ventana para rutinas mensuales sin detalle de dÃ­as restantes.",
-    "placeholders": {
-      "endLabel": {
-        "type": "String"
-      }
-    }
-  },
-  "routineWindowMonthlyByDate": "Window ends {endLabel} Â· {daysLeft} days left",
+    "routineWindowScheduledDays": "Esta semana ({daysLabel})",
+    "@routineWindowScheduledDays": {
+        "description": "Etiqueta de ventana para rutinas semanales programadas; incluye la lista de dÃ­as seleccionados.",
+        "placeholders": {
+            "daysLabel": {
+                "type": "String"
+            }
+        }
+    },
+    "routineWindowMonthlyEnds": "La ventana termina {endLabel}",
+    "@routineWindowMonthlyEnds": {
+        "description": "Etiqueta de ventana para rutinas mensuales sin detalle de dÃ­as restantes.",
+        "placeholders": {
+            "endLabel": {
+                "type": "String"
+            }
+        }
+    },
+    "routineWindowMonthlyByDate": "Window ends {endLabel} Â· {daysLeft} days left",
     "@routineWindowMonthlyByDate": {
         "description": "Window label for monthly routines using an end date.",
         "placeholders": {
@@ -3236,119 +3233,119 @@
             }
         }
     },
-  "routineLoggedLabel": "Registrado",
-  "@routineLoggedLabel": {
-    "description": "Label shown when a routine has been logged for today."
-  },
-  "routinePauseLabel": "Pause routine",
-  "@routinePauseLabel": {
-    "description": "Menu label to pause a routine."
-  },
-  "routineEditLabel": "Edit schedule",
-  "@routineEditLabel": {
-    "description": "Menu label to edit a routine schedule."
-  },
-  "routineCadenceScheduledLabel": "Programado",
-  "@routineCadenceScheduledLabel": {
-    "description": "Cadence label for scheduled weekly routines."
-  },
-  "routineCadenceFlexibleLabel": "Flexible",
-  "@routineCadenceFlexibleLabel": {
-    "description": "Cadence label for flexible routines."
-  },
-  "routinePanelScheduledTitle": "Programadas hoy",
-  "@routinePanelScheduledTitle": {
-    "description": "Panel title for scheduled routines in Plan My Day."
-  },
-  "routinePanelFlexibleTitle": "Enfoque flexible",
-  "@routinePanelFlexibleTitle": {
-    "description": "Panel title for flexible routines in Plan My Day."
-  },
-  "routineCatchUpSupportLine": "Los pasos pequeÃ±os cuentan.",
-  "@routineCatchUpSupportLine": {
-    "description": "Supportive line shown on catch-up routine days."
-  },
-  "routineStatusOnPace": "En camino",
-  "@routineStatusOnPace": {
-    "description": "Status label when routine is on pace."
-  },
+    "routineLoggedLabel": "Registrado",
+    "@routineLoggedLabel": {
+        "description": "Label shown when a routine has been logged for today."
+    },
+    "routinePauseLabel": "Pause routine",
+    "@routinePauseLabel": {
+        "description": "Menu label to pause a routine."
+    },
+    "routineEditLabel": "Edit schedule",
+    "@routineEditLabel": {
+        "description": "Menu label to edit a routine schedule."
+    },
+    "routineCadenceScheduledLabel": "Programado",
+    "@routineCadenceScheduledLabel": {
+        "description": "Cadence label for scheduled weekly routines."
+    },
+    "routineCadenceFlexibleLabel": "Flexible",
+    "@routineCadenceFlexibleLabel": {
+        "description": "Cadence label for flexible routines."
+    },
+    "routinePanelScheduledTitle": "Programadas hoy",
+    "@routinePanelScheduledTitle": {
+        "description": "Panel title for scheduled routines in Plan My Day."
+    },
+    "routinePanelFlexibleTitle": "Enfoque flexible",
+    "@routinePanelFlexibleTitle": {
+        "description": "Panel title for flexible routines in Plan My Day."
+    },
+    "routineCatchUpSupportLine": "Los pasos pequeÃ±os cuentan.",
+    "@routineCatchUpSupportLine": {
+        "description": "Supportive line shown on catch-up routine days."
+    },
+    "routineStatusOnPace": "En camino",
+    "@routineStatusOnPace": {
+        "description": "Status label when routine is on pace."
+    },
     "routineStatusTightWeek": "Tight week",
     "@routineStatusTightWeek": {
         "description": "Status label when routine has a tight week."
     },
-  "routineStatusCatchUp": "DÃ­a de recuperaciÃ³n",
-  "@routineStatusCatchUp": {
-    "description": "Status label when routine needs a catch-up window."
-  },
+    "routineStatusCatchUp": "DÃ­a de recuperaciÃ³n",
+    "@routineStatusCatchUp": {
+        "description": "Status label when routine needs a catch-up window."
+    },
     "routineStatusRestWeek": "Rest week",
     "@routineStatusRestWeek": {
         "description": "Status label when routine period is skipped."
     },
-  "routineFormValueLabel": "Valor",
-  "@routineFormValueLabel": {
-    "description": "Etiqueta para seleccion de valor en rutina."
-  },
-  "routineFormValueHint": "Selecciona un valor principal",
-  "@routineFormValueHint": {
-    "description": "Hint text for routine value selection"
-  },
-  "routineFormValuePrompt": "Por que es importante?",
-  "@routineFormValuePrompt": {
-    "description": "Prompt label for routine value selection."
-  },
-  "routineFormValueHelper": "Selecciona un valor principal...",
-  "@routineFormValueHelper": {
-    "description": "Helper text for routine value selection card."
-  },
-  "routineFormValuePlaceholder": "Selecciona un valor principal",
-  "@routineFormValuePlaceholder": {
-    "description": "Placeholder title for routine value selection card."
-  },
-  "routineFormFrequencyLabel": "Frecuencia",
-  "@routineFormFrequencyLabel": {
-    "description": "Section label for routine frequency selection."
-  },
-  "routineFormTargetPrompt": "Quiero hacer esto",
-  "@routineFormTargetPrompt": {
-    "description": "Prompt label for routine target count selection."
-  },
-  "routineFormEveryLabel": "Cada",
-  "@routineFormEveryLabel": {
-    "description": "Label for routine cadence period selection when flexible."
-  },
-  "routineFormRepeatLabel": "Repetir",
-  "@routineFormRepeatLabel": {
-      "description": "Label for routine cadence period selection when scheduled."
+    "routineFormValueLabel": "Valor",
+    "@routineFormValueLabel": {
+        "description": "Etiqueta para seleccion de valor en rutina."
+    },
+    "routineFormValueHint": "Selecciona un valor principal",
+    "@routineFormValueHint": {
+        "description": "Hint text for routine value selection"
+    },
+    "routineFormValuePrompt": "Por que es importante?",
+    "@routineFormValuePrompt": {
+        "description": "Prompt label for routine value selection."
+    },
+    "routineFormValueHelper": "Selecciona un valor principal...",
+    "@routineFormValueHelper": {
+        "description": "Helper text for routine value selection card."
+    },
+    "routineFormValuePlaceholder": "Selecciona un valor principal",
+    "@routineFormValuePlaceholder": {
+        "description": "Placeholder title for routine value selection card."
+    },
+    "routineFormFrequencyLabel": "Frecuencia",
+    "@routineFormFrequencyLabel": {
+        "description": "Section label for routine frequency selection."
+    },
+    "routineFormTargetPrompt": "Quiero hacer esto",
+    "@routineFormTargetPrompt": {
+        "description": "Prompt label for routine target count selection."
+    },
+    "routineFormEveryLabel": "Cada",
+    "@routineFormEveryLabel": {
+        "description": "Label for routine cadence period selection when flexible."
+    },
+    "routineFormRepeatLabel": "Repetir",
+    "@routineFormRepeatLabel": {
+        "description": "Label for routine cadence period selection when scheduled."
     },
     "routineFormTypeLabel": "Cadencia",
     "@routineFormTypeLabel": {
-      "description": "Label for routine cadence type selection."
+        "description": "Label for routine cadence type selection."
     },
     "routineFormPeriodDaily": "Dia",
-  "@routineFormPeriodDaily": {
-    "description": "Label for daily routine period option."
-  },
-  "routineFormPeriodWeekly": "Semana",
-  "@routineFormPeriodWeekly": {
-    "description": "Label for weekly routine period option."
-  },
-  "routineFormPeriodFortnight": "Quincena",
-  "@routineFormPeriodFortnight": {
-    "description": "Label for fortnight routine period option."
-  },
-  "routineFormPeriodMonthly": "Mes",
-  "@routineFormPeriodMonthly": {
-    "description": "Label for monthly routine period option."
-  },
-  "routineFormSelectDaysLabel": "Selecciona dias",
-  "@routineFormSelectDaysLabel": {
-    "description": "Label for selecting monthly scheduled days."
-  },
-  "projectValuePlaceholder": "Selecciona un valor principal",
-  "@projectValuePlaceholder": {
-    "description": "Placeholder title for project value selection card."
-  },
-  "myDaySubtitleChosenForToday": "Elegido para hoy",
+    "@routineFormPeriodDaily": {
+        "description": "Label for daily routine period option."
+    },
+    "routineFormPeriodWeekly": "Semana",
+    "@routineFormPeriodWeekly": {
+        "description": "Label for weekly routine period option."
+    },
+    "routineFormPeriodFortnight": "Quincena",
+    "@routineFormPeriodFortnight": {
+        "description": "Label for fortnight routine period option."
+    },
+    "routineFormPeriodMonthly": "Mes",
+    "@routineFormPeriodMonthly": {
+        "description": "Label for monthly routine period option."
+    },
+    "routineFormSelectDaysLabel": "Selecciona dias",
+    "@routineFormSelectDaysLabel": {
+        "description": "Label for selecting monthly scheduled days."
+    },
+    "projectValuePlaceholder": "Selecciona un valor principal",
+    "@projectValuePlaceholder": {
+        "description": "Placeholder title for project value selection card."
+    },
+    "myDaySubtitleChosenForToday": "Elegido para hoy",
     "@myDaySubtitleChosenForToday": {
         "description": "Subtitulo mostrado debajo del titulo de My Day."
     },
@@ -3503,10 +3500,10 @@
     "initialSyncUploading": "Subiendo...",
     "initialSyncFinalizing": "Finalizando...",
     "initialSyncConnecting": "Conectando...",
-    "deleteItemsConfirmationTitle": "{count, plural, =1{Â¿Eliminar 1 elemento?} other{Â¿Eliminar {count} elementos?}}",
-    "displayDensityTitle": "Densidad",
+    "deleteItemsConfirmationTitle": "{count, plural, =1{¿Eliminar 1 elemento?} other{¿Eliminar {count} elementos?}}",
+    "displayDensityTitle": "Densidad de visualizaciÃ³n",
     "@displayDensityTitle": {
-        "description": "TÃ­tulo para la hoja/menÃº de densidad de visualizaciÃ³n."
+        "description": "Titulo para ajustes de densidad de visualizaciÃ³n"
     },
     "displayDensityStandard": "EstÃ¡ndar",
     "displayDensityCompact": "Compacta",
@@ -3519,7 +3516,7 @@
     "recurrenceMonthUnit": "{count, plural, =1{mes} other{meses}}",
     "recurrenceYearUnit": "{count, plural, =1{aÃ±o} other{aÃ±os}}",
     "applyLabel": "Aplicar",
-    "authAlreadyHaveAccount": "Â¿Ya tienes una cuenta?",
+    "authAlreadyHaveAccount": "¿Ya tienes una cuenta?",
     "authConfirmPasswordHint": "Vuelve a escribir tu contraseÃ±a",
     "authConfirmPasswordLabel": "Confirmar contraseÃ±a",
     "authConfirmPasswordRequired": "Confirma tu contraseÃ±a.",
@@ -3527,14 +3524,14 @@
     "authEmailInvalid": "Introduce un correo vÃ¡lido.",
     "authEmailLabel": "Correo electrÃ³nico",
     "authEmailRequired": "El correo es obligatorio.",
-    "authForgotPasswordLink": "Â¿Olvidaste la contraseÃ±a?",
-    "authNoAccountPrompt": "Â¿No tienes una cuenta?",
+    "authForgotPasswordLink": "¿Olvidaste la contraseña?",
+    "authNoAccountPrompt": "¿No tienes una cuenta?",
     "authPasswordHint": "Introduce tu contraseÃ±a",
     "authPasswordLabel": "ContraseÃ±a",
     "authPasswordMinLength": "La contraseÃ±a debe tener al menos {min} caracteres.",
     "authPasswordMismatch": "Las contraseÃ±as no coinciden.",
     "authPasswordRequired": "La contraseÃ±a es obligatoria.",
-    "authRememberPasswordPrompt": "Â¿Recuerdas tu contraseÃ±a?",
+    "authRememberPasswordPrompt": "¿Recuerdas tu contraseña?",
     "authResetPasswordEmailSent": "Correo de restablecimiento enviado. Revisa tu bandeja.",
     "authResetPasswordSubtitle": "Te enviaremos un enlace de restablecimiento.",
     "authResetPasswordTitle": "Restablecer contraseÃ±a",
@@ -3543,6 +3540,17 @@
     "authSignUpButton": "Crear cuenta",
     "authSignUpSubtitle": "Crea tu cuenta para comenzar.",
     "authSignUpTitle": "Crear cuenta",
+    "authCheckEmailTitle": "Revisa tu correo",
+    "authCheckEmailBody": "Enviamos un enlace de confirmacion a {email}. Abre el enlace para verificar tu cuenta y luego inicia sesion.",
+    "@authCheckEmailBody": {
+        "description": "Mensaje mostrado en la pantalla de confirmacion de correo despues del registro.",
+        "placeholders": {
+            "email": {
+                "type": "String"
+            }
+        }
+    },
+    "authUseDifferentEmailAction": "Usar otro correo",
     "authWelcomeTitle": "Bienvenido a Taskly",
     "collapseLabel": "Colapsar",
     "expandLabel": "Expandir",
@@ -3555,16 +3563,16 @@
     "moveUpLabel": "Mover arriba",
     "moveDownLabel": "Mover abajo",
     "renameLabel": "Renombrar",
-    "removeLabel": "Eliminar",
-    "minLabel": "MÃ­n",
-    "maxLabel": "MÃ¡x",
+    "removeLabel": "Quitar",
+    "minLabel": "MÃ­nimo",
+    "maxLabel": "MÃ¡ximo",
     "stepLabel": "Paso",
-    "minOptionalLabel": "MÃ­n (opcional)",
-    "maxOptionalLabel": "MÃ¡x (opcional)",
+    "minOptionalLabel": "MÃ­nimo (opcional)",
+    "maxOptionalLabel": "MÃ¡ximo (opcional)",
     "filterSortTooltip": "Filtrar y ordenar",
     "journalAddEntry": "AÃ±adir entrada",
     "journalAddLog": "AÃ±adir registro",
-    "journalAddOptionHint": "Agregar una opciÃ³n",
+    "journalAddOptionHint": "AÃ±ade al menos una opciÃ³n.",
     "journalChooseOptionLabel": "Elige una opciÃ³n",
     "journalClearSelectionLabel": "Borrar selecciÃ³n",
     "journalDailyNoTrackers": "No hay trackers",
@@ -3665,7 +3673,7 @@
     "journalNewLogTitle": "Nuevo registro",
     "journalOptionHint": "AÃ±ade una opciÃ³n",
     "journalOptionLabel": "OpciÃ³n",
-    "journalRightNowSubtitle": "Â¿QuÃ© ocurriÃ³ justo ahora?",
+    "journalRightNowSubtitle": "¿Qué ocurrió justo ahora?",
     "journalRightNowTitle": "Ahora",
     "journalSavedLogSnack": "Registro guardado",
     "journalSaveLogButton": "Guardar registro",
@@ -3676,21 +3684,14 @@
     "journalUnitOptionalLabel": "Unidad (opcional)",
     "labelLabel": "Etiqueta",
     "nextLabel": "Siguiente",
-    "journalAddOptionHint": "AÃ±ade al menos una opciÃ³n.",
-    "maxLabel": "MÃ¡ximo",
-    "maxOptionalLabel": "MÃ¡ximo (opcional)",
-    "minLabel": "MÃ­nimo",
-    "minOptionalLabel": "MÃ­nimo (opcional)",
-    "removeLabel": "Quitar",
-    "stepLabel": "Paso",
     "routineLogLabel": "Registrar",
     "routineUnlogLabel": "Quitar registro",
     "activateLabel": "Activar",
     "deactivateLabel": "Desactivar",
-    "deleteRoutinesConfirmationTitle": "{count, plural, =1{Â¿Eliminar 1 rutina?} other{Â¿Eliminar {count} rutinas?}}",
+    "deleteRoutinesConfirmationTitle": "{count, plural, =1{¿Eliminar 1 rutina?} other{¿Eliminar {count} rutinas?}}",
     "moveNowLabel": "Mover ahora",
     "openEditorLabel": "Abrir editor",
-    "planMyDayExitWithoutSavingTitle": "Â¿Salir sin guardar?",
+    "planMyDayExitWithoutSavingTitle": "¿Salir sin guardar?",
     "planMyDayExitWithoutSavingBody": "Los cambios del plan no se guardarÃ¡n.",
     "stayLabel": "Quedarse",
     "exitLabel": "Salir",
@@ -3699,7 +3700,7 @@
     "userFallbackLabel": "Usuario",
     "signOutFailedMessage": "No se pudo cerrar sesiÃ³n. IntÃ©ntalo de nuevo.",
     "signOutLabel": "Cerrar sesiÃ³n",
-    "signOutConfirmTitle": "Â¿Cerrar sesiÃ³n?",
+    "signOutConfirmTitle": "¿Cerrar sesión?",
     "signOutConfirmBody": "NecesitarÃ¡s iniciar sesiÃ³n de nuevo para acceder a tus tareas y proyectos.",
     "appearanceTitle": "Apariencia",
     "themeTitle": "Tema",
@@ -3734,18 +3735,27 @@
     },
     "onboardingGetStartedLabel": "Comenzar",
     "onboardingContinueLabel": "Continuar",
+    "onboardingContinueValuesRemaining": "Continuar (faltan {remaining})",
+    "@onboardingContinueValuesRemaining": {
+        "description": "Etiqueta deshabilitada de continuar mientras faltan valores en onboarding.",
+        "placeholders": {
+            "remaining": {
+                "type": "int"
+            }
+        }
+    },
     "onboardingFinishLabel": "Finalizar",
     "onboardingWelcomeTitle": "Bienvenido a Taskly",
     "onboardingWelcomeSubtitle1": "Agrega algunos valores para que Taskly sugiera tareas alineadas con lo que te importa.",
     "onboardingWelcomeSubtitle2": "Puedes cambiarlos cuando quieras.",
     "onboardingValuesTitle": "Agrega tus valores",
-    "onboardingValuesSubtitle": "Los valores ayudan a Taskly a sugerir tareas que coinciden con lo que es importante para ti.",
-    "onboardingValuesHint": "La mayorÃ­a empieza con 3-5. Puedes agregar hasta 8.",
+    "onboardingValuesSubtitle": "Los valores son las areas de vida que mas te importan. Agrega al menos 3 para personalizar tus recomendaciones.",
+    "onboardingValuesHint": "Ejemplos: Salud, Relaciones, Aprendizaje, Estabilidad financiera.",
     "onboardingValueQuickAddTitle": "Agregar un valor",
     "onboardingValueNameHint": "Escribe un valor (p. ej., Salud, Aprendizaje)",
     "onboardingValueIconLabel": "Icono",
     "onboardingValueColorLabel": "Color",
-    "onboardingValueIdeasLabel": "Â¿Necesitas ideas?",
+    "onboardingValueIdeasLabel": "¿Necesitas ideas?",
     "onboardingYourValuesTitle": "Tus valores ({current} de {max})",
     "@onboardingYourValuesTitle": {
         "description": "Etiqueta para la lista de valores seleccionados en onboarding",
@@ -3758,7 +3768,16 @@
             }
         }
     },
-    "onboardingPickAtLeastOneValue": "Elige al menos un valor para continuar.",
+    "onboardingPickAtLeastOneValue": "Elige al menos 3 valores para continuar.",
+    "onboardingValuesMinimumHint": "Necesitas al menos {min} valores antes de continuar.",
+    "@onboardingValuesMinimumHint": {
+        "description": "Texto de ayuda bajo el CTA de continuar hasta alcanzar el minimo de valores.",
+        "placeholders": {
+            "min": {
+                "type": "int"
+            }
+        }
+    },
     "onboardingAddValueLabel": "Agregar valor",
     "onboardingValuesMaxHint": "Has alcanzado el mÃ¡ximo de {max} valores.",
     "@onboardingValuesMaxHint": {
@@ -3771,7 +3790,7 @@
     },
     "onboardingRatingsTitle": "Establece tu primera calificaciÃ³n semanal",
     "onboardingRatingsBody": "Usamos calificaciones semanales para sugerir tareas que coinciden con lo que te importa.",
-    "onboardingRatingsPrompt": "Â¿QuÃ© tan satisfecho estÃ¡s con {valueName} esta semana?",
+    "onboardingRatingsPrompt": "¿Qué tan satisfecho estás con {valueName} esta semana?",
     "@onboardingRatingsPrompt": {
         "description": "Pregunta principal para la calificaciÃ³n en onboarding",
         "placeholders": {
@@ -3957,11 +3976,7 @@
     "@historyLabel": {
         "description": "Etiqueta para acciones o secciones de historial"
     },
-    "displayDensityTitle": "Densidad de visualizaciÃ³n",
-    "@displayDensityTitle": {
-        "description": "Titulo para ajustes de densidad de visualizaciÃ³n"
-    },
-    "completeSeriesConfirmTitle": "Â¿Completar serie?",
+    "completeSeriesConfirmTitle": "¿Completar serie?",
     "@completeSeriesConfirmTitle": {
         "description": "Titulo del dialogo de confirmaciÃ³n para completar serie"
     },
@@ -4080,17 +4095,25 @@
     },
     "planMyDayBuildPlanTitle": "Arma tu plan",
     "@planMyDayBuildPlanTitle": {
-        "description": "Titulo para la secciÃ³n de construir plan en Planificar mi dÃ­a"
+        "description": "Titulo para la seccion de construir plan en Planificar mi dia"
     },
-    "planMyDayRoutineActionSheetTitle": "Ajustar rutina programada",
+    "planMyDayInfoCardTitle": "Ya esta en la lista de hoy",
+    "@planMyDayInfoCardTitle": {
+        "description": "Titulo de la tarjeta informativa de elementos comprometidos en Planificar mi dia"
+    },
+    "planMyDayInfoCardBody": "Incluimos tareas vencidas, planificadas y rutinas programadas para que nada se pierda. Para quitar una, reprograma, salta o pausa.",
+    "@planMyDayInfoCardBody": {
+        "description": "Texto de la tarjeta informativa de elementos comprometidos en Planificar mi dia"
+    },
+    "planMyDayRoutineActionSheetTitle": "Cambiar rutina programada",
     "@planMyDayRoutineActionSheetTitle": {
-        "description": "Titulo para la hoja de deseleccionar rutina programada en Planificar mi dÃ­a"
+        "description": "Titulo para la hoja de deseleccionar rutina programada en Planificar mi dia"
     },
     "planMyDayRoutineActionSheetSubtitle": "Elige como manejar esta rutina para hoy.",
     "@planMyDayRoutineActionSheetSubtitle": {
-        "description": "Subtitulo para la hoja de deseleccionar rutina programada en Planificar mi dÃ­a"
+        "description": "Subtitulo para la hoja de deseleccionar rutina programada en Planificar mi dia"
     },
-    "planMyDayRoutineSkipInstanceAction": "Saltar esta instancia",
+    "planMyDayRoutineSkipInstanceAction": "Saltar hoy",
     "@planMyDayRoutineSkipInstanceAction": {
         "description": "Accion para saltar solo la instancia programada de hoy"
     },
@@ -4102,73 +4125,89 @@
     "@planMyDayRoutineSkipPeriodMonthAction": {
         "description": "Accion para saltar el mes actual de una rutina programada"
     },
-    "planMyDayRoutineKeepScheduledAction": "Mantener programada",
+    "planMyDayRoutineKeepScheduledAction": "Mantener en el plan de hoy",
     "@planMyDayRoutineKeepScheduledAction": {
         "description": "Accion para cerrar la hoja y mantener la rutina programada"
     },
     "planMyDayDueTodayTitle": "Vence hoy",
     "@planMyDayDueTodayTitle": {
-        "description": "Titulo para la secciÃ³n de vence hoy en Planificar mi dÃ­a"
+        "description": "Titulo para la seccion de vence hoy en Planificar mi dia"
     },
     "planMyDayRescheduleAllDueAction": "Reprogramar todo",
     "@planMyDayRescheduleAllDueAction": {
-        "description": "Etiqueta de acciÃ³n para reprogramar todas las tareas vencidas"
+        "description": "Etiqueta de accion para reprogramar todas las tareas vencidas"
     },
     "planMyDayRescheduleAllTitle": "Reprogramar todo",
     "@planMyDayRescheduleAllTitle": {
-        "description": "Titulo para reprogramar todas las tareas en Planificar mi dÃ­a"
+        "description": "Titulo para reprogramar todas las tareas en Planificar mi dia"
     },
-    "planMyDayRescheduleAllSubtitle": "Elige un nuevo dÃ­a para estas tareas.",
+    "planMyDayRescheduleAllSubtitle": "Elige un nuevo dia para estas tareas.",
     "@planMyDayRescheduleAllSubtitle": {
-        "description": "Subtitulo para reprogramar todas las tareas en Planificar mi dÃ­a"
+        "description": "Subtitulo para reprogramar todas las tareas en Planificar mi dia"
     },
-    "planMyDayRescheduleTaskTitle": "Reprogramar tarea",
-    "@planMyDayRescheduleTaskTitle": {
-        "description": "Titulo para reprogramar una tarea en Planificar mi dÃ­a"
+    "planMyDayRescheduleAction": "Reprogramar",
+    "@planMyDayRescheduleAction": {
+        "description": "Etiqueta de accion de fila para mover una tarea comprometida fuera de hoy"
     },
-    "planMyDayRescheduleTaskSubtitle": "Elige un nuevo dÃ­a para esta tarea.",
-    "@planMyDayRescheduleTaskSubtitle": {
-        "description": "Subtitulo para reprogramar una tarea en Planificar mi dÃ­a"
+    "planMyDayChangeAction": "Cambiar",
+    "@planMyDayChangeAction": {
+        "description": "Etiqueta de accion de fila para cambiar una rutina programada"
+    },
+    "planMyDayRescheduleDueTaskTitle": "Mover tarea vencida",
+    "@planMyDayRescheduleDueTaskTitle": {
+        "description": "Titulo para mover una tarea vencida fuera del plan de hoy"
+    },
+    "planMyDayRescheduleDueTaskSubtitle": "Elige un nuevo dia para sacarla de la lista de hoy.",
+    "@planMyDayRescheduleDueTaskSubtitle": {
+        "description": "Subtitulo para mover una tarea vencida fuera del plan de hoy"
+    },
+    "planMyDayReschedulePlannedTaskTitle": "Mover tarea planificada",
+    "@planMyDayReschedulePlannedTaskTitle": {
+        "description": "Titulo para mover una tarea planificada fuera del plan de hoy"
+    },
+    "planMyDayReschedulePlannedTaskSubtitle": "Elige un nuevo dia para moverla fuera de hoy.",
+    "@planMyDayReschedulePlannedTaskSubtitle": {
+        "description": "Subtitulo para mover una tarea planificada fuera del plan de hoy"
     },
     "planMyDayDueTodayEmptyBody": "No hay vencimientos hoy.",
     "@planMyDayDueTodayEmptyBody": {
-        "description": "Texto cuando no hay tareas que vencen hoy en Planificar mi dÃ­a"
+        "description": "Texto cuando no hay tareas que vencen hoy en Planificar mi dia"
     },
     "planMyDayRescheduleAllAction": "Reprogramar todo",
     "@planMyDayRescheduleAllAction": {
-        "description": "Etiqueta de acciÃ³n para reprogramar todas las tareas en la secciÃ³n de planificadas"
+        "description": "Etiqueta de accion para reprogramar todas las tareas en la seccion de planificadas"
     },
     "planMyDaySummaryLabel": "{count, plural, =1{1 elemento planificado} other{{count} elementos planificados}}",
     "@planMyDaySummaryLabel": {
-        "description": "Etiqueta de resumen con el conteo planificado en Planificar mi dÃ­a",
+        "description": "Etiqueta de resumen con el conteo planificado en Planificar mi dia",
         "placeholders": {
             "count": {
                 "type": "int"
             }
         }
     },
-    "planMyDayDecreaseLimitTooltip": "Disminuir lÃ­mite",
+    "planMyDayDecreaseLimitTooltip": "Disminuir limite",
     "@planMyDayDecreaseLimitTooltip": {
-        "description": "Tooltip para disminuir el lÃ­mite diario en Planificar mi dÃ­a"
+        "description": "Tooltip para disminuir el limite diario en Planificar mi dia"
     },
-    "planMyDayLimitLabel": "LÃ­mite {limit}",
+    "planMyDayLimitLabel": "Limite {limit}",
     "@planMyDayLimitLabel": {
-        "description": "Etiqueta que muestra el lÃ­mite diario en Planificar mi dÃ­a",
+        "description": "Etiqueta que muestra el limite diario en Planificar mi dia",
         "placeholders": {
             "limit": {
                 "type": "int"
             }
         }
     },
-    "planMyDayIncreaseLimitTooltip": "Aumentar lÃ­mite",
+    "planMyDayIncreaseLimitTooltip": "Aumentar limite",
     "@planMyDayIncreaseLimitTooltip": {
-        "description": "Tooltip para aumentar el lÃ­mite diario en Planificar mi dÃ­a"
+        "description": "Tooltip para aumentar el limite diario en Planificar mi dia"
     },
     "planMyDaySuggestionsTitle": "Sugerencias de valores",
     "@planMyDaySuggestionsTitle": {
-        "description": "Titulo para la secciÃ³n de sugerencias en Planificar mi dÃ­a"
+        "description": "Titulo para la seccion de sugerencias en Planificar mi dia"
     },
-    "planMyDaySuggestionsSubtitle": "Basado en tus valoraciones semanales (Ãºltimas 4 semanas).",
+    "planMyDaySuggestionsSubtitle": "Basado en tus valoraciones semanales (ultimas 4 semanas).",
     "@planMyDaySuggestionsSubtitle": {
         "description": "Subtitle for the value suggestions section in Plan My Day."
     },
@@ -4181,7 +4220,7 @@
             }
         }
     },
-    "planMyDaySortLowestAverage": "Promedio mÃ¡s bajo",
+    "planMyDaySortLowestAverage": "Promedio mas bajo",
     "@planMyDaySortLowestAverage": {
         "description": "Sort label for lowest average rating in Plan My Day."
     },
@@ -4189,7 +4228,7 @@
     "@planMyDaySortTrendingDown": {
         "description": "Sort label for trending down values in Plan My Day."
     },
-    "planMyDayNeedsRatingTitle": "Necesita valoraciÃ³n",
+    "planMyDayNeedsRatingTitle": "Necesita valoracion",
     "@planMyDayNeedsRatingTitle": {
         "description": "Title for the needs rating section in Plan My Day."
     },
@@ -4626,7 +4665,7 @@
     "@weeklyReviewCheckInTitle": {
         "description": "Top bar title for weekly review check-in"
     },
-    "weeklyReviewCheckInPromptTitle": "Â¿QuÃ© tan satisfecho estÃ¡s?",
+    "weeklyReviewCheckInPromptTitle": "¿Qué tan satisfecho estás?",
     "@weeklyReviewCheckInPromptTitle": {
         "description": "Primary question for weekly review check-in prompt"
     },
@@ -4703,7 +4742,7 @@
             }
         }
     },
-    "weeklyReviewCheckInInstruction": "Â¿QuÃ© tan satisfecho estÃ¡s con este valor esta semana?",
+    "weeklyReviewCheckInInstruction": "¿Qué tan satisfecho estás con este valor esta semana?",
     "@weeklyReviewCheckInInstruction": {
         "description": "Instruction text for weekly review rating slider"
     },
@@ -4772,7 +4811,7 @@
             }
         }
     },
-    "weeklyReviewEvidenceTitle": "Â¿QuÃ© respaldÃ³ esta calificaciÃ³n?",
+    "weeklyReviewEvidenceTitle": "¿Qué respaldó esta calificación?",
     "@weeklyReviewEvidenceTitle": {
         "description": "Title for the weekly review evidence bottom sheet"
     },
@@ -5018,6 +5057,46 @@
                 "type": "int"
             }
         }
+    },
+    "settingsStatsTitle": "Estadisticas",
+    "@settingsStatsTitle": {
+        "description": "Title for the debug stats page and settings entry."
+    },
+    "settingsStatsSubtitle": "Telemetria de PMD para mantener/aplazar/completar",
+    "@settingsStatsSubtitle": {
+        "description": "Subtitle for the debug stats settings entry."
+    },
+    "statsKeepRateByShelfTitle": "Tasa de mantener por bandeja",
+    "@statsKeepRateByShelfTitle": {
+        "description": "Card title for keep rate grouped by PMD shelf."
+    },
+    "statsDeferRateByShelfTitle": "Tasa de aplazar por bandeja",
+    "@statsDeferRateByShelfTitle": {
+        "description": "Card title for defer rate grouped by PMD shelf."
+    },
+    "statsTopDeferredTasksTitle": "Tareas mas aplazadas",
+    "@statsTopDeferredTasksTitle": {
+        "description": "Card title for most deferred tasks."
+    },
+    "statsTopDeferredRoutinesTitle": "Rutinas mas aplazadas",
+    "@statsTopDeferredRoutinesTitle": {
+        "description": "Card title for most deferred routines."
+    },
+    "statsRoutineTopWeekdaysTitle": "Mejores dias por rutina",
+    "@statsRoutineTopWeekdaysTitle": {
+        "description": "Card title for routine completion weekdays."
+    },
+    "statsDeferredToCompletedLagTitle": "Retraso aplazado -> completado",
+    "@statsDeferredToCompletedLagTitle": {
+        "description": "Card title for deferred-to-completed lag metrics."
+    },
+    "statsNoDataLabel": "Sin datos",
+    "@statsNoDataLabel": {
+        "description": "Fallback label when there is no stats data."
+    },
+    "statsErrorLabel": "Error",
+    "@statsErrorLabel": {
+        "description": "Prefix label for stats loading errors."
     },
     "scopeHeaderLoadFailedMessage": "No se pudieron cargar los detalles del alcance.",
     "@scopeHeaderLoadFailedMessage": {
@@ -5304,48 +5383,3 @@
         "description": "Action label for postponing immediate completion"
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

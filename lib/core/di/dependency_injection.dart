@@ -107,6 +107,9 @@ Future<void> setupDependencies() async {
     ..registerSingleton<MyDayRepositoryContract>(
       getIt<TasklyDataBindings>().myDayRepository,
     )
+    ..registerSingleton<MyDayDecisionEventRepositoryContract>(
+      getIt<TasklyDataBindings>().myDayDecisionEventRepository,
+    )
     ..registerLazySingleton<MyDayRitualStatusService>(
       () => MyDayRitualStatusService(
         myDayRepository: getIt<MyDayRepositoryContract>(),

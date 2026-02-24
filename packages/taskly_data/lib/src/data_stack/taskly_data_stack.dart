@@ -14,6 +14,7 @@ import 'package:taskly_data/src/attention/repositories/attention_repository_v2.d
 import 'package:taskly_data/src/features/analytics/repositories/analytics_repository_impl.dart';
 import 'package:taskly_data/src/features/analytics/services/analytics_service_impl.dart';
 import 'package:taskly_data/src/features/journal/repositories/journal_repository_impl.dart';
+import 'package:taskly_data/src/features/my_day/repositories/my_day_decision_event_repository_impl.dart';
 import 'package:taskly_data/src/features/my_day/repositories/my_day_repository_impl.dart';
 import 'package:taskly_data/src/features/notifications/repositories/pending_notifications_repository_impl.dart';
 import 'package:taskly_data/src/features/notifications/services/logging_notification_presenter.dart';
@@ -55,6 +56,7 @@ final class TasklyDataBindings {
     required this.valueRepository,
     required this.valueRatingsRepository,
     required this.myDayRepository,
+    required this.myDayDecisionEventRepository,
     required this.routineRepository,
     required this.taskChecklistRepository,
     required this.routineChecklistRepository,
@@ -84,6 +86,7 @@ final class TasklyDataBindings {
   final ValueRepositoryContract valueRepository;
   final ValueRatingsRepositoryContract valueRatingsRepository;
   final MyDayRepositoryContract myDayRepository;
+  final MyDayDecisionEventRepositoryContract myDayDecisionEventRepository;
   final RoutineRepositoryContract routineRepository;
   final TaskChecklistRepositoryContract taskChecklistRepository;
   final RoutineChecklistRepositoryContract routineChecklistRepository;
@@ -399,10 +402,17 @@ final class TasklyDataStack implements SyncAnomalyStream {
       clock: clock,
     );
 
+    final myDayDecisionEventRepository = MyDayDecisionEventRepositoryImpl(
+      driftDb: driftDb,
+      ids: idGenerator,
+      clock: clock,
+    );
+
     final occurrenceExpander = OccurrenceStreamExpander(clock: clock);
     final occurrenceWriteHelper = OccurrenceWriteHelper(
       driftDb: driftDb,
       idGenerator: idGenerator,
+      decisionEventsRepository: myDayDecisionEventRepository,
       clock: clock,
     );
 
@@ -425,6 +435,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       occurrenceExpander: occurrenceExpander,
       occurrenceWriteHelper: occurrenceWriteHelper,
       idGenerator: idGenerator,
+      decisionEventsRepository: myDayDecisionEventRepository,
       clock: clock,
     );
 
@@ -443,12 +454,14 @@ final class TasklyDataStack implements SyncAnomalyStream {
     final myDayRepository = MyDayRepositoryImpl(
       driftDb: driftDb,
       ids: idGenerator,
+      decisionEventsRepository: myDayDecisionEventRepository,
       clock: clock,
     );
 
     final routineRepository = RoutineRepository(
       driftDb: driftDb,
       idGenerator: idGenerator,
+      decisionEventsRepository: myDayDecisionEventRepository,
       clock: clock,
     );
     final taskChecklistRepository = TaskChecklistRepository(
@@ -528,6 +541,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       valueRepository: valueRepository,
       valueRatingsRepository: valueRatingsRepository,
       myDayRepository: myDayRepository,
+      myDayDecisionEventRepository: myDayDecisionEventRepository,
       routineRepository: routineRepository,
       taskChecklistRepository: taskChecklistRepository,
       routineChecklistRepository: routineChecklistRepository,

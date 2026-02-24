@@ -516,7 +516,7 @@ void main() {
       expect(find.text(l10n.routinePanelScheduledTitle), findsOneWidget);
       expect(find.text(l10n.routinePanelFlexibleTitle), findsOneWidget);
 
-      await tester.tap(find.byTooltip(l10n.myDayAddedLabel).first);
+      await tester.tap(find.text(l10n.planMyDayChangeAction).first);
       await tester.pumpForStream();
       final foundSkipAction = await tester.pumpUntilFound(
         find.text(l10n.planMyDayRoutineSkipInstanceAction),

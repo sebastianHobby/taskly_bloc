@@ -417,7 +417,11 @@ void main() {
           .toList(growable: false);
       expect(
         repeating.map((o) => o.tag),
-        containsAll([ScheduledDateTag.starts, ScheduledDateTag.due]),
+        contains(ScheduledDateTag.starts),
+      );
+      expect(
+        repeating.map((o) => o.tag),
+        isNot(contains(ScheduledDateTag.due)),
       );
 
       expect(
@@ -677,6 +681,187 @@ void main() {
       expect(
         projectPredicates.any((p) => p is ProjectIdPredicate),
         isTrue,
+      );
+    },
+  );
+
+  testSafe(
+    'watchScheduledOccurrences collapses after-completion recurrence to next occurrence only',
+    () async {
+      final overdueTasksController = StreamController<List<Task>>.broadcast();
+      final overdueProjectsController =
+          StreamController<List<Project>>.broadcast();
+      final scheduledTasksController = StreamController<List<Task>>.broadcast();
+      final scheduledProjectsController =
+          StreamController<List<Project>>.broadcast();
+      final recurringTasksController = StreamController<List<Task>>.broadcast();
+      final recurringProjectsController =
+          StreamController<List<Project>>.broadcast();
+      final taskCompletionsController =
+          StreamController<List<CompletionHistoryData>>.broadcast();
+      final taskExceptionsController =
+          StreamController<List<RecurrenceExceptionData>>.broadcast();
+      final projectCompletionsController =
+          StreamController<List<CompletionHistoryData>>.broadcast();
+      final projectExceptionsController =
+          StreamController<List<RecurrenceExceptionData>>.broadcast();
+
+      addTearDown(overdueTasksController.close);
+      addTearDown(overdueProjectsController.close);
+      addTearDown(scheduledTasksController.close);
+      addTearDown(scheduledProjectsController.close);
+      addTearDown(recurringTasksController.close);
+      addTearDown(recurringProjectsController.close);
+      addTearDown(taskCompletionsController.close);
+      addTearDown(taskExceptionsController.close);
+      addTearDown(projectCompletionsController.close);
+      addTearDown(projectExceptionsController.close);
+
+      final taskRepo = _StreamTaskRepo(
+        overdueTasksController,
+        scheduledTasksController,
+        recurringTasksController,
+        taskCompletionsController,
+        taskExceptionsController,
+      );
+      final projectRepo = _StreamProjectRepo(
+        overdueProjectsController,
+        scheduledProjectsController,
+        recurringProjectsController,
+        projectCompletionsController,
+        projectExceptionsController,
+      );
+      final settingsRepository = _MockSettingsRepository();
+      final occurrenceService = OccurrenceReadService(
+        taskRepository: taskRepo,
+        projectRepository: projectRepo,
+        dayKeyService: HomeDayKeyService(
+          settingsRepository: settingsRepository,
+          clock: _FakeClock(DateTime.utc(2026, 1, 1)),
+        ),
+        occurrenceExpander: _PassThroughOccurrenceExpander(),
+      );
+
+      final service = ScheduledOccurrencesService(
+        taskRepository: taskRepo,
+        projectRepository: projectRepo,
+        occurrenceReadService: occurrenceService,
+      );
+
+      final rangeStart = DateTime.utc(2026, 1, 10);
+      final rangeEnd = DateTime.utc(2026, 1, 20);
+
+      Task recurringTask({
+        required String id,
+        required DateTime occurrenceDate,
+        required bool repeatFromCompletion,
+      }) => buildTask(
+        id: id,
+        name: id,
+        repeatRrule: 'RRULE:FREQ=DAILY',
+        repeatFromCompletion: repeatFromCompletion,
+        occurrence: OccurrenceData(date: occurrenceDate, isRescheduled: false),
+      );
+
+      Project recurringProject({
+        required String id,
+        required DateTime occurrenceDate,
+        required bool repeatFromCompletion,
+      }) => buildProject(
+        id: id,
+        name: id,
+        repeatRrule: 'RRULE:FREQ=DAILY',
+        repeatFromCompletion: repeatFromCompletion,
+        occurrence: OccurrenceData(date: occurrenceDate, isRescheduled: false),
+      );
+
+      final resultFuture = service
+          .watchScheduledOccurrences(
+            rangeStartDay: rangeStart,
+            rangeEndDay: rangeEnd,
+            todayDayKeyUtc: rangeStart,
+          )
+          .first;
+
+      overdueTasksController.add(const <Task>[]);
+      overdueProjectsController.add(const <Project>[]);
+      scheduledTasksController.add(const <Task>[]);
+      scheduledProjectsController.add(const <Project>[]);
+      recurringTasksController.add([
+        recurringTask(
+          id: 't-after',
+          occurrenceDate: DateTime.utc(2026, 1, 11),
+          repeatFromCompletion: true,
+        ),
+        recurringTask(
+          id: 't-after',
+          occurrenceDate: DateTime.utc(2026, 1, 14),
+          repeatFromCompletion: true,
+        ),
+        recurringTask(
+          id: 't-scheduled',
+          occurrenceDate: DateTime.utc(2026, 1, 11),
+          repeatFromCompletion: false,
+        ),
+        recurringTask(
+          id: 't-scheduled',
+          occurrenceDate: DateTime.utc(2026, 1, 14),
+          repeatFromCompletion: false,
+        ),
+      ]);
+      recurringProjectsController.add([
+        recurringProject(
+          id: 'p-after',
+          occurrenceDate: DateTime.utc(2026, 1, 11),
+          repeatFromCompletion: true,
+        ),
+        recurringProject(
+          id: 'p-after',
+          occurrenceDate: DateTime.utc(2026, 1, 14),
+          repeatFromCompletion: true,
+        ),
+        recurringProject(
+          id: 'p-scheduled',
+          occurrenceDate: DateTime.utc(2026, 1, 11),
+          repeatFromCompletion: false,
+        ),
+        recurringProject(
+          id: 'p-scheduled',
+          occurrenceDate: DateTime.utc(2026, 1, 14),
+          repeatFromCompletion: false,
+        ),
+      ]);
+
+      final result = await resultFuture;
+
+      final taskAfterDates = result.occurrences
+          .where((o) => o.entityId == 't-after')
+          .map((o) => dateOnly(o.localDay))
+          .toSet();
+      expect(taskAfterDates, {DateTime.utc(2026, 1, 11)});
+
+      final taskScheduledDates = result.occurrences
+          .where((o) => o.entityId == 't-scheduled')
+          .map((o) => dateOnly(o.localDay))
+          .toSet();
+      expect(
+        taskScheduledDates,
+        {DateTime.utc(2026, 1, 11), DateTime.utc(2026, 1, 14)},
+      );
+
+      final projectAfterDates = result.occurrences
+          .where((o) => o.entityId == 'p-after')
+          .map((o) => dateOnly(o.localDay))
+          .toSet();
+      expect(projectAfterDates, {DateTime.utc(2026, 1, 11)});
+
+      final projectScheduledDates = result.occurrences
+          .where((o) => o.entityId == 'p-scheduled')
+          .map((o) => dateOnly(o.localDay))
+          .toSet();
+      expect(
+        projectScheduledDates,
+        {DateTime.utc(2026, 1, 11), DateTime.utc(2026, 1, 14)},
       );
     },
   );

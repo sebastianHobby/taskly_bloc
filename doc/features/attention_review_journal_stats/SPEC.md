@@ -55,3 +55,15 @@ Defines support signals, weekly review cards, journal integration, and stats con
 - Threshold gating and suppression windows.
 - Correct rendering conditions for review cards.
 - Stats derivation from canonical inputs.
+
+## PMD debug stats surface contract
+
+- A debug-only developer stats surface may expose PMD behavior metrics (keep,
+  defer, remove, snooze, completed) derived from canonical event facts.
+- This surface is non-production and must be gated behind debug mode.
+- PMD behavior metrics consume append-only behavior telemetry and existing
+  outcome facts; no replacement of canonical execution tables.
+
+Detailed implementation spec:
+
+- `doc/features/my_day_plan_my_day/PMD_DECISION_EVENTS_DEBUG_STATS_SPEC.md`

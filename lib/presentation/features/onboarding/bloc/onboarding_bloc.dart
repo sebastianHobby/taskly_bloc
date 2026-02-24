@@ -12,6 +12,8 @@ import 'package:taskly_domain/preferences.dart';
 
 enum OnboardingStep { welcome, valuesSetup, ratings, reviewSettings }
 
+const int kOnboardingMinimumValuesRequired = 3;
+
 @immutable
 final class OnboardingValueSelection {
   const OnboardingValueSelection({
@@ -97,7 +99,8 @@ final class OnboardingState {
   final bool isCompleting;
   final OnboardingEffect? effect;
 
-  bool get hasMinimumValues => selectedValues.isNotEmpty;
+  bool get hasMinimumValues =>
+      selectedValues.length >= kOnboardingMinimumValuesRequired;
 
   OnboardingState copyWith({
     OnboardingStep? step,
@@ -195,7 +198,7 @@ class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
         if (!state.hasMinimumValues) {
           emit(
             state.copyWith(
-              effect: const OnboardingEffect.error('Pick at least 1 value.'),
+              effect: const OnboardingEffect.error('Pick at least 3 values.'),
             ),
           );
           return;

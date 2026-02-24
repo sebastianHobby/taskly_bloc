@@ -56,7 +56,49 @@ void main() {
   );
 
   blocTestSafe<OnboardingBloc, OnboardingState>(
-    'advances from values setup to ratings when values exist',
+    'advances from values setup to ratings when at least 3 values exist',
+    build: buildBloc,
+    seed: () => const OnboardingState(
+      step: OnboardingStep.valuesSetup,
+      selectedValues: [
+        OnboardingValueSelection(
+          id: 'value-1',
+          name: 'Health',
+          color: '#000000',
+          iconName: 'health',
+          priority: ValuePriority.medium,
+        ),
+        OnboardingValueSelection(
+          id: 'value-2',
+          name: 'Learning',
+          color: '#111111',
+          iconName: 'school',
+          priority: ValuePriority.medium,
+        ),
+        OnboardingValueSelection(
+          id: 'value-3',
+          name: 'Relationships',
+          color: '#222222',
+          iconName: 'groups',
+          priority: ValuePriority.medium,
+        ),
+      ],
+      isCreatingValue: false,
+      isCompleting: false,
+      effect: null,
+    ),
+    act: (bloc) => bloc.add(const OnboardingNextRequested()),
+    expect: () => [
+      isA<OnboardingState>().having(
+        (s) => s.step,
+        'step',
+        OnboardingStep.ratings,
+      ),
+    ],
+  );
+
+  blocTestSafe<OnboardingBloc, OnboardingState>(
+    'blocks values setup when fewer than 3 values are selected',
     build: buildBloc,
     seed: () => const OnboardingState(
       step: OnboardingStep.valuesSetup,
@@ -76,9 +118,9 @@ void main() {
     act: (bloc) => bloc.add(const OnboardingNextRequested()),
     expect: () => [
       isA<OnboardingState>().having(
-        (s) => s.step,
-        'step',
-        OnboardingStep.ratings,
+        (s) => s.effect,
+        'effect',
+        isA<OnboardingErrorEffect>(),
       ),
     ],
   );

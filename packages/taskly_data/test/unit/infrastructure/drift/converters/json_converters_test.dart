@@ -31,6 +31,11 @@ void main() {
       expect(decoded, equals(<String, dynamic>{'a': 1}));
     });
 
+    testSafe('JsonMapConverter throws for non-map payloads', () async {
+      const converter = JsonMapConverter();
+      expect(() => converter.fromSql('[1,2,3]'), throwsA(isA<ArgumentError>()));
+    });
+
     testSafe('JsonMapOrWrappedListConverter wraps list payload', () async {
       const converter = JsonMapOrWrappedListConverter(listKey: 'items');
       final decoded = converter.fromSql('["a","b"]');
@@ -43,6 +48,16 @@ void main() {
     });
 
     testSafe(
+      'JsonMapOrWrappedListConverter decodes map and throws on scalar',
+      () async {
+        const converter = JsonMapOrWrappedListConverter();
+        expect(converter.fromSql('{"a":1}'), equals(<String, dynamic>{'a': 1}));
+        expect(() => converter.fromSql('42'), throwsA(isA<ArgumentError>()));
+        expect(jsonDecode(converter.toSql(const {'x': 1})), {'x': 1});
+      },
+    );
+
+    testSafe(
       'JsonStringListConverter decodes list and stringifies entries',
       () async {
         const converter = JsonStringListConverter();
@@ -53,6 +68,18 @@ void main() {
 
     testSafe('JsonStringListConverter throws for non-list', () async {
       const converter = JsonStringListConverter();
+      expect(() => converter.fromSql('{"a":1}'), throwsA(isA<ArgumentError>()));
+    });
+
+    testSafe('JsonIntListConverter decodes ints and filters non-numbers', () async {
+      const converter = JsonIntListConverter();
+      final decoded = converter.fromSql('[1,2.8,"x",true]');
+      expect(decoded, equals([1, 2]));
+      expect(jsonDecode(converter.toSql(decoded)), equals([1, 2]));
+    });
+
+    testSafe('JsonIntListConverter throws for non-list', () async {
+      const converter = JsonIntListConverter();
       expect(() => converter.fromSql('{"a":1}'), throwsA(isA<ArgumentError>()));
     });
   });

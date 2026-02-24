@@ -95,6 +95,9 @@ abstract final class Routing {
   static void pushSettingsSyncIssues(BuildContext context) =>
       GoRouter.of(context).push(_settingsSubPath('developer/sync-issues'));
 
+  static void pushSettingsStats(BuildContext context) =>
+      GoRouter.of(context).push(_settingsSubPath('developer/stats'));
+
   static void pushSettingsMicroLearning(BuildContext context) =>
       GoRouter.of(context).push(_settingsSubPath('micro-learning'));
 

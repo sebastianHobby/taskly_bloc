@@ -75,6 +75,9 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         state.copyWith(
           status: AuthStatus.authenticated,
           user: session.user,
+          error: null,
+          message: null,
+          pendingEmailConfirmation: null,
         ),
       );
     } else {
@@ -105,6 +108,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
             user: nextSession.user,
             error: null,
             message: null,
+            pendingEmailConfirmation: null,
           );
         }
         talker.blocLog(
@@ -132,7 +136,14 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     AuthSignInRequested event,
     Emitter<AppAuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(
+      state.copyWith(
+        status: AuthStatus.loading,
+        error: null,
+        message: null,
+        pendingEmailConfirmation: null,
+      ),
+    );
 
     final ctx = _newContext(
       screen: 'sign_in',
@@ -157,6 +168,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           state.copyWith(
             status: AuthStatus.unauthenticated,
             error: 'Sign in failed - no session',
+            pendingEmailConfirmation: null,
           ),
         );
       }
@@ -184,6 +196,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         state.copyWith(
           status: AuthStatus.unauthenticated,
           error: error is AppFailure ? error.uiMessage() : 'Sign in failed',
+          pendingEmailConfirmation: null,
         ),
       );
     }
@@ -193,7 +206,14 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     AuthSignUpRequested event,
     Emitter<AppAuthState> emit,
   ) async {
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(
+      state.copyWith(
+        status: AuthStatus.loading,
+        error: null,
+        message: null,
+        pendingEmailConfirmation: null,
+      ),
+    );
 
     final ctx = _newContext(
       screen: 'sign_up',
@@ -221,7 +241,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         emit(
           state.copyWith(
             status: AuthStatus.unauthenticated,
-            message: 'Check your email to confirm your account',
+            pendingEmailConfirmation: event.email,
           ),
         );
       }
@@ -248,6 +268,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         state.copyWith(
           status: AuthStatus.unauthenticated,
           error: error is AppFailure ? error.uiMessage() : 'Sign up failed',
+          pendingEmailConfirmation: null,
         ),
       );
     }
@@ -268,6 +289,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
+          pendingEmailConfirmation: null,
         ),
       );
     } catch (error, stackTrace) {
@@ -303,7 +325,14 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   ) async {
     // Capture original status before changing to loading
     final wasAuthenticated = state.status == AuthStatus.authenticated;
-    emit(state.copyWith(status: AuthStatus.loading));
+    emit(
+      state.copyWith(
+        status: AuthStatus.loading,
+        error: null,
+        message: null,
+        pendingEmailConfirmation: null,
+      ),
+    );
 
     final ctx = _newContext(
       screen: wasAuthenticated ? 'settings' : 'forgot_password',
@@ -322,6 +351,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
               ? AuthStatus.authenticated
               : AuthStatus.unauthenticated,
           message: 'Password reset email sent',
+          pendingEmailConfirmation: null,
         ),
       );
     } catch (error, stackTrace) {
@@ -351,6 +381,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           error: error is AppFailure
               ? error.uiMessage()
               : 'Password reset failed',
+          pendingEmailConfirmation: null,
         ),
       );
     }

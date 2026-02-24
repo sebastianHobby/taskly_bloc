@@ -12,6 +12,7 @@ import 'package:taskly_data/src/repositories/query_stream_cache.dart';
 import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 import 'package:taskly_data/src/repositories/repository_helpers.dart';
 import 'package:taskly_data/src/repositories/stream_cache_policy.dart';
+import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/time.dart' show Clock, systemClock;
 
 class _OccurrenceRangeKey {
@@ -38,6 +39,7 @@ class TaskRepository implements TaskRepositoryContract {
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
     required this.idGenerator,
+    this.decisionEventsRepository,
     Clock clock = systemClock,
   }) : _predicateMapper = TaskPredicateMapper(driftDb: driftDb),
        _clock = clock;
@@ -46,6 +48,7 @@ class TaskRepository implements TaskRepositoryContract {
   final OccurrenceStreamExpanderContract occurrenceExpander;
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
   final IdGenerator idGenerator;
+  final MyDayDecisionEventRepositoryContract? decisionEventsRepository;
   final TaskPredicateMapper _predicateMapper;
   final Clock _clock;
 
@@ -848,6 +851,14 @@ class TaskRepository implements TaskRepositoryContract {
         }
 
         return driftDb.transaction(() async {
+          final beforeRows = await (driftDb.select(
+            driftDb.taskTable,
+          )..where((t) => t.id.isIn(ids))).get();
+          final beforeById = <String, DateTime?>{
+            for (final row in beforeRows)
+              row.id: dateOnlyOrNull(row.deadlineDate),
+          };
+
           final existingIds =
               await (driftDb.selectOnly(driftDb.taskTable)
                     ..addColumns([driftDb.taskTable.id])
@@ -959,6 +970,30 @@ class TaskRepository implements TaskRepositoryContract {
             return ids.length;
           }
 
+          if (decisionEventsRepository != null) {
+            final now = _clock.nowUtc();
+            final dayKey = dateOnly(now);
+            await decisionEventsRepository!.appendAll(
+              ids
+                  .map(
+                    (id) => MyDayDecisionEvent(
+                      id: idGenerator.myDayDecisionEventId(),
+                      dayKeyUtc: dayKey,
+                      entityType: MyDayDecisionEntityType.task,
+                      entityId: id,
+                      shelf: MyDayDecisionShelf.due,
+                      action: MyDayDecisionAction.deferred,
+                      actionAtUtc: now,
+                      deferKind: MyDayDecisionDeferKind.deadlineReschedule,
+                      fromDayKey: beforeById[id],
+                      toDayKey: normalizedDeadline,
+                    ),
+                  )
+                  .toList(growable: false),
+              context: context,
+            );
+          }
+
           return updated;
         });
       },
@@ -997,6 +1032,13 @@ class TaskRepository implements TaskRepositoryContract {
         final emptyIdCount = trimmedIds.length - nonEmptyIds.length;
 
         return driftDb.transaction(() async {
+          final beforeRows = await (driftDb.select(
+            driftDb.taskTable,
+          )..where((t) => t.id.isIn(ids))).get();
+          final beforeById = <String, DateTime?>{
+            for (final row in beforeRows) row.id: dateOnlyOrNull(row.startDate),
+          };
+
           final existingIds =
               await (driftDb.selectOnly(driftDb.taskTable)
                     ..addColumns([driftDb.taskTable.id])
@@ -1110,6 +1152,30 @@ class TaskRepository implements TaskRepositoryContract {
             return ids.length;
           }
 
+          if (decisionEventsRepository != null) {
+            final now = _clock.nowUtc();
+            final dayKey = dateOnly(now);
+            await decisionEventsRepository!.appendAll(
+              ids
+                  .map(
+                    (id) => MyDayDecisionEvent(
+                      id: idGenerator.myDayDecisionEventId(),
+                      dayKeyUtc: dayKey,
+                      entityType: MyDayDecisionEntityType.task,
+                      entityId: id,
+                      shelf: MyDayDecisionShelf.planned,
+                      action: MyDayDecisionAction.deferred,
+                      actionAtUtc: now,
+                      deferKind: MyDayDecisionDeferKind.startReschedule,
+                      fromDayKey: beforeById[id],
+                      toDayKey: normalizedStart,
+                    ),
+                  )
+                  .toList(growable: false),
+              context: context,
+            );
+          }
+
           return updated;
         });
       },
@@ -1164,6 +1230,9 @@ class TaskRepository implements TaskRepositoryContract {
         final now = _clock.nowUtc();
 
         await driftDb.transaction(() async {
+          final beforeTask = await (driftDb.select(
+            driftDb.taskTable,
+          )..where((t) => t.id.equals(id))).getSingleOrNull();
           await (driftDb.update(
             driftDb.taskTable,
           )..where((t) => t.id.equals(id))).write(
@@ -1193,6 +1262,26 @@ class TaskRepository implements TaskRepositoryContract {
                   ),
                   mode: drift_pkg.InsertMode.insert,
                 );
+
+            if (decisionEventsRepository != null) {
+              await decisionEventsRepository!.append(
+                MyDayDecisionEvent(
+                  id: idGenerator.myDayDecisionEventId(),
+                  dayKeyUtc: dateOnly(now),
+                  entityType: MyDayDecisionEntityType.task,
+                  entityId: id,
+                  shelf: MyDayDecisionShelf.planned,
+                  action: MyDayDecisionAction.snoozed,
+                  actionAtUtc: now,
+                  deferKind: MyDayDecisionDeferKind.snooze,
+                  fromDayKey:
+                      dateOnlyOrNull(beforeTask?.myDaySnoozedUntilUtc) ??
+                      dateOnly(now),
+                  toDayKey: dateOnly(normalized),
+                ),
+                context: context,
+              );
+            }
           }
         });
       },

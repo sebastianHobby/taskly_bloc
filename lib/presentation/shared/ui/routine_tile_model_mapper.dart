@@ -163,8 +163,6 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
     completionDays.add(day);
   }
 
-  final completedWeekdays = completionDays.map((day) => day.weekday).toSet();
-  final unscheduledWeekdays = completedWeekdays.difference(scheduleDays);
   final skipCreatedDay = _skipCreatedDayForWeek(
     routineId: routine.id,
     weekStart: weekStart,
@@ -173,7 +171,7 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
   final hasWeekSkip =
       skipCreatedDay != null || status == RoutineStatus.restWeek;
 
-  final daysToShow = <int>{...scheduleDays, ...unscheduledWeekdays};
+  final daysToShow = <int>{...scheduleDays};
   final orderedDays = daysToShow.toList()..sort();
 
   final days = <TasklyRoutineScheduleDay>[];
@@ -201,9 +199,7 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
     final state = isBeforeCreation
         ? TasklyRoutineScheduleDayState.none
         : isCompleted
-        ? (isScheduled
-              ? TasklyRoutineScheduleDayState.loggedScheduled
-              : TasklyRoutineScheduleDayState.loggedUnscheduled)
+        ? TasklyRoutineScheduleDayState.loggedScheduled
         : isSkipped
         ? TasklyRoutineScheduleDayState.skippedScheduled
         : isMissed
@@ -212,11 +208,7 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
         ? TasklyRoutineScheduleDayState.scheduled
         : TasklyRoutineScheduleDayState.none;
 
-    final label = _dayLabel(
-      context,
-      day,
-      addMarker: isCompleted && !isScheduled,
-    );
+    final label = _dayLetter(context, day);
 
     days.add(
       TasklyRoutineScheduleDay(
@@ -230,15 +222,6 @@ TasklyRoutineScheduleRowData _buildScheduleRow(
   return TasklyRoutineScheduleRowData(
     days: days,
   );
-}
-
-String _dayLabel(
-  BuildContext context,
-  DateTime day, {
-  required bool addMarker,
-}) {
-  final base = _dayLetter(context, day);
-  return addMarker ? '$base*' : base;
 }
 
 String _dayLetter(BuildContext context, DateTime day) {

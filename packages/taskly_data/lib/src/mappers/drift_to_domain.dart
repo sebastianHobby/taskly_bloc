@@ -126,7 +126,9 @@ RoutineCompletion routineCompletionFromTable(
     completedAtUtc: t.completedAt,
     createdAtUtc: t.createdAt,
     completedDayLocal: t.completedDayLocal,
+    completedWeekdayLocal: t.completedWeekdayLocal,
     completedTimeLocalMinutes: t.completedTimeLocalMinutes,
+    timezoneOffsetMinutes: t.timezoneOffsetMinutes,
   );
 }
 

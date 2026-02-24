@@ -68,6 +68,7 @@ final class PowerSyncUserDataWipeService implements UserDataWipeService {
       await _deleteAll('routine_skips');
 
       // My Day.
+      await _deleteAll('my_day_decision_events');
       await _deleteAll('my_day_picks');
       await _deleteAll('my_day_days');
 

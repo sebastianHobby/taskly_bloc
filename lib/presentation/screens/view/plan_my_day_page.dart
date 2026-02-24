@@ -231,6 +231,11 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
         ),
       ),
       SizedBox(height: tokens.spaceSm),
+      _PlanInfoCard(
+        title: l10n.planMyDayInfoCardTitle,
+        body: l10n.planMyDayInfoCardBody,
+      ),
+      SizedBox(height: tokens.spaceSm),
       _PlanSummaryBar(data: data),
       SizedBox(height: tokens.spaceLg),
       if (data.dueTodayTasks.isNotEmpty)
@@ -272,18 +277,14 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
                 );
             }
           },
-          rows: _buildTaskRows(
+          rows: _buildCommittedTaskRows(
             context,
             tasks: data.dueTodayTasks,
-            selectedTaskIds: data.selectedTaskIds,
-            style: ({required selected}) =>
-                TasklyTaskRowStyle.planPick(selected: selected),
-            allowSelection: false,
             onActionPressed: (task) async {
               final choice = await showRescheduleChoiceSheet(
                 context,
-                title: l10n.planMyDayRescheduleTaskTitle,
-                subtitle: l10n.planMyDayRescheduleTaskSubtitle,
+                title: l10n.planMyDayRescheduleDueTaskTitle,
+                subtitle: l10n.planMyDayRescheduleDueTaskSubtitle,
                 dayKeyUtc: data.dayKeyUtc,
               );
               if (choice == null || !context.mounted) return;
@@ -302,6 +303,7 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
               }
             },
             dayKeyUtc: data.dayKeyUtc,
+            actionLabel: l10n.planMyDayRescheduleAction,
           ),
         )
       else
@@ -353,18 +355,14 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
                 );
             }
           },
-          rows: _buildTaskRows(
+          rows: _buildCommittedTaskRows(
             context,
             tasks: data.plannedTasks,
-            selectedTaskIds: data.selectedTaskIds,
-            style: ({required selected}) =>
-                TasklyTaskRowStyle.planPick(selected: selected),
-            allowSelection: false,
             onActionPressed: (task) async {
               final choice = await showRescheduleChoiceSheet(
                 context,
-                title: l10n.planMyDayRescheduleTaskTitle,
-                subtitle: l10n.planMyDayRescheduleTaskSubtitle,
+                title: l10n.planMyDayReschedulePlannedTaskTitle,
+                subtitle: l10n.planMyDayReschedulePlannedTaskSubtitle,
                 dayKeyUtc: data.dayKeyUtc,
               );
               if (choice == null || !context.mounted) return;
@@ -383,6 +381,7 @@ class _PlanMyDayBodyState extends State<_PlanMyDayBody> {
               }
             },
             dayKeyUtc: data.dayKeyUtc,
+            actionLabel: l10n.planMyDayRescheduleAction,
           ),
         )
       else
@@ -545,6 +544,49 @@ class _PlanSummaryBar extends StatelessWidget {
   }
 }
 
+class _PlanInfoCard extends StatelessWidget {
+  const _PlanInfoCard({
+    required this.title,
+    required this.body,
+  });
+
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: EdgeInsets.all(tokens.spaceMd),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        border: Border.all(color: scheme.outlineVariant.withOpacity(0.8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(height: tokens.spaceXs2),
+          Text(
+            body,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TaskShelf extends StatelessWidget {
   const _TaskShelf({
     required this.title,
@@ -582,9 +624,16 @@ class _TaskShelf extends StatelessWidget {
                 ),
               ),
             ),
-            TextButton(
-              onPressed: onAction,
-              child: Text(actionLabel),
+            Flexible(
+              child: TextButton(
+                onPressed: onAction,
+                child: Text(
+                  actionLabel,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.fade,
+                ),
+              ),
             ),
           ],
         ),
@@ -723,12 +772,10 @@ class _SuggestionsShelf extends StatelessWidget {
         ),
       );
       suggestions.add(SizedBox(height: tokens.spaceSm2));
-      final rows = _buildTaskRows(
+      final rows = _buildSuggestionTaskRows(
         context,
         tasks: group.tasks,
         selectedTaskIds: data.selectedTaskIds,
-        style: TasklyTaskRowStyle.planPick,
-        allowSelection: true,
         dayKeyUtc: data.dayKeyUtc,
         onSwapRequested: (task) => _showSwapSheet(
           context,
@@ -1083,18 +1130,51 @@ class _PlanBottomBar extends StatelessWidget {
   }
 }
 
-List<TasklyRowSpec> _buildTaskRows(
+List<TasklyRowSpec> _buildCommittedTaskRows(
+  BuildContext context, {
+  required List<Task> tasks,
+  required DateTime dayKeyUtc,
+  required String actionLabel,
+  required ValueChanged<Task> onActionPressed,
+}) {
+  final today = dateOnly(dayKeyUtc);
+
+  return tasks
+      .map((task) {
+        final tileCapabilities = EntityTileCapabilitiesResolver.forTask(task);
+        final labels = _compactDateLabels(context, task: task, today: today);
+
+        final data = buildTaskRowData(
+          context,
+          task: task,
+          tileCapabilities: tileCapabilities,
+          overrideStartDateLabel: labels.startLabel,
+          overrideDeadlineDateLabel: labels.deadlineLabel,
+          overrideIsOverdue: _isOverdue(task, today),
+          overrideIsDueToday: _isDueToday(task, today),
+        );
+
+        return TasklyRowSpec.task(
+          key: 'plan-task-${task.id}',
+          data: data,
+          style: TasklyTaskRowStyle.planAction(actionLabel: actionLabel),
+          actions: TasklyTaskRowActions(
+            onTap: buildTaskOpenEditorHandler(context, task: task),
+            onToggleSelected: () => onActionPressed(task),
+          ),
+        );
+      })
+      .toList(growable: false);
+}
+
+List<TasklyRowSpec> _buildSuggestionTaskRows(
   BuildContext context, {
   required List<Task> tasks,
   required Set<String> selectedTaskIds,
-  required TasklyTaskRowStyle Function({required bool selected}) style,
-  required bool allowSelection,
   required DateTime dayKeyUtc,
-  ValueChanged<Task>? onActionPressed,
   ValueChanged<Task>? onSwapRequested,
 }) {
   final today = dateOnly(dayKeyUtc);
-  final showAction = allowSelection || onActionPressed != null;
   final snoozeUntil = dateOnly(dayKeyUtc).add(const Duration(days: 1));
 
   return tasks
@@ -1116,22 +1196,14 @@ List<TasklyRowSpec> _buildTaskRows(
         return TasklyRowSpec.task(
           key: 'plan-task-${task.id}',
           data: data,
-          style: style(selected: isSelected),
+          style: TasklyTaskRowStyle.planPick(selected: isSelected),
           actions: TasklyTaskRowActions(
             onTap: buildTaskOpenEditorHandler(context, task: task),
-            onToggleSelected: showAction
-                ? () {
-                    if (onActionPressed != null) {
-                      onActionPressed(task);
-                      return;
-                    }
-                    if (allowSelection) {
-                      context.read<PlanMyDayBloc>().add(
-                        PlanMyDayToggleTask(task.id, selected: !isSelected),
-                      );
-                    }
-                  }
-                : null,
+            onToggleSelected: () {
+              context.read<PlanMyDayBloc>().add(
+                PlanMyDayToggleTask(task.id, selected: !isSelected),
+              );
+            },
             onSwapRequested: onSwapRequested == null
                 ? null
                 : () => onSwapRequested(task),
@@ -1189,10 +1261,13 @@ TasklyRowSpec _buildRoutineRow(
   required DateTime dayKeyUtc,
 }) {
   final routine = item.routine;
-  final labels = TasklyRoutineRowLabels(
-    selectionTooltipLabel: context.l10n.myDayAddToMyDayAction,
-    selectionTooltipSelectedLabel: context.l10n.myDayAddedLabel,
-  );
+  final l10n = context.l10n;
+  final labels = item.isScheduled
+      ? null
+      : TasklyRoutineRowLabels(
+          selectionTooltipLabel: l10n.myDayAddToMyDayAction,
+          selectionTooltipSelectedLabel: l10n.myDayAddedLabel,
+        );
 
   final dataRow = buildRoutineRowData(
     context,
@@ -1212,7 +1287,11 @@ TasklyRowSpec _buildRoutineRow(
   return TasklyRowSpec.routine(
     key: 'plan-routine-${routine.id}',
     data: dataRow,
-    style: const TasklyRoutineRowStyle.planPick(),
+    style: item.isScheduled
+        ? TasklyRoutineRowStyle.planAction(
+            actionLabel: l10n.planMyDayChangeAction,
+          )
+        : const TasklyRoutineRowStyle.planPick(),
     actions: TasklyRoutineRowActions(
       onTap: () => Routing.toRoutineEdit(context, routine.id),
       onToggleSelected: allowSelection

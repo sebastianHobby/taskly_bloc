@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_brand_logo.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Sign up view with custom form using AuthBloc.
@@ -52,9 +53,11 @@ class _SignUpViewState extends State<SignUpView> {
       body: BlocListener<AuthBloc, AppAuthState>(
         listenWhen: (prev, curr) =>
             (prev.error != curr.error && curr.error != null) ||
-            (prev.message != curr.message && curr.message != null),
+            (prev.pendingEmailConfirmation != curr.pendingEmailConfirmation &&
+                curr.pendingEmailConfirmation != null),
         listener: (context, state) {
-          // Only show errors/messages - navigation is handled by auth gating
+          // Show errors inline. On email-confirmation sign-up, route to
+          // dedicated confirmation guidance.
           if (state.error != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -62,10 +65,8 @@ class _SignUpViewState extends State<SignUpView> {
                 backgroundColor: Theme.of(context).colorScheme.error,
               ),
             );
-          } else if (state.message != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message!)),
-            );
+          } else if (state.pendingEmailConfirmation != null) {
+            context.go('/check-email');
           }
         },
         child: Center(
@@ -79,11 +80,7 @@ class _SignUpViewState extends State<SignUpView> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.person_add_outlined,
-                      size: 80,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                    const TasklyBrandLogo(size: 80),
                     SizedBox(height: TasklyTokens.of(context).spaceSm),
                     Text(
                       context.l10n.authSignUpTitle,

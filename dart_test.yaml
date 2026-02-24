@@ -46,6 +46,7 @@ tags:
   journal:
   scheduled:
   statistics:
+  routing:
   scope_context:
   values:
   tasks:
@@ -87,7 +88,7 @@ on_os:
   mac-os:
 
 # Test execution settings
-concurrency: 4
+concurrency: 6
 reporter: expanded
 
 # Also emit structured output to a file (in addition to stdout).

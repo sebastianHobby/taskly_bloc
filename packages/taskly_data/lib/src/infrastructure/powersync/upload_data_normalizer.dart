@@ -62,6 +62,10 @@ uploadJsonExpectationsByTable = {
     // Supabase: jsonb
     'metrics_json': UploadJsonExpectation.map,
   },
+  'my_day_decision_events': {
+    // Supabase: jsonb
+    'meta_json': UploadJsonExpectation.map,
+  },
 };
 
 String _previewForLog(Object? value, {int maxChars = 200}) {

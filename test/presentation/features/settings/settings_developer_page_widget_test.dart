@@ -14,6 +14,7 @@ void main() {
     expect(find.text('Developer'), findsOneWidget);
     expect(find.text('View App Logs'), findsOneWidget);
     expect(find.text('Sync issues'), findsOneWidget);
+    expect(find.text('Stats'), findsOneWidget);
     expect(find.text('Tile Catalog'), findsNothing);
     expect(find.text('Generate Template Data'), findsNothing);
     expect(find.text('Wipe account data and reset onboarding'), findsNothing);

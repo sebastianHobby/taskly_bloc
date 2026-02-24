@@ -10,6 +10,10 @@ Defines auth states, onboarding progression, startup synchronization gates, and 
 - Startup gating must not bypass required sync/ready checks.
 - Navigation transitions are deterministic from state.
 - Sync connect cycles must emit structured telemetry events for traceability.
+- Sign-up paths that require email verification must route to an explicit
+  "check email" confirmation state (not a transient snackbar-only message).
+- Onboarding values setup requires at least 3 values before progression to
+  ratings.
 
 ## Sync observability contract
 

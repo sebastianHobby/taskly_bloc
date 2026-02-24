@@ -199,5 +199,212 @@ void main() {
       final remaining = await db.select(db.analyticsInsights).get();
       expect(remaining, isEmpty);
     });
+
+    testSafe('saveSnapshots and saveCorrelations batch paths', () async {
+      final db = createAutoClosingDb();
+      final repo = AnalyticsRepositoryImpl(
+        db,
+        IdGenerator.withUserId('user-1'),
+      );
+      final day = DateTime.utc(2025, 2, 1);
+
+      await repo.saveSnapshots([
+        AnalyticsSnapshot(
+          id: '',
+          entityType: 'task',
+          entityId: 'task-1',
+          snapshotDate: day,
+          metrics: const {'v': 1},
+        ),
+        AnalyticsSnapshot(
+          id: '',
+          entityType: 'project',
+          entityId: 'project-1',
+          snapshotDate: day,
+          metrics: const {'v': 2},
+        ),
+      ]);
+
+      await repo.saveCorrelations([
+        CorrelationResult(
+          sourceLabel: 'S',
+          targetLabel: 'T',
+          coefficient: 0.2,
+          strength: CorrelationStrength.weakPositive,
+          sourceId: 'unknown-a',
+          targetId: 'unknown-b',
+        ),
+      ]);
+
+      expect(await db.select(db.analyticsSnapshots).get(), hasLength(2));
+      expect(await db.select(db.analyticsCorrelations).get(), hasLength(1));
+    });
+
+    testSafe(
+      'getCachedCorrelations fallback labels and parse fallbacks',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = AnalyticsRepositoryImpl(
+          db,
+          IdGenerator.withUserId('user-1'),
+        );
+
+        await db
+            .into(db.analyticsCorrelations)
+            .insert(
+              AnalyticsCorrelationsCompanion(
+                id: const drift.Value('c-fallback'),
+                correlationType: const drift.Value('general'),
+                sourceType: const drift.Value('unknown'),
+                sourceId: const drift.Value('src-1'),
+                targetType: const drift.Value('unknown'),
+                targetId: const drift.Value('tgt-1'),
+                periodStart: drift.Value(DateTime.utc(2025, 1, 1)),
+                periodEnd: drift.Value(DateTime.utc(2025, 1, 2)),
+                coefficient: const drift.Value(0.0),
+                sampleSize: const drift.Value(1),
+                strength: const drift.Value('not-a-real-strength'),
+                insight: const drift.Value(''),
+                computedAt: drift.Value(DateTime.utc(2025, 1, 2)),
+                statisticalSignificance: const drift.Value({'bad': 'value'}),
+                performanceMetrics: const drift.Value({'bad': 'value'}),
+              ),
+            );
+
+        final results = await repo.getCachedCorrelations(
+          correlationType: 'general',
+          range: DateRange(
+            start: DateTime.utc(2025, 1, 1),
+            end: DateTime.utc(2025, 1, 3),
+          ),
+        );
+
+        expect(results.single.sourceLabel, 'unknown-src-1');
+        expect(results.single.targetLabel, 'unknown-tgt-1');
+        expect(results.single.strength, CorrelationStrength.negligible);
+        expect(results.single.statisticalSignificance, isNull);
+        expect(results.single.performanceMetrics, isNull);
+      },
+    );
+
+    testSafe('helper methods cover parsing and threshold branches', () async {
+      final db = createAutoClosingDb();
+      final repo = AnalyticsRepositoryImpl(
+        db,
+        IdGenerator.withUserId('user-1'),
+      );
+
+      expect(
+        repo.parseStrength('strongPositive'),
+        CorrelationStrength.strongPositive,
+      );
+      expect(repo.parseStrength('invalid'), isNull);
+
+      expect(repo.inferEntityTypeFromId('task-123'), 'task');
+      expect(repo.inferEntityTypeFromId('project-123'), 'project');
+      expect(repo.inferEntityTypeFromId('tracker-123'), 'tracker');
+      expect(repo.inferEntityTypeFromId('label-123'), 'label');
+      expect(repo.inferEntityTypeFromId('mystery'), 'unknown');
+
+      expect(
+        repo.inferCorrelationType(sourceType: 'task', targetType: 'project'),
+        'task_project',
+      );
+      expect(
+        repo.inferCorrelationType(sourceType: 'unknown', targetType: 'project'),
+        'general',
+      );
+
+      expect(
+        repo.strengthFromCoefficient(0.8),
+        CorrelationStrength.strongPositive,
+      );
+      expect(
+        repo.strengthFromCoefficient(0.4),
+        CorrelationStrength.moderatePositive,
+      );
+      expect(
+        repo.strengthFromCoefficient(0.2),
+        CorrelationStrength.weakPositive,
+      );
+      expect(
+        repo.strengthFromCoefficient(-0.2),
+        CorrelationStrength.weakNegative,
+      );
+      expect(
+        repo.strengthFromCoefficient(-0.4),
+        CorrelationStrength.moderateNegative,
+      );
+      expect(
+        repo.strengthFromCoefficient(-0.8),
+        CorrelationStrength.strongNegative,
+      );
+      expect(
+        repo.strengthFromCoefficient(0.01),
+        CorrelationStrength.negligible,
+      );
+
+      expect(
+        repo.parseInsightType('not-a-type'),
+        InsightType.correlationDiscovery,
+      );
+      expect(repo.fallbackLabel('task', 't1'), 'task-t1');
+    });
+
+    testSafe(
+      'resolveEntityLabelsByType resolves task project and tracker labels',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = AnalyticsRepositoryImpl(
+          db,
+          IdGenerator.withUserId('user-1'),
+        );
+
+        await db
+            .into(db.taskTable)
+            .insert(
+              TaskTableCompanion.insert(
+                id: const drift.Value('task-1'),
+                name: 'Task Label',
+                completed: const drift.Value(false),
+              ),
+            );
+        await db
+            .into(db.projectTable)
+            .insert(
+              ProjectTableCompanion.insert(
+                id: const drift.Value('project-1'),
+                name: 'Project Label',
+                completed: false,
+                primaryValueId: const drift.Value('v1'),
+              ),
+            );
+        await db
+            .into(db.trackerDefinitions)
+            .insert(
+              TrackerDefinitionsCompanion.insert(
+                id: const drift.Value('tracker-1'),
+                name: 'Tracker Label',
+                scope: 'entry',
+                roles: const drift.Value('[]'),
+                valueType: 'number',
+                config: const drift.Value('{}'),
+                goal: const drift.Value('{}'),
+                createdAt: drift.Value(DateTime.utc(2025, 1, 1)),
+                updatedAt: drift.Value(DateTime.utc(2025, 1, 1)),
+              ),
+            );
+
+        final labels = await repo.resolveEntityLabelsByType({
+          'task': {'task-1'},
+          'project': {'project-1'},
+          'tracker': {'tracker-1'},
+        });
+
+        expect(labels['task-1'], 'Task Label');
+        expect(labels['project-1'], 'Project Label');
+        expect(labels['tracker-1'], 'Tracker Label');
+      },
+    );
   });
 }

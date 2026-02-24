@@ -425,6 +425,10 @@ sealed class TasklyTaskRowStyle {
   const factory TasklyTaskRowStyle.planPick({
     required bool selected,
   }) = TasklyTaskRowStylePlanPick;
+
+  const factory TasklyTaskRowStyle.planAction({
+    required String actionLabel,
+  }) = TasklyTaskRowStylePlanAction;
 }
 
 final class TasklyTaskRowStyleStandard extends TasklyTaskRowStyle {
@@ -453,6 +457,12 @@ final class TasklyTaskRowStylePlanPick extends TasklyTaskRowStyle {
   final bool selected;
 }
 
+final class TasklyTaskRowStylePlanAction extends TasklyTaskRowStyle {
+  const TasklyTaskRowStylePlanAction({required this.actionLabel});
+
+  final String actionLabel;
+}
+
 sealed class TasklyRoutineRowStyle {
   const TasklyRoutineRowStyle();
 
@@ -464,6 +474,10 @@ sealed class TasklyRoutineRowStyle {
 
   const factory TasklyRoutineRowStyle.planPick() =
       TasklyRoutineRowStylePlanPick;
+
+  const factory TasklyRoutineRowStyle.planAction({
+    required String actionLabel,
+  }) = TasklyRoutineRowStylePlanAction;
 }
 
 final class TasklyRoutineRowStyleStandard extends TasklyRoutineRowStyle {
@@ -476,6 +490,12 @@ final class TasklyRoutineRowStyleBulkSelection extends TasklyRoutineRowStyle {
 
 final class TasklyRoutineRowStylePlanPick extends TasklyRoutineRowStyle {
   const TasklyRoutineRowStylePlanPick();
+}
+
+final class TasklyRoutineRowStylePlanAction extends TasklyRoutineRowStyle {
+  const TasklyRoutineRowStylePlanAction({required this.actionLabel});
+
+  final String actionLabel;
 }
 
 @immutable
@@ -738,7 +758,6 @@ enum TasklyRoutineScheduleDayState {
   none,
   scheduled,
   loggedScheduled,
-  loggedUnscheduled,
   skippedScheduled,
   missedScheduled,
 }

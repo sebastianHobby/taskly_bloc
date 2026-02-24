@@ -8,7 +8,7 @@ This project uses GitHub Actions for continuous integration and deployment. The 
 
 ### 1. Main CI/CD Pipeline (`main.yaml`)
 
-**Trigger:** Push to `main` branch, Pull Requests, Daily scheduled runs at 2 AM UTC
+**Trigger:** Push to `main` branch, Pull Requests, Manual workflow dispatch, Daily scheduled runs at 2 AM UTC
 
 **Jobs:**
 
@@ -25,22 +25,20 @@ This project uses GitHub Actions for continuous integration and deployment. The 
 - **Checks for unsafe testWidgets usage** (files using `pumpAndSettle` must use `testWidgetsSafe`)
 - **Validates IdGenerator table registration** (all PowerSync tables must be registered)
 - Ensures code quality standards
-- **Timeout:** 15 minutes
+- **Timeout:** 20 minutes
 
-#### `build-platforms`
-- Matrix build across multiple platforms:
-  - **Ubuntu:** Web build
-  - **macOS:** iOS build (unsigned)
-  - **Windows:** Windows desktop build
-- Uploads build artifacts (7-day retention)
-- Validates builds complete successfully
-- **Timeout:** 45 minutes per platform
+#### `build-web-smoke`
+- Runs a production web build smoke check on Ubuntu
+- Validates release web compilation
+- **Timeout:** 30 minutes
 
-#### `security`
-- Runs Trivy vulnerability scanner
-- Scans dependencies and code for security issues
-- Uploads results to GitHub Security tab
-- Non-blocking (continues on failure)
+#### `build-ios-unsigned-ipa`
+- Runs iOS build on `macos-latest` with `--no-codesign`
+- Packages `build/ios/iphoneos/Runner.app` into `Runner-unsigned.ipa`
+- Uploads artifact `ios-unsigned-ipa` (7-day retention)
+- Intended for AltStore/manual sideloading flows
+- Skips scheduled runs to reduce macOS CI consumption
+- **Timeout:** 45 minutes
 
 ### 2. GitHub Pages Deployment (`deploy-web.yaml`)
 
@@ -49,7 +47,7 @@ This project uses GitHub Actions for continuous integration and deployment. The 
 **Process:**
 1. **Build Job:**
    - Checks out code
-   - Sets up Flutter 3.35.x stable
+   - Sets up Flutter 3.38.x stable
    - Caches dependencies
    - Generates code with build_runner
    - Builds web with correct base href: `/taskly_bloc/`
@@ -312,18 +310,39 @@ For Codecov integration:
 - Dev credentials should have limited permissions
 - Production secrets should be environment-specific
 
-### 3. Branch Protection Rules (Recommended)
+### 3. iOS Unsigned IPA (AltStore) Notes
+
+This pipeline does **not** perform Apple code signing. It produces an unsigned
+`.ipa` artifact for AltStore to sign with your linked Apple ID.
+
+Required project/repo conditions:
+
+1. `ios/Runner.xcodeproj` must continue to build for device in Release mode.
+2. Keep a stable and unique iOS bundle identifier (`PRODUCT_BUNDLE_IDENTIFIER`)
+   in the iOS project.
+3. No Apple certificates/provisioning profiles are required in GitHub Secrets
+   for this workflow because build uses `--no-codesign`.
+4. If Flutter or Xcode compatibility changes, pin/update versions in workflow
+   first and verify device build output still succeeds.
+
+Artifact usage:
+
+1. Run `taskly_bloc` workflow (push/PR or manually with workflow dispatch).
+2. Download artifact `ios-unsigned-ipa`.
+3. Install with AltStore (`My Apps` -> `+` -> select `.ipa`).
+
+### 4. Branch Protection Rules (Recommended)
 
 1. Go to **Settings** → **Branches** → **Add rule**
 2. Branch name pattern: `main`
 3. Enable:
    - ✅ Require a pull request before merging
    - ✅ Require status checks to pass before merging
-     - Select: `build`, `analyze`, `test`
+     - Select: `analyze`, `test`, `build-web-smoke`, `build-ios-unsigned-ipa`
    - ✅ Require branches to be up to date before merging
    - ✅ Require conversation resolution before merging
 
-### 4. Required GitHub Permissions
+### 5. Required GitHub Permissions
 
 The workflows automatically request these permissions:
 - **Contents:** Read (for checking out code)
@@ -345,8 +364,8 @@ The workflows automatically request these permissions:
 
 ### Failure Handling
 - Each job has appropriate timeout limits
-- Security scans don't block deployments
-- Matrix builds continue even if one platform fails
+- Scheduled runs skip macOS IPA build to reduce cost
+- Web deployment is isolated in `deploy-web.yaml`
 
 ### Performance
 - Parallel job execution where possible

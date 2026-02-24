@@ -198,6 +198,19 @@ void main() {
       expect(identical(s1, s2), isFalse);
     });
 
+    testSafe('watchAll on empty database emits empty list', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final projects = await repo.watchAll().first;
+      expect(projects, isEmpty);
+    });
+
     testSafe('watchAll executes non-date query path', () async {
       final db = createAutoClosingDb();
       final repo = ProjectRepository(
@@ -307,6 +320,50 @@ void main() {
 
       final projects = await repo.getAll();
       expect(projects.map((p) => p.id).toList(), equals(['p2', 'p1']));
+    });
+
+    testSafe('getAll applies query filter path', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      await db
+          .into(db.projectTable)
+          .insert(
+            ProjectTableCompanion.insert(
+              id: const drift.Value('p1'),
+              name: 'Done',
+              completed: true,
+              primaryValueId: const drift.Value('v1'),
+            ),
+          );
+      await db
+          .into(db.projectTable)
+          .insert(
+            ProjectTableCompanion.insert(
+              id: const drift.Value('p2'),
+              name: 'Open',
+              completed: false,
+              primaryValueId: const drift.Value('v1'),
+            ),
+          );
+
+      final query = ProjectQuery(
+        filter: const QueryFilter<ProjectPredicate>(
+          shared: [
+            ProjectBoolPredicate(
+              field: ProjectBoolField.completed,
+              operator: BoolOperator.isTrue,
+            ),
+          ],
+        ),
+      );
+      final projects = await repo.getAll(query);
+      expect(projects.map((p) => p.id).toList(), equals(['p1']));
     });
 
     testSafe('getById includes task counts', () async {
@@ -511,6 +568,29 @@ void main() {
       expect(row.seriesEnded, isTrue);
     });
 
+    testSafe('update rejects whitespace-only value ids', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      await repo.create(name: 'Project', valueIds: ['v1']);
+      final id = (await db.select(db.projectTable).getSingle()).id;
+
+      await expectLater(
+        () => repo.update(
+          id: id,
+          name: 'Project',
+          completed: false,
+          valueIds: const ['  '],
+        ),
+        throwsA(isA<InputValidationFailure>()),
+      );
+    });
+
     testSafe(
       'bulkRescheduleDeadlines throws when some project ids are missing',
       () async {
@@ -534,6 +614,22 @@ void main() {
         );
       },
     );
+
+    testSafe('bulkRescheduleDeadlines returns zero for empty ids', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+
+      final updated = await repo.bulkRescheduleDeadlines(
+        projectIds: const [],
+        deadlineDate: DateTime.utc(2026, 2, 11),
+      );
+      expect(updated, equals(0));
+    });
 
     testSafe(
       'delete removes project and watch completion/exception mappings',
@@ -736,6 +832,30 @@ void main() {
           'convertProjectToOneTime',
         ]),
       );
+    });
+
+    testSafe('setPinned writes metadata when context is provided', () async {
+      final db = createAutoClosingDb();
+      final repo = ProjectRepository(
+        driftDb: db,
+        occurrenceExpander: _FakeOccurrenceExpander(),
+        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+        idGenerator: IdGenerator.withUserId('user-1'),
+      );
+      final context = systemOperationContext(
+        feature: 'test',
+        intent: 'unit',
+        operation: 'project_pin',
+      );
+
+      await repo.create(name: 'Project', valueIds: ['v1']);
+      final row = await db.select(db.projectTable).getSingle();
+
+      await repo.setPinned(id: row.id, isPinned: true, context: context);
+
+      final updated = await db.select(db.projectTable).getSingle();
+      expect(updated.isPinned, isTrue);
+      expect(updated.psMetadata, isNotNull);
     });
   });
 }

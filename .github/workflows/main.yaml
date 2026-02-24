@@ -14,6 +14,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
   schedule:
     - cron: '0 2 * * *'
 
@@ -197,3 +198,89 @@ jobs:
 
       - name: Build web smoke
         run: flutter build web --release -t lib/main_prod.dart
+
+  build-ios-unsigned-ipa:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    if: github.event_name != 'schedule'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.x'
+          channel: stable
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_domain)
+        working-directory: packages/taskly_domain
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_core)
+        working-directory: packages/taskly_core
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_data)
+        working-directory: packages/taskly_data
+        run: flutter pub get
+
+      - name: Get dependencies (taskly_ui)
+        working-directory: packages/taskly_ui
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate code (taskly_domain)
+        working-directory: packages/taskly_domain
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate code (taskly_data)
+        working-directory: packages/taskly_data
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build iOS app (unsigned)
+        run: flutter build ios --release --no-codesign -t lib/main_prod.dart
+
+      - name: Package IPA for AltStore
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="build/ios/iphoneos/Runner.app"
+          IPA_DIR="build/ios/ipa"
+
+          if [ ! -d "$APP_PATH" ]; then
+            echo "Runner.app not found at $APP_PATH"
+            exit 1
+          fi
+
+          rm -rf "$IPA_DIR"
+          mkdir -p "$IPA_DIR/Payload"
+          cp -R "$APP_PATH" "$IPA_DIR/Payload/Runner.app"
+          (
+            cd "$IPA_DIR"
+            /usr/bin/zip -r -y Runner-unsigned.ipa Payload
+          )
+
+      - name: Upload iOS unsigned IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-ipa
+          path: build/ios/ipa/Runner-unsigned.ipa
+          retention-days: 7

@@ -325,6 +325,44 @@ class MyDayPicksTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class MyDayDecisionEventsTable extends Table {
+  @override
+  String get tableName => 'my_day_decision_events';
+
+  TextColumn get id => text().named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get dayKeyUtc =>
+      text().map(dateOnlyStringConverter).named('day_key_utc')();
+  TextColumn get entityType => text().named('entity_type')();
+  TextColumn get entityId => text().named('entity_id')();
+  TextColumn get shelf => text().named('shelf')();
+  TextColumn get action => text().named('action')();
+  DateTimeColumn get actionAtUtc => dateTime().named('action_at_utc')();
+  TextColumn get deferKind => text().nullable().named('defer_kind')();
+  TextColumn get fromDayKey =>
+      text().map(dateOnlyStringConverter).nullable().named('from_day_key')();
+  TextColumn get toDayKey =>
+      text().map(dateOnlyStringConverter).nullable().named('to_day_key')();
+  IntColumn get suggestionRank =>
+      integer().nullable().named('suggestion_rank')();
+  TextColumn get metaJson => text().nullable().named('meta_json')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  TextColumn get psMetadata => text().nullable().named('_metadata')();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (entity_type IN ('task','routine'))",
+    "CHECK (shelf IN ('due','planned','routine_scheduled','routine_flexible','suggestion'))",
+    "CHECK (\"action\" IN ('kept','deferred','snoozed','removed','completed'))",
+    "CHECK (defer_kind IS NULL OR defer_kind IN ('deadline_reschedule','start_reschedule','snooze'))",
+    'CHECK (suggestion_rank IS NULL OR suggestion_rank >= 0)',
+  ];
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 // =============================================================================
 // NEW TABLES FOR REPEATING TASKS
 // =============================================================================
@@ -716,8 +754,12 @@ class RoutineCompletionsTable extends Table {
       .map(dateOnlyStringConverter)
       .nullable()
       .named('completed_day_local')();
+  IntColumn get completedWeekdayLocal =>
+      integer().nullable().named('completed_weekday_local')();
   IntColumn get completedTimeLocalMinutes =>
       integer().nullable().named('completed_time_local_minutes')();
+  IntColumn get timezoneOffsetMinutes =>
+      integer().nullable().named('timezone_offset_minutes')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
 
@@ -760,6 +802,7 @@ class RoutineSkipsTable extends Table {
     UserProfileTable,
     MyDayDaysTable,
     MyDayPicksTable,
+    MyDayDecisionEventsTable,
     TaskCompletionHistoryTable,
     TaskSnoozeEventsTable,
     ProjectCompletionHistoryTable,
@@ -800,7 +843,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

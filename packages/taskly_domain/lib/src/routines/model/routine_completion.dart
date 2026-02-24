@@ -8,7 +8,9 @@ class RoutineCompletion {
     required this.completedAtUtc,
     required this.createdAtUtc,
     this.completedDayLocal,
+    this.completedWeekdayLocal,
     this.completedTimeLocalMinutes,
+    this.timezoneOffsetMinutes,
   });
 
   final String id;
@@ -16,5 +18,7 @@ class RoutineCompletion {
   final DateTime completedAtUtc;
   final DateTime createdAtUtc;
   final DateTime? completedDayLocal;
+  final int? completedWeekdayLocal;
   final int? completedTimeLocalMinutes;
+  final int? timezoneOffsetMinutes;
 }

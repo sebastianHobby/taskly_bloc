@@ -4,7 +4,9 @@ import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/infrastructure/powersync/crud_metadata.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/my_day.dart' as domain;
+import 'package:taskly_domain/my_day.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart' show Clock, dateOnly, systemClock;
 
@@ -12,13 +14,16 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
   MyDayRepositoryImpl({
     required AppDatabase driftDb,
     required IdGenerator ids,
+    required MyDayDecisionEventRepositoryContract decisionEventsRepository,
     Clock clock = systemClock,
   }) : _db = driftDb,
        _ids = ids,
+       _decisionEventsRepository = decisionEventsRepository,
        _clock = clock;
 
   final AppDatabase _db;
   final IdGenerator _ids;
+  final MyDayDecisionEventRepositoryContract _decisionEventsRepository;
   final Clock _clock;
 
   @override
@@ -121,6 +126,16 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
     };
   }
 
+  MyDayDecisionShelf _shelfForTaskBucket(domain.MyDayPickBucket bucket) {
+    return switch (bucket) {
+      domain.MyDayPickBucket.due => MyDayDecisionShelf.due,
+      domain.MyDayPickBucket.starts => MyDayDecisionShelf.planned,
+      domain.MyDayPickBucket.valueSuggestions => MyDayDecisionShelf.suggestion,
+      domain.MyDayPickBucket.manual => MyDayDecisionShelf.planned,
+      domain.MyDayPickBucket.routine => MyDayDecisionShelf.planned,
+    };
+  }
+
   @override
   Future<void> setDayPicks({
     required DateTime dayKeyUtc,
@@ -134,6 +149,11 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
     final dayId = _ids.myDayDayId(dayUtc: dayUtc);
 
     final psMetadata = encodeCrudMetadata(context, clock: _clock);
+    final actionAtUtc = _clock.nowUtc();
+
+    final previousRows = await (_db.select(
+      _db.myDayPicksTable,
+    )..where((t) => t.dayId.equals(dayId))).get();
 
     await _db.transaction(() async {
       // Ensure day row exists.
@@ -201,6 +221,84 @@ final class MyDayRepositoryImpl implements domain.MyDayRepositoryContract {
             );
       }
     });
+
+    final routineIds = <String>{
+      ...picks.map((p) => p.routineId).whereType<String>(),
+      ...previousRows.map((r) => r.routineId).whereType<String>(),
+    }.toList(growable: false);
+    final routineModeById = <String, String>{};
+    if (routineIds.isNotEmpty) {
+      final rows = await (_db.select(
+        _db.routinesTable,
+      )..where((r) => r.id.isIn(routineIds))).get();
+      for (final row in rows) {
+        routineModeById[row.id] = row.scheduleMode;
+      }
+    }
+
+    MyDayDecisionShelf shelfForRoutineId(String routineId) {
+      final mode = routineModeById[routineId];
+      return mode == 'scheduled'
+          ? MyDayDecisionShelf.routineScheduled
+          : MyDayDecisionShelf.routineFlexible;
+    }
+
+    final nextKeys = <String>{
+      for (final pick in picks) '${pick.targetType.name}:${pick.targetId}',
+    };
+    final previousKeys = <String>{
+      for (final row in previousRows)
+        row.taskId != null
+            ? 'task:${row.taskId!}'
+            : 'routine:${row.routineId!}',
+    };
+    final removedKeys = previousKeys.difference(nextKeys);
+
+    final keptEvents = <MyDayDecisionEvent>[
+      for (final pick in picks)
+        MyDayDecisionEvent(
+          id: _ids.myDayDecisionEventId(),
+          dayKeyUtc: dayUtc,
+          entityType: pick.targetType == domain.MyDayPickTargetType.task
+              ? MyDayDecisionEntityType.task
+              : MyDayDecisionEntityType.routine,
+          entityId: pick.targetId,
+          shelf: pick.targetType == domain.MyDayPickTargetType.task
+              ? _shelfForTaskBucket(pick.bucket)
+              : shelfForRoutineId(pick.targetId),
+          action: MyDayDecisionAction.kept,
+          actionAtUtc: actionAtUtc,
+          suggestionRank: pick.suggestionRank,
+        ),
+    ];
+
+    final removedEvents = <MyDayDecisionEvent>[
+      for (final row in previousRows)
+        if (removedKeys.contains(
+          row.taskId != null
+              ? 'task:${row.taskId!}'
+              : 'routine:${row.routineId!}',
+        ))
+          MyDayDecisionEvent(
+            id: _ids.myDayDecisionEventId(),
+            dayKeyUtc: dayUtc,
+            entityType: row.taskId != null
+                ? MyDayDecisionEntityType.task
+                : MyDayDecisionEntityType.routine,
+            entityId: row.taskId ?? row.routineId!,
+            shelf: row.taskId != null
+                ? _shelfForTaskBucket(_bucketFromDb(row.bucket))
+                : shelfForRoutineId(row.routineId!),
+            action: MyDayDecisionAction.removed,
+            actionAtUtc: actionAtUtc,
+            suggestionRank: row.suggestionRank,
+          ),
+    ];
+
+    await _decisionEventsRepository.appendAll(
+      [...keptEvents, ...removedEvents],
+      context: context,
+    );
   }
 
   @override

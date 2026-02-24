@@ -38,6 +38,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   DateTime? _until;
   final Set<int> _byWeekDay = {};
   late TextEditingController _intervalController;
+  late TextEditingController _countController;
   RruleL10n? _rruleL10n;
 
   late bool _repeatFromCompletion;
@@ -47,7 +48,9 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   void initState() {
     super.initState();
     _intervalController = TextEditingController(text: _interval.toString());
+    _countController = TextEditingController(text: '10');
     _parseRRule(widget.initialRRule);
+    _countController.text = (_count ?? 10).toString();
 
     _repeatFromCompletion = widget.initialRepeatFromCompletion;
     _seriesEnded = widget.initialSeriesEnded;
@@ -73,6 +76,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   @override
   void dispose() {
     _intervalController.dispose();
+    _countController.dispose();
     super.dispose();
   }
 
@@ -303,8 +307,9 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                 ),
                 SizedBox(width: tokens.spaceLg),
                 SizedBox(
-                  width: 80,
+                  width: 96,
                   child: TextFormField(
+                    key: const ValueKey('recurrence-interval-field'),
                     controller: _intervalController,
                     keyboardType: TextInputType.number,
                     inputFormatters: [
@@ -319,6 +324,13 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                         vertical: tokens.spaceSm,
                       ),
                     ),
+                    onTap: () {
+                      if (_frequency == RecurrenceFrequency.none) {
+                        setState(() {
+                          _frequency = RecurrenceFrequency.daily;
+                        });
+                      }
+                    },
                     onChanged: (value) {
                       final interval = int.tryParse(value);
                       if (interval != null && interval > 0 && interval <= 999) {
@@ -344,6 +356,27 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                       return null;
                     },
                   ),
+                ),
+                SizedBox(width: tokens.spaceXs),
+                _buildStepper(
+                  decrementKey: const ValueKey('recurrence-interval-decrement'),
+                  incrementKey: const ValueKey('recurrence-interval-increment'),
+                  onDecrement: () {
+                    setState(() {
+                      _interval = (_interval - 1).clamp(1, 999);
+                      _intervalController.text = _interval.toString();
+                      _updateRRule();
+                    });
+                  },
+                  onIncrement: () {
+                    setState(() {
+                      _interval = (_interval + 1).clamp(1, 999);
+                      _intervalController.text = _interval.toString();
+                      _updateRRule();
+                    });
+                  },
+                  canDecrement: _interval > 1,
+                  canIncrement: _interval < 999,
                 ),
                 SizedBox(width: tokens.spaceMd),
                 Expanded(
@@ -430,50 +463,109 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                 children: [
                   Text(l10n.recurrenceAfter),
                   SizedBox(width: tokens.spaceLg),
-                  SizedBox(
-                    width: 80,
-                    child: TextFormField(
-                      initialValue: _count?.toString() ?? '10',
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(4),
-                      ],
-                      decoration: InputDecoration(
-                        isDense: true,
-                        suffix: Text(l10n.recurrenceTimesLabel),
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: tokens.spaceMd,
-                          vertical: tokens.spaceSm,
+                  Expanded(
+                    child: Wrap(
+                      spacing: tokens.spaceXs,
+                      runSpacing: tokens.spaceXs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 96,
+                          child: TextFormField(
+                            key: const ValueKey('recurrence-count-field'),
+                            controller: _countController,
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(4),
+                            ],
+                            decoration: InputDecoration(
+                              isDense: true,
+                              border: const OutlineInputBorder(),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: tokens.spaceMd,
+                                vertical: tokens.spaceSm,
+                              ),
+                            ),
+                            onTap: () {
+                              setState(() {
+                                _until = null;
+                                _count =
+                                    int.tryParse(_countController.text) ?? 10;
+                                _updateRRule();
+                              });
+                            },
+                            onChanged: (value) {
+                              final count = int.tryParse(value);
+                              if (count != null && count > 0 && count <= 9999) {
+                                setState(() {
+                                  _count = count;
+                                  _until = null;
+                                  _updateRRule();
+                                });
+                              }
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return l10n.validationRequired;
+                              }
+                              final count = int.tryParse(value);
+                              if (count == null) {
+                                return l10n.validationInvalid;
+                              }
+                              if (count <= 0) {
+                                return l10n.validationMustBeGreaterThanZero;
+                              }
+                              if (count > 9999) {
+                                return l10n.validationMaxValue(9999);
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                      ),
-                      onChanged: (value) {
-                        final count = int.tryParse(value);
-                        if (count != null && count > 0 && count <= 9999) {
-                          setState(() {
-                            _count = count;
-                            _until = null;
-                            _updateRRule();
-                          });
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return l10n.validationRequired;
-                        }
-                        final count = int.tryParse(value);
-                        if (count == null) {
-                          return l10n.validationInvalid;
-                        }
-                        if (count <= 0) {
-                          return l10n.validationMustBeGreaterThanZero;
-                        }
-                        if (count > 9999) {
-                          return l10n.validationMaxValue(9999);
-                        }
-                        return null;
-                      },
+                        _buildStepper(
+                          decrementKey: const ValueKey(
+                            'recurrence-count-decrement',
+                          ),
+                          incrementKey: const ValueKey(
+                            'recurrence-count-increment',
+                          ),
+                          onDecrement: () {
+                            setState(() {
+                              final current =
+                                  int.tryParse(_countController.text) ?? 10;
+                              final next = (current - 1).clamp(1, 9999);
+                              _count = next;
+                              _until = null;
+                              _countController.text = next.toString();
+                              _updateRRule();
+                            });
+                          },
+                          onIncrement: () {
+                            setState(() {
+                              final current =
+                                  int.tryParse(_countController.text) ?? 10;
+                              final next = (current + 1).clamp(1, 9999);
+                              _count = next;
+                              _until = null;
+                              _countController.text = next.toString();
+                              _updateRRule();
+                            });
+                          },
+                          canDecrement:
+                              (int.tryParse(_countController.text) ??
+                                  (_count ?? 10)) >
+                              1,
+                          canIncrement:
+                              (int.tryParse(_countController.text) ??
+                                  (_count ?? 10)) <
+                              9999,
+                        ),
+                        Text(
+                          l10n.recurrenceTimesLabel,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -485,6 +577,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
               onChanged: (value) {
                 setState(() {
                   _count = 10;
+                  _countController.text = '10';
                   _until = null;
                   _updateRRule();
                 });
@@ -622,6 +715,33 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
       RecurrenceFrequency.monthly => l10n.recurrenceMonthUnit(interval),
       RecurrenceFrequency.yearly => l10n.recurrenceYearUnit(interval),
     };
+  }
+
+  Widget _buildStepper({
+    required VoidCallback onDecrement,
+    required VoidCallback onIncrement,
+    required bool canDecrement,
+    required bool canIncrement,
+    required Key decrementKey,
+    required Key incrementKey,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          key: decrementKey,
+          onPressed: canDecrement ? onDecrement : null,
+          icon: const Icon(Icons.remove),
+          visualDensity: VisualDensity.compact,
+        ),
+        IconButton(
+          key: incrementKey,
+          onPressed: canIncrement ? onIncrement : null,
+          icon: const Icon(Icons.add),
+          visualDensity: VisualDensity.compact,
+        ),
+      ],
+    );
   }
 }
 

@@ -37,6 +37,7 @@ class TaskEntityTile extends StatelessWidget {
       style is TasklyTaskRowStyleBulkSelectionCompact;
 
   bool get _isPlanPickStyle => style is TasklyTaskRowStylePlanPick;
+  bool get _isPlanActionStyle => style is TasklyTaskRowStylePlanAction;
 
   bool get _isCompactStyle =>
       style is TasklyTaskRowStyleCompact || _isBulkSelectionCompactStyle;
@@ -86,6 +87,7 @@ class TaskEntityTile extends StatelessWidget {
 
     final VoidCallback? onTap = switch (style) {
       TasklyTaskRowStylePlanPick() => actions.onTap ?? actions.onToggleSelected,
+      TasklyTaskRowStylePlanAction() => actions.onTap,
       TasklyTaskRowStyleBulkSelection() =>
         actions.onToggleSelected ?? actions.onTap,
       TasklyTaskRowStyleBulkSelectionCompact() =>
@@ -101,6 +103,14 @@ class TaskEntityTile extends StatelessWidget {
         ? swapTooltip
         : 'Swap';
     final showSwapAction = actions.onSwapRequested != null;
+    final planActionLabel = switch (style) {
+      TasklyTaskRowStylePlanAction(:final actionLabel) => actionLabel.trim(),
+      _ => '',
+    };
+    final showPlanActionButton =
+        _isPlanActionStyle &&
+        planActionLabel.isNotEmpty &&
+        actions.onToggleSelected != null;
 
     final baseOpacity = model.deemphasized ? 0.6 : 1.0;
     final completedOpacity = model.completed ? 0.75 : 1.0;
@@ -118,7 +128,8 @@ class TaskEntityTile extends StatelessWidget {
             : theme.textTheme.titleSmall) ??
         const TextStyle();
 
-    final useCompactLayout = _isCompactStyle || _isPlanPickStyle;
+    final useCompactLayout =
+        _isCompactStyle || _isPlanPickStyle || _isPlanActionStyle;
 
     final tile = DecoratedBox(
       decoration: BoxDecoration(
@@ -163,6 +174,9 @@ class TaskEntityTile extends StatelessWidget {
                           selectionCompact: _isBulkSelectionCompactStyle,
                           onToggleSelected: actions.onToggleSelected,
                           pickerTooltip: addTooltipLabel,
+                          showPlanActionButton: showPlanActionButton,
+                          planActionLabel: planActionLabel,
+                          onPlanActionPressed: actions.onToggleSelected,
                           showSwapAction: showSwapAction,
                           onSwapRequested: actions.onSwapRequested,
                           swapTooltip: effectiveSwapTooltip,
@@ -270,6 +284,42 @@ class TaskEntityTile extends StatelessWidget {
                                 enabled: selectionEnabled,
                                 onPressed: actions.onToggleSelected,
                                 tooltip: addTooltipLabel,
+                              ),
+                            ] else if (showPlanActionButton) ...[
+                              SizedBox(width: tokens.spaceSm),
+                              TextButton(
+                                onPressed: actions.onToggleSelected,
+                                style: TextButton.styleFrom(
+                                  minimumSize: Size(
+                                    tokens.minTapTargetSize + tokens.spaceLg,
+                                    40,
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: tokens.spaceMd,
+                                    vertical: tokens.spaceXs2,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                      tokens.radiusMd,
+                                    ),
+                                    side: BorderSide(
+                                      color: scheme.outlineVariant.withValues(
+                                        alpha: 0.8,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  planActionLabel,
+                                  style: Theme.of(context).textTheme.labelLarge
+                                      ?.copyWith(
+                                        color: scheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.fade,
+                                ),
                               ),
                             ],
                           ],
@@ -528,6 +578,9 @@ class _CompactTaskRow extends StatelessWidget {
     required this.selectionCompact,
     required this.onToggleSelected,
     required this.pickerTooltip,
+    required this.showPlanActionButton,
+    required this.planActionLabel,
+    required this.onPlanActionPressed,
     required this.showSwapAction,
     required this.onSwapRequested,
     required this.swapTooltip,
@@ -548,6 +601,9 @@ class _CompactTaskRow extends StatelessWidget {
   final bool selectionCompact;
   final VoidCallback? onToggleSelected;
   final String? pickerTooltip;
+  final bool showPlanActionButton;
+  final String planActionLabel;
+  final VoidCallback? onPlanActionPressed;
   final bool showSwapAction;
   final VoidCallback? onSwapRequested;
   final String? swapTooltip;
@@ -559,7 +615,7 @@ class _CompactTaskRow extends StatelessWidget {
     final hasDeadline = deadlineLabel.isNotEmpty;
     final hasStart = !hasDeadline && startLabel.isNotEmpty;
     final label = hasDeadline ? deadlineLabel : (hasStart ? startLabel : '');
-    final showLabel = label.isNotEmpty;
+    final showLabel = label.isNotEmpty && !showPlanActionButton;
     final isUrgent =
         hasDeadline && (model.meta.isOverdue || model.meta.isDueToday);
     final labelColor = isUrgent ? scheme.error : scheme.onSurfaceVariant;
@@ -570,7 +626,7 @@ class _CompactTaskRow extends StatelessWidget {
     final valueChip =
         model.leadingChip ??
         (model.secondaryChips.isNotEmpty ? model.secondaryChips.first : null);
-    final showValueIcon = valueChip != null;
+    final showValueIcon = valueChip != null && !showPlanActionButton;
 
     final completionControl = showCompletionControl
         ? _CompletionControl(
@@ -678,6 +734,34 @@ class _CompactTaskRow extends StatelessWidget {
             enabled: pickerEnabled,
             onPressed: onToggleSelected,
             tooltip: pickerTooltip,
+          ),
+        ] else if (showPlanActionButton) ...[
+          SizedBox(width: tokens.spaceSm),
+          TextButton(
+            onPressed: onPlanActionPressed,
+            style: TextButton.styleFrom(
+              minimumSize: Size(tokens.minTapTargetSize + tokens.spaceLg, 40),
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spaceMd,
+                vertical: tokens.spaceXs2,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
+                side: BorderSide(
+                  color: scheme.outlineVariant.withValues(alpha: 0.8),
+                ),
+              ),
+            ),
+            child: Text(
+              planActionLabel,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.fade,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: scheme.onSurfaceVariant,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ],
