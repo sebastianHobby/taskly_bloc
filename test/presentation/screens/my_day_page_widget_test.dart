@@ -86,6 +86,7 @@ void main() {
   late RoutineWriteService routineWriteService;
   late TaskWriteService taskWriteService;
   late TaskSuggestionService taskSuggestionService;
+  late OccurrenceReadService occurrenceReadService;
   late SessionStreamCacheManager sessionStreamCacheManager;
   late SessionSharedDataService sessionSharedDataService;
   late SessionAllocationCacheService sessionAllocationCacheService;
@@ -363,6 +364,12 @@ void main() {
       valueRatingsRepository: valueRatingsRepository,
     );
 
+    occurrenceReadService = OccurrenceReadService(
+      taskRepository: taskRepository,
+      projectRepository: projectRepository,
+      dayKeyService: dayKeyService,
+    );
+
     sessionStreamCacheManager = SessionStreamCacheManager(
       appLifecycleService: appLifecycleEvents,
     );
@@ -503,6 +510,9 @@ void main() {
           value: projectAnchorStateRepository,
         ),
         RepositoryProvider<TaskWriteService>.value(value: taskWriteService),
+        RepositoryProvider<OccurrenceReadService>.value(
+          value: occurrenceReadService,
+        ),
         RepositoryProvider<DemoModeService>.value(value: demoModeService),
         RepositoryProvider<DemoDataProvider>.value(value: demoDataProvider),
         RepositoryProvider<TemporalTriggerService>.value(
