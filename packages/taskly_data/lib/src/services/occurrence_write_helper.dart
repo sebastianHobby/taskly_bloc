@@ -202,10 +202,9 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
         final completedDayKeyUtc = dateOnly(now.toUtc());
         final dayId = idGenerator.myDayDayId(dayUtc: completedDayKeyUtc);
         final pick =
-            await (driftDb.select(driftDb.myDayPicksTable)
-                  ..where(
-                    (p) => p.dayId.equals(dayId) & p.taskId.equals(taskId),
-                  ))
+            await (driftDb.select(driftDb.myDayPicksTable)..where(
+                  (p) => p.dayId.equals(dayId) & p.taskId.equals(taskId),
+                ))
                 .getSingleOrNull();
         if (pick != null) {
           await decisionEventsRepository!.append(

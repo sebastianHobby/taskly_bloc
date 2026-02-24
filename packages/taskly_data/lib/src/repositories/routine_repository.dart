@@ -314,7 +314,8 @@ final class RoutineRepository implements RoutineRepositoryContract {
         final psMetadata = encodeCrudMetadata(context, clock: _clock);
         final completedUtc = (completedAtUtc ?? now).toUtc();
         final normalizedLocalDay =
-            dateOnlyOrNull(completedDayLocal) ?? dateOnly(completedUtc.toLocal());
+            dateOnlyOrNull(completedDayLocal) ??
+            dateOnly(completedUtc.toLocal());
         final completedWeekdayLocal = normalizedLocalDay.weekday;
         final tzOffsetMinutes = completedUtc.toLocal().timeZoneOffset.inMinutes;
 
@@ -346,14 +347,15 @@ final class RoutineRepository implements RoutineRepositoryContract {
           final completedDayKeyUtc = dateOnly(completedUtc);
           final dayId = _ids.myDayDayId(dayUtc: completedDayKeyUtc);
           final pick =
-              await (_db.select(_db.myDayPicksTable)
-                    ..where((p) => p.dayId.equals(dayId) & p.routineId.equals(routineId)))
+              await (_db.select(_db.myDayPicksTable)..where(
+                    (p) =>
+                        p.dayId.equals(dayId) & p.routineId.equals(routineId),
+                  ))
                   .getSingleOrNull();
           if (pick != null) {
-            final routine =
-                await (_db.select(
-                  _db.routinesTable,
-                )..where((r) => r.id.equals(routineId))).getSingleOrNull();
+            final routine = await (_db.select(
+              _db.routinesTable,
+            )..where((r) => r.id.equals(routineId))).getSingleOrNull();
             final shelf = routine?.scheduleMode == 'scheduled'
                 ? MyDayDecisionShelf.routineScheduled
                 : MyDayDecisionShelf.routineFlexible;

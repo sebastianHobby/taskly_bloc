@@ -813,82 +813,88 @@ void main() {
       expect(tasks, hasLength(2));
     });
 
-    testSafe('create with two override values and metadata writes both slots', () async {
-      final db = createAutoClosingDb();
-      final repo = TaskRepository(
-        driftDb: db,
-        occurrenceExpander: _FakeOccurrenceExpander(),
-        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
-        idGenerator: IdGenerator.withUserId('user-1'),
-      );
-      final context = systemOperationContext(
-        feature: 'test',
-        intent: 'unit',
-        operation: 'task_create',
-      );
+    testSafe(
+      'create with two override values and metadata writes both slots',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = TaskRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
+        final context = systemOperationContext(
+          feature: 'test',
+          intent: 'unit',
+          operation: 'task_create',
+        );
 
-      await db
-          .into(db.projectTable)
-          .insert(
-            ProjectTableCompanion.insert(
-              id: const drift.Value('p1'),
-              name: 'Project',
-              completed: false,
-              primaryValueId: const drift.Value('v1'),
-            ),
-          );
+        await db
+            .into(db.projectTable)
+            .insert(
+              ProjectTableCompanion.insert(
+                id: const drift.Value('p1'),
+                name: 'Project',
+                completed: false,
+                primaryValueId: const drift.Value('v1'),
+              ),
+            );
 
-      await repo.create(
-        name: 'Task',
-        projectId: 'p1',
-        repeatIcalRrule: 'FREQ=DAILY',
-        valueIds: const ['v2', 'v3'],
-        context: context,
-      );
+        await repo.create(
+          name: 'Task',
+          projectId: 'p1',
+          repeatIcalRrule: 'FREQ=DAILY',
+          valueIds: const ['v2', 'v3'],
+          context: context,
+        );
 
-      final row = await db.select(db.taskTable).getSingle();
-      expect(row.repeatIcalRrule, equals('FREQ=DAILY'));
-      expect(row.overridePrimaryValueId, equals('v2'));
-      expect(row.overrideSecondaryValueId, equals('v3'));
-      expect(row.psMetadata, isNotNull);
-    });
+        final row = await db.select(db.taskTable).getSingle();
+        expect(row.repeatIcalRrule, equals('FREQ=DAILY'));
+        expect(row.overridePrimaryValueId, equals('v2'));
+        expect(row.overrideSecondaryValueId, equals('v3'));
+        expect(row.psMetadata, isNotNull);
+      },
+    );
 
-    testSafe('update preserves overrides when valueIds omitted and project kept', () async {
-      final db = createAutoClosingDb();
-      final repo = TaskRepository(
-        driftDb: db,
-        occurrenceExpander: _FakeOccurrenceExpander(),
-        occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
-        idGenerator: IdGenerator.withUserId('user-1'),
-      );
+    testSafe(
+      'update preserves overrides when valueIds omitted and project kept',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = TaskRepository(
+          driftDb: db,
+          occurrenceExpander: _FakeOccurrenceExpander(),
+          occurrenceWriteHelper: _FakeOccurrenceWriteHelper(),
+          idGenerator: IdGenerator.withUserId('user-1'),
+        );
 
-      await db
-          .into(db.taskTable)
-          .insert(
-            TaskTableCompanion.insert(
-              id: const drift.Value('t1'),
-              name: 'Task',
-              completed: const drift.Value(false),
-              projectId: const drift.Value('p1'),
-              overridePrimaryValueId: const drift.Value('v2'),
-              overrideSecondaryValueId: const drift.Value('v3'),
-            ),
-          );
+        await db
+            .into(db.taskTable)
+            .insert(
+              TaskTableCompanion.insert(
+                id: const drift.Value('t1'),
+                name: 'Task',
+                completed: const drift.Value(false),
+                projectId: const drift.Value('p1'),
+                overridePrimaryValueId: const drift.Value('v2'),
+                overrideSecondaryValueId: const drift.Value('v3'),
+              ),
+            );
 
-      await repo.update(
-        id: 't1',
-        name: 'Task Updated',
-        completed: false,
-        projectId: 'p1',
-        valueIds: null,
-      );
+        await repo.update(
+          id: 't1',
+          name: 'Task Updated',
+          completed: false,
+          projectId: 'p1',
+          valueIds: null,
+        );
 
-      final row = await (db.select(
-        db.taskTable,
-      )..where((t) => t.id.equals('t1'))).getSingle();
-      expect(row.overridePrimaryValueId, equals('v2'));
-      expect(row.overrideSecondaryValueId, equals('v3'));
-    });
+        final row = await (db.select(
+          db.taskTable,
+        )..where((t) => t.id.equals('t1'))).getSingle();
+        expect(row.overridePrimaryValueId, equals('v2'));
+        expect(row.overrideSecondaryValueId, equals('v3'));
+      },
+    );
 
     testSafe('bulk reschedule methods return zero for empty ids', () async {
       final db = createAutoClosingDb();

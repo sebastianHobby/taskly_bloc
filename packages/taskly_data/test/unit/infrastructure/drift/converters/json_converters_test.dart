@@ -71,12 +71,15 @@ void main() {
       expect(() => converter.fromSql('{"a":1}'), throwsA(isA<ArgumentError>()));
     });
 
-    testSafe('JsonIntListConverter decodes ints and filters non-numbers', () async {
-      const converter = JsonIntListConverter();
-      final decoded = converter.fromSql('[1,2.8,"x",true]');
-      expect(decoded, equals([1, 2]));
-      expect(jsonDecode(converter.toSql(decoded)), equals([1, 2]));
-    });
+    testSafe(
+      'JsonIntListConverter decodes ints and filters non-numbers',
+      () async {
+        const converter = JsonIntListConverter();
+        final decoded = converter.fromSql('[1,2.8,"x",true]');
+        expect(decoded, equals([1, 2]));
+        expect(jsonDecode(converter.toSql(decoded)), equals([1, 2]));
+      },
+    );
 
     testSafe('JsonIntListConverter throws for non-list', () async {
       const converter = JsonIntListConverter();

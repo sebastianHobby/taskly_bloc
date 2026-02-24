@@ -99,7 +99,10 @@ final class DebugStatsBloc extends Bloc<DebugStatsEvent, DebugStatsState> {
     await _load(emit, event.range);
   }
 
-  Future<void> _load(Emitter<DebugStatsState> emit, DebugStatsRange range) async {
+  Future<void> _load(
+    Emitter<DebugStatsState> emit,
+    DebugStatsRange range,
+  ) async {
     emit(state.copyWith(loading: true, range: range, error: null));
     final now = _nowService.nowUtc();
     final days = switch (range) {
@@ -113,7 +116,9 @@ final class DebugStatsBloc extends Bloc<DebugStatsEvent, DebugStatsState> {
     );
     try {
       final keepRates = await _repository.getKeepRateByShelf(range: dateRange);
-      final deferRates = await _repository.getDeferRateByShelf(range: dateRange);
+      final deferRates = await _repository.getDeferRateByShelf(
+        range: dateRange,
+      );
       final topDeferredTasks = await _repository.getEntityDeferCounts(
         range: dateRange,
         entityType: MyDayDecisionEntityType.task,

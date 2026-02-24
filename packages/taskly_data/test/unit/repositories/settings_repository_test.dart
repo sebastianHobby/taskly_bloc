@@ -203,31 +203,34 @@ void main() {
       expect(await stream.firstWhere((v) => v == updated), equals(updated));
     });
 
-    testSafe('repairs invalid map shape and throttles repeated repair writes', () async {
-      final db = createAutoClosingDb();
-      final repo = SettingsRepository(driftDb: db);
+    testSafe(
+      'repairs invalid map shape and throttles repeated repair writes',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = SettingsRepository(driftDb: db);
 
-      await db
-          .into(db.userProfileTable)
-          .insert(
-            UserProfileTableCompanion.insert(
-              settingsOverrides: const drift.Value('[]'),
-              createdAt: drift.Value(DateTime.utc(2024, 1, 1)),
-              updatedAt: drift.Value(DateTime.utc(2024, 1, 1)),
-            ),
-          );
+        await db
+            .into(db.userProfileTable)
+            .insert(
+              UserProfileTableCompanion.insert(
+                settingsOverrides: const drift.Value('[]'),
+                createdAt: drift.Value(DateTime.utc(2024, 1, 1)),
+                updatedAt: drift.Value(DateTime.utc(2024, 1, 1)),
+              ),
+            );
 
-      final first = await repo.load(SettingsKey.global);
-      final second = await repo.load(SettingsKey.global);
-      expect(first, equals(const GlobalSettings()));
-      expect(second, equals(const GlobalSettings()));
+        final first = await repo.load(SettingsKey.global);
+        final second = await repo.load(SettingsKey.global);
+        expect(first, equals(const GlobalSettings()));
+        expect(second, equals(const GlobalSettings()));
 
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-      final row = await db.select(db.userProfileTable).getSingle();
-      final overrides =
-          jsonDecode(row.settingsOverrides!) as Map<String, dynamic>;
-      expect(overrides['_repairs'], isA<Map<String, dynamic>>());
-    });
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        final row = await db.select(db.userProfileTable).getSingle();
+        final overrides =
+            jsonDecode(row.settingsOverrides!) as Map<String, dynamic>;
+        expect(overrides['_repairs'], isA<Map<String, dynamic>>());
+      },
+    );
 
     testSafe('long invalid JSON stores truncated repair preview', () async {
       final db = createAutoClosingDb();
@@ -255,51 +258,57 @@ void main() {
       expect(preview.length, lessThanOrEqualTo(501));
     });
 
-    testSafe('singleton decode fromJson failure falls back to defaults', () async {
-      final db = createAutoClosingDb();
-      final repo = SettingsRepository(driftDb: db);
+    testSafe(
+      'singleton decode fromJson failure falls back to defaults',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = SettingsRepository(driftDb: db);
 
-      await db
-          .into(db.userProfileTable)
-          .insert(
-            UserProfileTableCompanion.insert(
-              settingsOverrides: const drift.Value(
-                '{"global":{"themeMode":"BAD_ENUM"},"allocation":{"suggestionSignal":"BAD_SIGNAL"}}',
+        await db
+            .into(db.userProfileTable)
+            .insert(
+              UserProfileTableCompanion.insert(
+                settingsOverrides: const drift.Value(
+                  '{"global":{"themeMode":"BAD_ENUM"},"allocation":{"suggestionSignal":"BAD_SIGNAL"}}',
+                ),
+                createdAt: drift.Value(DateTime.utc(2024, 1, 3)),
+                updatedAt: drift.Value(DateTime.utc(2024, 1, 3)),
               ),
-              createdAt: drift.Value(DateTime.utc(2024, 1, 3)),
-              updatedAt: drift.Value(DateTime.utc(2024, 1, 3)),
-            ),
-          );
+            );
 
-      final global = await repo.load(SettingsKey.global);
-      final allocation = await repo.load(SettingsKey.allocation);
-      expect(global, equals(const GlobalSettings()));
-      expect(allocation, equals(const AllocationConfig()));
-    });
+        final global = await repo.load(SettingsKey.global);
+        final allocation = await repo.load(SettingsKey.allocation);
+        expect(global, equals(const GlobalSettings()));
+        expect(allocation, equals(const AllocationConfig()));
+      },
+    );
 
-    testSafe('keyed entry-not-map branches are repaired and defaulted', () async {
-      final db = createAutoClosingDb();
-      final repo = SettingsRepository(driftDb: db);
+    testSafe(
+      'keyed entry-not-map branches are repaired and defaulted',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = SettingsRepository(driftDb: db);
 
-      await db
-          .into(db.userProfileTable)
-          .insert(
-            UserProfileTableCompanion.insert(
-              settingsOverrides: const drift.Value(
-                '{"pageSort":{"tasks_inbox":"oops"},'
-                '"pageDisplay":"oops"}',
+        await db
+            .into(db.userProfileTable)
+            .insert(
+              UserProfileTableCompanion.insert(
+                settingsOverrides: const drift.Value(
+                  '{"pageSort":{"tasks_inbox":"oops"},'
+                  '"pageDisplay":"oops"}',
+                ),
+                createdAt: drift.Value(DateTime.utc(2024, 1, 4)),
+                updatedAt: drift.Value(DateTime.utc(2024, 1, 4)),
               ),
-              createdAt: drift.Value(DateTime.utc(2024, 1, 4)),
-              updatedAt: drift.Value(DateTime.utc(2024, 1, 4)),
-            ),
-          );
+            );
 
-      final sort = await repo.load(SettingsKey.pageSort(PageKey.tasksInbox));
-      final display = await repo.load(
-        SettingsKey.pageDisplay(PageKey.projectOverview),
-      );
-      expect(sort, isNull);
-      expect(display, isNull);
-    });
+        final sort = await repo.load(SettingsKey.pageSort(PageKey.tasksInbox));
+        final display = await repo.load(
+          SettingsKey.pageDisplay(PageKey.projectOverview),
+        );
+        expect(sort, isNull);
+        expect(display, isNull);
+      },
+    );
   });
 }
