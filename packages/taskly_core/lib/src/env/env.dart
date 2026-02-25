@@ -56,14 +56,24 @@ class Env {
     return _requireConfig().powersyncUrl;
   }
 
-  /// Auth redirect URL for web callbacks.
-  static String get authWebRedirectUrl {
-    return _requireConfig().authWebRedirectUrl;
+  /// Auth redirect URL for sign-up callbacks in web environments.
+  static String get authSignUpWebRedirectUrl {
+    return _requireConfig().authSignUpWebRedirectUrl;
   }
 
-  /// Auth redirect URL for native deep-link callbacks.
-  static String get authAppRedirectUrl {
-    return _requireConfig().authAppRedirectUrl;
+  /// Auth redirect URL for password recovery callbacks in web environments.
+  static String get authPasswordRecoveryWebRedirectUrl {
+    return _requireConfig().authPasswordRecoveryWebRedirectUrl;
+  }
+
+  /// Auth redirect URL for sign-up callbacks in native environments.
+  static String get authSignUpAppRedirectUrl {
+    return _requireConfig().authSignUpAppRedirectUrl;
+  }
+
+  /// Auth redirect URL for password recovery callbacks in native environments.
+  static String get authPasswordRecoveryAppRedirectUrl {
+    return _requireConfig().authPasswordRecoveryAppRedirectUrl;
   }
 
   /// App version used for telemetry metadata.
@@ -184,16 +194,87 @@ class Env {
     }
     if (configured.powersyncUrl.trim().isEmpty) missing.add('POWERSYNC_URL');
 
-    if (missing.isEmpty) return;
+    if (missing.isNotEmpty) {
+      talker.error(
+        '[env] Missing required configuration in entrypoint:${configured.name}: '
+        '${missing.join(', ')}',
+      );
 
-    talker.error(
-      '[env] Missing required configuration in entrypoint:${configured.name}: '
-      '${missing.join(', ')}',
-    );
+      throw StateError(
+        'Missing required configuration in entrypoint:${configured.name}: '
+        '${missing.join(', ')}',
+      );
+    }
 
-    throw StateError(
-      'Missing required configuration in entrypoint:${configured.name}: '
-      '${missing.join(', ')}',
+    validateAuthRedirectUrls();
+  }
+
+  /// Validates configured auth redirect URLs for sign-up and password recovery.
+  ///
+  /// Web URLs must be absolute `http(s)` URLs.
+  /// App URLs must be absolute URLs with a scheme and either host or path.
+  static void validateAuthRedirectUrls() {
+    final configured = _requireConfig();
+    _validateRedirectUrl(
+      field: 'AUTH_SIGN_UP_WEB_REDIRECT_URL',
+      value: configured.authSignUpWebRedirectUrl,
+      allowCustomScheme: false,
     );
+    _validateRedirectUrl(
+      field: 'AUTH_PASSWORD_RECOVERY_WEB_REDIRECT_URL',
+      value: configured.authPasswordRecoveryWebRedirectUrl,
+      allowCustomScheme: false,
+    );
+    _validateRedirectUrl(
+      field: 'AUTH_SIGN_UP_APP_REDIRECT_URL',
+      value: configured.authSignUpAppRedirectUrl,
+      allowCustomScheme: true,
+    );
+    _validateRedirectUrl(
+      field: 'AUTH_PASSWORD_RECOVERY_APP_REDIRECT_URL',
+      value: configured.authPasswordRecoveryAppRedirectUrl,
+      allowCustomScheme: true,
+    );
+  }
+
+  static void _validateRedirectUrl({
+    required String field,
+    required String value,
+    required bool allowCustomScheme,
+  }) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return;
+
+    final uri = Uri.tryParse(trimmed);
+    if (uri == null || !uri.hasScheme) {
+      talker.error(
+        '[env] Invalid $field "$trimmed". Expected an absolute URL with a scheme.',
+      );
+      throw StateError(
+        'Invalid $field "$trimmed". Expected an absolute URL with a scheme.',
+      );
+    }
+
+    if (!allowCustomScheme) {
+      final isHttp = uri.scheme == 'http' || uri.scheme == 'https';
+      if (!isHttp || uri.host.isEmpty) {
+        talker.error(
+          '[env] Invalid $field "$trimmed". Expected an absolute http(s) URL.',
+        );
+        throw StateError(
+          'Invalid $field "$trimmed". Expected an absolute http(s) URL.',
+        );
+      }
+      return;
+    }
+
+    if (uri.host.isEmpty && uri.path.isEmpty) {
+      talker.error(
+        '[env] Invalid $field "$trimmed". Expected a URL with host or path.',
+      );
+      throw StateError(
+        'Invalid $field "$trimmed". Expected a URL with host or path.',
+      );
+    }
   }
 }

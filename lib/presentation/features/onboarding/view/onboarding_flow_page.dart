@@ -7,7 +7,6 @@ import 'package:taskly_bloc/presentation/features/onboarding/bloc/onboarding_blo
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/review/bloc/weekly_review_cubit.dart';
 import 'package:taskly_bloc/presentation/features/review/widgets/weekly_value_checkin_sheet.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/taskly_brand_logo.dart';
@@ -104,7 +103,6 @@ class _OnboardingFlowViewState extends State<_OnboardingFlowView> {
                 context.read<GlobalSettingsBloc>().add(
                   const GlobalSettingsEvent.onboardingCompleted(),
                 );
-                Routing.toScreenKey(context, 'projects');
               }
 
               if (state.step == OnboardingStep.ratings) {

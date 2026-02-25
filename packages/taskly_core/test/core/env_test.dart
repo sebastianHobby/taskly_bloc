@@ -43,5 +43,19 @@ void main() {
       expect(() => Env.supabasePublishableKey, throwsA(isA<StateError>()));
       expect(() => Env.powersyncUrl, throwsA(isA<StateError>()));
     });
+
+    testSafe('validateRequired also validates auth redirect URL shapes', () async {
+      Env.resetForTest();
+      Env.config = const EnvConfig(
+        name: 'test',
+        supabaseUrl: 'https://example.supabase.co',
+        supabasePublishableKey: 'pubkey',
+        powersyncUrl: 'https://example.powersync.dev',
+        authSignUpWebRedirectUrl: 'not-a-url',
+      );
+      await Env.load();
+
+      expect(Env.validateRequired, throwsA(isA<StateError>()));
+    });
   });
 }

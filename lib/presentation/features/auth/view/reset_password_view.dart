@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/routing/session_entry_policy.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ResetPasswordView extends StatefulWidget {
@@ -39,7 +40,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/sign-in'),
+          onPressed: () => context.go(signInPath),
         ),
       ),
       body: BlocListener<AuthBloc, AppAuthState>(
@@ -59,7 +60,6 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message!)),
             );
-            context.go('/sign-in');
           }
         },
         child: Center(

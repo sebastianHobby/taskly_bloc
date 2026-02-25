@@ -97,7 +97,7 @@ void main() {
 
     final repo = AuthRepository(
       client: client,
-      redirectUrlResolver: () => 'https://example.com/auth/callback',
+      redirectUrlResolver: (_) => 'https://example.com/auth/callback',
     );
 
     await repo.signUp(
@@ -145,6 +145,54 @@ void main() {
       ),
     ).called(1);
   });
+
+  testSafe(
+    'uses flow-specific redirect resolver for sign-up and recovery',
+    () async {
+      when(
+        () => authClient.signUp(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+          emailRedirectTo: any(named: 'emailRedirectTo'),
+        ),
+      ).thenAnswer((_) async => supabase.AuthResponse());
+      when(
+        () => authClient.resetPasswordForEmail(
+          any(),
+          redirectTo: any(named: 'redirectTo'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final repo = AuthRepository(
+        client: client,
+        redirectUrlResolver: (flow) {
+          return switch (flow) {
+            AuthRedirectFlow.signUp =>
+              'https://example.com/auth/callback/signup',
+            AuthRedirectFlow.passwordRecovery =>
+              'https://example.com/auth/callback/recovery',
+          };
+        },
+      );
+
+      await repo.signUp(email: 'new@test.com', password: 'secret');
+      await repo.resetPasswordForEmail('reset@test.com');
+
+      verify(
+        () => authClient.signUp(
+          email: 'new@test.com',
+          password: 'secret',
+          emailRedirectTo: 'https://example.com/auth/callback/signup',
+        ),
+      ).called(1);
+      verify(
+        () => authClient.resetPasswordForEmail(
+          'reset@test.com',
+          redirectTo: 'https://example.com/auth/callback/recovery',
+        ),
+      ).called(1);
+    },
+  );
 
   testSafe('updatePassword maps user response', () async {
     when(

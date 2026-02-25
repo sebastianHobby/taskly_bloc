@@ -40,6 +40,15 @@ void main() {
     expect(payload.type, 'recovery');
   });
 
+  testSafe('parses native callback query payload', () async {
+    final payload = parser.parse(
+      Uri.parse('taskly://auth-callback?type=recovery'),
+    );
+
+    expect(payload.isRecoveryFlow, isTrue);
+    expect(payload.type, 'recovery');
+  });
+
   testSafe('handles plain hash route fragments without params', () async {
     final payload = parser.parse(
       Uri.parse('https://example.com/#/auth/callback'),

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/routing/session_entry_policy.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class CheckEmailView extends StatelessWidget {
@@ -19,7 +20,7 @@ class CheckEmailView extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/sign-in'),
+          onPressed: () => context.go(signInPath),
         ),
       ),
       body: Center(
@@ -51,7 +52,7 @@ class CheckEmailView extends StatelessWidget {
                 ),
                 SizedBox(height: tokens.spaceLg),
                 FilledButton(
-                  onPressed: () => context.go('/sign-in'),
+                  onPressed: () => context.go(signInPath),
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: tokens.spaceMd),
                     child: Text(context.l10n.authSignInButton),
@@ -59,7 +60,7 @@ class CheckEmailView extends StatelessWidget {
                 ),
                 SizedBox(height: tokens.spaceSm),
                 TextButton(
-                  onPressed: () => context.go('/sign-up'),
+                  onPressed: () => context.go(signUpPath),
                   child: Text(context.l10n.authUseDifferentEmailAction),
                 ),
               ],

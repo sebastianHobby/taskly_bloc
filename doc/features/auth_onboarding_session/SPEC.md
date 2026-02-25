@@ -46,6 +46,11 @@ Defines auth states, onboarding progression, startup synchronization gates, and 
 - Native deep-link callback:
   - `taskly://auth-callback`
 - Supabase Auth settings must allow both web and native redirect URLs.
+- Redirect configuration is split by intent:
+  - sign-up confirmation redirect URL
+  - password recovery redirect URL
+- Local/dev and production callback URLs are environment-specific and must both
+  map to the canonical in-app callback route (`/auth/callback`).
 
 ## Sync observability contract
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -17,11 +18,13 @@ import 'package:taskly_bloc/presentation/features/app/bloc/initial_sync_gate_blo
 import 'package:taskly_bloc/presentation/features/app/view/auth_session_transition.dart';
 import 'package:taskly_bloc/presentation/features/app/view/debug_bootstrap_sheet.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/features/auth/services/auth_callback_link_mapper.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher_defaults.dart';
 import 'package:taskly_bloc/presentation/features/micro_learning/bloc/micro_learning_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
+import 'package:taskly_bloc/presentation/routing/session_entry_policy.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 import 'package:taskly_bloc/presentation/screens/services/my_day_gate_query_service.dart';
@@ -335,6 +338,10 @@ class _AppRouter extends StatefulWidget {
 class _AppRouterState extends State<_AppRouter> {
   late final _RouterRefreshNotifier _refreshNotifier;
   late final GoRouter _router;
+  final AuthCallbackLinkMapper _authCallbackLinkMapper =
+      const AuthCallbackLinkMapper();
+  StreamSubscription<Uri>? _authCallbackLinkSubscription;
+  String? _lastHandledAuthCallbackTarget;
 
   @override
   void initState() {
@@ -348,13 +355,64 @@ class _AppRouterState extends State<_AppRouter> {
       navigatorKey: App.navigatorKey,
       refreshListenable: _refreshNotifier,
     );
+    _startAuthCallbackLinkBridge();
   }
 
   @override
   void dispose() {
+    _authCallbackLinkSubscription?.cancel();
     _router.dispose();
     _refreshNotifier.dispose();
     super.dispose();
+  }
+
+  void _startAuthCallbackLinkBridge() {
+    if (kIsWeb) return;
+
+    final appLinks = AppLinks();
+    _authCallbackLinkSubscription = appLinks.uriLinkStream.listen(
+      _handleIncomingAuthCallbackUri,
+      onError: (Object error, StackTrace stackTrace) {
+        AppLog.handleStructured(
+          'routing.auth_callback',
+          'app link stream failed',
+          error,
+          stackTrace,
+          const <String, Object?>{},
+        );
+      },
+    );
+
+    unawaited(() async {
+      try {
+        final initialUri = await appLinks.getInitialLink();
+        if (initialUri != null) {
+          _handleIncomingAuthCallbackUri(initialUri);
+        }
+      } catch (error, stackTrace) {
+        AppLog.handleStructured(
+          'routing.auth_callback',
+          'initial app link read failed',
+          error,
+          stackTrace,
+          const <String, Object?>{},
+        );
+      }
+    }());
+  }
+
+  void _handleIncomingAuthCallbackUri(Uri incomingUri) {
+    final mapped = _authCallbackLinkMapper.map(incomingUri);
+    if (mapped == null) return;
+
+    final target = mapped.toString();
+    if (_lastHandledAuthCallbackTarget == target) return;
+
+    final current = _router.routeInformationProvider.value.uri.toString();
+    if (current == target) return;
+
+    _lastHandledAuthCallbackTarget = target;
+    _router.go(target);
   }
 
   @override
@@ -468,14 +526,14 @@ class _DebugBootstrapper extends StatefulWidget {
 
 class _DebugBootstrapperState extends State<_DebugBootstrapper> {
   static const Set<String> _blockedRoutes = {
-    '/splash',
-    '/sign-in',
-    '/sign-up',
-    '/check-email',
-    '/forgot-password',
-    '/auth/callback',
-    '/reset-password',
-    '/initial-sync',
+    splashPath,
+    signInPath,
+    signUpPath,
+    checkEmailPath,
+    forgotPasswordPath,
+    authCallbackPath,
+    resetPasswordPath,
+    initialSyncPath,
   };
 
   static bool _shownThisSession = false;

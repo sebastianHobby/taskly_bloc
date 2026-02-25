@@ -148,6 +148,23 @@ void main() {
     await expectNavigation(tester, router, from: '/my-day', to: '/splash');
   });
 
+  testWidgetsSafe('initial auth still allows auth callback route', (
+    tester,
+  ) async {
+    final router = await pumpRouter(
+      tester,
+      authState: const AppAuthState(status: AuthStatus.initial),
+      settingsState: const GlobalSettingsState(isLoading: false),
+      syncState: const InitialSyncGateReady(),
+    );
+    await expectNavigation(
+      tester,
+      router,
+      from: '/auth/callback',
+      to: '/auth/callback',
+    );
+  });
+
   testWidgetsSafe('authenticated recovery flow redirects to reset-password', (
     tester,
   ) async {

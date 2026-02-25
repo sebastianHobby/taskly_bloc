@@ -9,16 +9,21 @@ import 'package:taskly_domain/telemetry.dart';
 
 import 'package:taskly_data/src/errors/app_failure_mapper.dart';
 
+enum AuthRedirectFlow {
+  signUp,
+  passwordRecovery,
+}
+
 /// Implementation of authentication repository using Supabase.
 class AuthRepository implements AuthRepositoryContract {
   AuthRepository({
     required supabase.SupabaseClient client,
-    String? Function()? redirectUrlResolver,
+    String? Function(AuthRedirectFlow flow)? redirectUrlResolver,
   }) : _client = client,
        _redirectUrlResolver = redirectUrlResolver;
 
   final supabase.SupabaseClient _client;
-  final String? Function()? _redirectUrlResolver;
+  final String? Function(AuthRedirectFlow flow)? _redirectUrlResolver;
 
   late final Stream<AuthStateChange> _authStateStream = _client
       .auth
@@ -81,7 +86,9 @@ class AuthRepository implements AuthRepositoryContract {
       final response = await _client.auth.signUp(
         email: email,
         password: password,
-        emailRedirectTo: _resolveAuthRedirectUrl(),
+        emailRedirectTo: _resolveAuthRedirectUrl(
+          flow: AuthRedirectFlow.signUp,
+        ),
       );
       AppLog.info('data.auth', 'signUp: success');
       return _mapAuthResponse(response);
@@ -129,7 +136,9 @@ class AuthRepository implements AuthRepositoryContract {
     try {
       await _client.auth.resetPasswordForEmail(
         email,
-        redirectTo: _resolveAuthRedirectUrl(),
+        redirectTo: _resolveAuthRedirectUrl(
+          flow: AuthRedirectFlow.passwordRecovery,
+        ),
       );
       AppLog.info('data.auth', 'resetPasswordForEmail: success');
     } catch (e, st) {
@@ -265,25 +274,29 @@ class AuthRepository implements AuthRepositoryContract {
     );
   }
 
-  String _resolveAuthRedirectUrl() {
-    final override = _redirectUrlResolver?.call()?.trim();
+  String _resolveAuthRedirectUrl({required AuthRedirectFlow flow}) {
+    final override = _redirectUrlResolver?.call(flow)?.trim();
     if (override != null && override.isNotEmpty) return override;
 
-    if (kIsWeb) return _webRedirectFallback();
+    if (kIsWeb) return _webRedirectFallback(flow: flow);
 
     return switch (defaultTargetPlatform) {
-      TargetPlatform.iOS => _appRedirectFallback(),
-      TargetPlatform.android => _appRedirectFallback(),
-      TargetPlatform.macOS => _appRedirectFallback(),
-      TargetPlatform.fuchsia => _webRedirectFallback(),
-      TargetPlatform.linux => _webRedirectFallback(),
-      TargetPlatform.windows => _webRedirectFallback(),
+      TargetPlatform.iOS => _appRedirectFallback(flow: flow),
+      TargetPlatform.android => _appRedirectFallback(flow: flow),
+      TargetPlatform.macOS => _appRedirectFallback(flow: flow),
+      TargetPlatform.fuchsia => _webRedirectFallback(flow: flow),
+      TargetPlatform.linux => _webRedirectFallback(flow: flow),
+      TargetPlatform.windows => _webRedirectFallback(flow: flow),
     };
   }
 
-  String _webRedirectFallback() {
+  String _webRedirectFallback({required AuthRedirectFlow flow}) {
     try {
-      final configured = Env.authWebRedirectUrl.trim();
+      final configured = switch (flow) {
+        AuthRedirectFlow.signUp => Env.authSignUpWebRedirectUrl.trim(),
+        AuthRedirectFlow.passwordRecovery =>
+          Env.authPasswordRecoveryWebRedirectUrl.trim(),
+      };
       if (configured.isNotEmpty) return configured;
     } catch (_) {
       // Test/non-configured entrypoints can safely use the default below.
@@ -291,9 +304,13 @@ class AuthRepository implements AuthRepositoryContract {
     return 'https://sebastianhobby.github.io/taskly_bloc/auth/callback';
   }
 
-  String _appRedirectFallback() {
+  String _appRedirectFallback({required AuthRedirectFlow flow}) {
     try {
-      final configured = Env.authAppRedirectUrl.trim();
+      final configured = switch (flow) {
+        AuthRedirectFlow.signUp => Env.authSignUpAppRedirectUrl.trim(),
+        AuthRedirectFlow.passwordRecovery =>
+          Env.authPasswordRecoveryAppRedirectUrl.trim(),
+      };
       if (configured.isNotEmpty) return configured;
     } catch (_) {
       // Test/non-configured entrypoints can safely use the default below.

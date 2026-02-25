@@ -46,6 +46,16 @@ void main() {
     expect(target, splashPath);
   });
 
+  testSafe('initial auth allows pre-auth routes', () async {
+    final target = sessionEntryRedirectTarget(
+      path: authCallbackPath,
+      authState: const AppAuthState(status: AuthStatus.initial),
+      settingsState: loadedSettings(),
+      syncState: syncReady,
+    );
+    expect(target, isNull);
+  });
+
   testSafe('loading auth allows pre-auth routes', () async {
     final target = sessionEntryRedirectTarget(
       path: signUpPath,
@@ -184,4 +194,17 @@ void main() {
     );
     expect(target, isNull);
   });
+
+  testSafe(
+    'authenticated onboarding route exits to canonical app home',
+    () async {
+      final target = sessionEntryRedirectTarget(
+        path: onboardingPath,
+        authState: const AppAuthState(status: AuthStatus.authenticated),
+        settingsState: loadedSettings(onboardingCompleted: true),
+        syncState: syncReady,
+      );
+      expect(target, myDayPath);
+    },
+  );
 }

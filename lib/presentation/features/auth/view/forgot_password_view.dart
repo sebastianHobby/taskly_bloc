@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/routing/session_entry_policy.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Forgot password view that sends reset email via AuthBloc.
@@ -36,7 +37,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/sign-in'),
+          onPressed: () => context.go(signInPath),
         ),
       ),
       body: BlocListener<AuthBloc, AppAuthState>(
@@ -143,7 +144,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
-                          onPressed: () => context.go('/sign-in'),
+                          onPressed: () => context.go(signInPath),
                           child: Text(context.l10n.authSignInButton),
                         ),
                       ],

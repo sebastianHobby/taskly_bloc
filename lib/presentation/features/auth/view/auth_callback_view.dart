@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/services/auth_callback_uri_parser.dart';
+import 'package:taskly_bloc/presentation/routing/session_entry_policy.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class AuthCallbackView extends StatefulWidget {
@@ -153,7 +154,7 @@ class _AuthCallbackErrorCard extends StatelessWidget {
         ),
         SizedBox(height: tokens.spaceLg),
         FilledButton(
-          onPressed: () => context.go('/sign-in'),
+          onPressed: () => context.go(signInPath),
           child: Padding(
             padding: EdgeInsets.symmetric(vertical: tokens.spaceMd),
             child: Text(context.l10n.authSignInButton),

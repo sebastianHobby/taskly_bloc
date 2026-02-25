@@ -51,7 +51,7 @@ String? sessionEntryRedirectTarget({
 
   switch (authState.status) {
     case AuthStatus.initial:
-      return isSplashRoute ? null : splashPath;
+      return (isSplashRoute || isPreAuthRoute) ? null : splashPath;
     case AuthStatus.loading:
       return (isSplashRoute || isPreAuthRoute) ? null : splashPath;
     case AuthStatus.unauthenticated:

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/routing/session_entry_policy.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/taskly_brand_logo.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -167,13 +168,13 @@ class _SignInViewState extends State<SignInView> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
-                          onPressed: () => context.go('/sign-up'),
+                          onPressed: () => context.go(signUpPath),
                           child: Text(context.l10n.authSignUpButton),
                         ),
                       ],
                     ),
                     TextButton(
-                      onPressed: () => context.go('/forgot-password'),
+                      onPressed: () => context.go(forgotPasswordPath),
                       child: Text(context.l10n.authForgotPasswordLink),
                     ),
                   ],
