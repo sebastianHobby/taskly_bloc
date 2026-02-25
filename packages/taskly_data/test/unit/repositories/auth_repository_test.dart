@@ -97,7 +97,7 @@ void main() {
 
     final repo = AuthRepository(
       client: client,
-      redirectUrlResolver: () => 'https://example.com/#/auth/callback',
+      redirectUrlResolver: () => 'https://example.com/auth/callback',
     );
 
     await repo.signUp(
@@ -109,7 +109,7 @@ void main() {
       () => authClient.signUp(
         email: 'new@test.com',
         password: 'secret',
-        emailRedirectTo: 'https://example.com/#/auth/callback',
+        emailRedirectTo: 'https://example.com/auth/callback',
       ),
     ).called(1);
   });

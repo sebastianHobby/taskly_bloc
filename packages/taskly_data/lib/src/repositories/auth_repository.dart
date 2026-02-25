@@ -288,7 +288,7 @@ class AuthRepository implements AuthRepositoryContract {
     } catch (_) {
       // Test/non-configured entrypoints can safely use the default below.
     }
-    return 'https://sebastianhobby.github.io/taskly_bloc/#/auth/callback';
+    return 'https://sebastianhobby.github.io/taskly_bloc/auth/callback';
   }
 
   String _appRedirectFallback() {

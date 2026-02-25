@@ -41,8 +41,8 @@ Defines auth states, onboarding progression, startup synchronization gates, and 
 ## Callback and redirect URLs
 
 - Canonical callback route: `/auth/callback`
-- Web (GitHub Pages hash routing):
-  - `https://sebastianhobby.github.io/taskly_bloc/#/auth/callback`
+- Web (GitHub Pages path callback):
+  - `https://sebastianhobby.github.io/taskly_bloc/auth/callback`
 - Native deep-link callback:
   - `taskly://auth-callback`
 - Supabase Auth settings must allow both web and native redirect URLs.
