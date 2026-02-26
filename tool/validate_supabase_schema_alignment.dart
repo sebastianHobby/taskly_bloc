@@ -146,7 +146,11 @@ class _CommandResult {
 Future<_ValidationResult> _runStrictDdlValidation({
   required bool requireDb,
 }) async {
-  final start = await _runSupabase(['db', 'start']);
+  final start = await _runSupabaseWithRetry(
+    ['db', 'start'],
+    attempts: 3,
+    delay: const Duration(seconds: 2),
+  );
   if (start.exitCode != 0) {
     return _ValidationResult(
       ok: !requireDb,
@@ -156,7 +160,11 @@ Future<_ValidationResult> _runStrictDdlValidation({
     );
   }
 
-  final reset = await _runSupabase(['db', 'reset', '--local', '--no-seed']);
+  final reset = await _runSupabaseWithRetry(
+    ['db', 'reset', '--local', '--no-seed'],
+    attempts: 3,
+    delay: const Duration(seconds: 3),
+  );
   if (reset.exitCode != 0) {
     return _ValidationResult(
       ok: false,
@@ -253,6 +261,36 @@ Future<_CommandResult> _runSupabase(List<String> args) async {
     stdout: '${result.stdout}',
     stderr: '${result.stderr}',
   );
+}
+
+Future<_CommandResult> _runSupabaseWithRetry(
+  List<String> args, {
+  required int attempts,
+  required Duration delay,
+}) async {
+  late _CommandResult last;
+  for (var i = 0; i < attempts; i++) {
+    last = await _runSupabase(args);
+    if (last.exitCode == 0) {
+      return last;
+    }
+    if (!_isTransientSupabaseError(last.combinedOutput) || i == attempts - 1) {
+      return last;
+    }
+    await Future<void>.delayed(delay);
+  }
+  return last;
+}
+
+bool _isTransientSupabaseError(String output) {
+  final lower = output.toLowerCase();
+  return lower.contains('error status 502') ||
+      lower.contains(
+        'invalid response was received from the upstream server',
+      ) ||
+      lower.contains('the database system is starting up') ||
+      lower.contains('econnrefused') ||
+      lower.contains('container is not ready: unhealthy');
 }
 
 List<String> _extractDdlStatements(String output) {
