@@ -344,7 +344,9 @@ void main() {
     final ready = await tester.pumpUntilFound(find.text('New Moment'));
     expect(ready, isTrue);
     await tester.tap(find.text('Good'));
-    await tester.pumpAndSettle();
+    await tester.pumpForStream();
+    await tester.pumpForStream();
+    await tester.pumpForStream();
 
     await expectLater(
       find.byType(MaterialApp).first,
