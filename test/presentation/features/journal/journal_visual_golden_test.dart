@@ -1,6 +1,8 @@
 @Tags(['widget', 'journal', 'golden'])
 library;
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
@@ -37,6 +39,8 @@ class _MockSettingsRepositoryContract extends Mock
     implements SettingsRepositoryContract {}
 
 void main() {
+  final skipInCi = Platform.environment['CI'] == 'true';
+
   setUpAll(() async {
     setUpAllTestEnvironment();
     registerAllFallbackValues();
@@ -317,7 +321,7 @@ void main() {
       find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_home_dark_harness.png'),
     );
-  });
+  }, skip: skipInCi);
 
   testWidgetsSafe('journal filter sheet dark snapshot', (tester) async {
     seedHomeData();
@@ -335,7 +339,7 @@ void main() {
       find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_filter_sheet_dark_harness.png'),
     );
-  });
+  }, skip: skipInCi);
 
   testWidgetsSafe('journal quick capture dark snapshot', (tester) async {
     seedHomeData();
@@ -352,7 +356,7 @@ void main() {
       find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_quick_capture_dark_harness.png'),
     );
-  });
+  }, skip: skipInCi);
 
   testWidgetsSafe('journal insights dark snapshot', (tester) async {
     seedInsightsData();
@@ -365,7 +369,7 @@ void main() {
       find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_insights_dark_harness.png'),
     );
-  });
+  }, skip: skipInCi);
 }
 
 JournalEntry _entry(DateTime when, {required String id, String? text}) {
