@@ -25,8 +25,7 @@ import 'package:taskly_bloc/presentation/features/projects/view/project_editor_r
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
-import 'package:taskly_bloc/presentation/features/journal/view/journal_daily_checkins_page.dart';
-import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_manage_factors_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
@@ -483,12 +482,8 @@ GoRouter createRouter({
             builder: (_, __) => const SettingsNotificationsPage(),
           ),
           GoRoute(
-            path: Routing.screenPath('journal_manage_trackers'),
-            builder: (_, __) => const JournalTrackersPage(),
-          ),
-          GoRoute(
-            path: Routing.screenPath('journal_manage_daily_checkins'),
-            builder: (_, __) => const JournalDailyCheckinsPage(),
+            path: Routing.screenPath('journal_manage_factors'),
+            builder: (_, __) => const JournalManageFactorsPage(),
           ),
           GoRoute(
             path: '/journal/trackers/new',

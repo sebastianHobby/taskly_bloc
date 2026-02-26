@@ -16,15 +16,19 @@ Defines support signals, weekly review cards, journal integration, and stats con
 - Journal home quick capture uses a modal bottom-sheet editor optimized for
   rapid logging; full-screen route edit/create remains available for detailed
   edits.
-- Journal home is a single chronological timeline feed (newest first) grouped
-  by day headers with compact metadata (entry count + mood average).
+- Journal home is summary-first:
+  - "Your Day" card first (selected day summary),
+  - chronological timeline feed second (newest first),
+  - one top insight card third when thresholds are met.
 - Journal supports multiple entries per day; entry identity is `journal_entries.id`
   and edits are ID-targeted (never day-level upsert/merge by `entry_date`).
 - Journal history is not a separate screen; search and filters live on the main
   Journal feed.
 - Journal home timeline supports infinite scroll by expanding the date window
   as the user reaches the end of the list.
-- Journal home does not render a daily summary section.
+- Journal uses strict hybrid semantics:
+  - day-scoped factors (daily card) are one-per-day state,
+  - moment logs remain multi-entry-per-day.
 - Tracker writes for a selected day must be anchored to that selected day (not
   the device's current day) for both entry writes and day-scoped factor writes.
 - The editor renders one grouped tracker accordion list.
@@ -38,17 +42,28 @@ Defines support signals, weekly review cards, journal integration, and stats con
   in-editor manage actions.
 - Timeline factor summaries should be deduplicated per tracker so repeated
   edits do not produce duplicate chips for the same tracker.
-- Daily check-ins are a distinct user concept from trackers:
-  - Daily check-ins are managed on a dedicated management surface.
-  - Trackers are managed on a separate management surface.
-  - Both daily check-ins and trackers appear in the entry editor.
+- Daily check-ins and trackers are managed from one tabbed management surface
+  (Factors / Groups).
 - The entry editor renders daily check-ins in a pinned first card with
   "applies to today" semantics, and renders trackers in separate "for this
   log" sections.
+- Mood is required before a moment log can be saved.
+- Journal home filters support:
+  - date presets/range,
+  - factor filters,
+  - optional factor-group filter.
+- Journal home does not support minimum mood threshold filtering.
+- Timeline density supports compact and rich modes; compact is the default.
 - Timeline boolean chips do not use "Done"; they render only the tracker label
   when logged/true.
 - Timeline quantity chips render day totals (aggregated across the day) rather
   than per-entry deltas.
+- Insight contract:
+  - show top insight only when thresholds are met (sample >= 10 and medium
+    effect size),
+  - if not met, show a single onboarding nudge card,
+  - copy must use association language (not causation claims),
+  - evidence metadata must include confidence, sample size, and time window.
 
 ## Testing minimums
 

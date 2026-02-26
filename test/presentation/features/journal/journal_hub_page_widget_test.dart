@@ -98,9 +98,21 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
     when(
+      () => settingsRepository.load(
+        SettingsKey.pageDisplay(PageKey.journal),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
       () => settingsRepository.save(
         SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
         any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => settingsRepository.save<DisplayPreferences?>(
+        SettingsKey.pageDisplay(PageKey.journal),
+        any<DisplayPreferences?>(),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
@@ -140,6 +152,10 @@ void main() {
             ],
             child: const JournalHubPage(),
           ),
+        ),
+        GoRoute(
+          path: '/journal-manage-factors',
+          builder: (_, __) => const Scaffold(body: Text('Factors route')),
         ),
         GoRoute(
           path: '/journal-manage-trackers',
@@ -193,7 +209,8 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.text('Morning note'), findsOneWidget);
+    expect(find.text('Morning note'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byTooltip('Add entry'), findsOneWidget);
   });
 
@@ -297,7 +314,8 @@ void main() {
     await tester.tap(find.byTooltip('Filters'));
     await tester.pumpForStream();
 
-    expect(find.byType(SwitchListTile), findsOneWidget);
+    expect(find.byType(FilterChip), findsNothing);
+    expect(find.text('Trackers'), findsOneWidget);
   });
 
   testWidgetsSafe('starter pack prompt can be dismissed with Not now', (
@@ -320,7 +338,7 @@ void main() {
     expect(found, isTrue);
   });
 
-  testWidgetsSafe('manage sheet navigates to trackers route', (tester) async {
+  testWidgetsSafe('manage action navigates to factors route', (tester) async {
     defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
     entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
 
@@ -329,7 +347,7 @@ void main() {
 
     await tester.tap(find.byTooltip('Manage trackers'));
     await tester.pumpForStream();
-    expect(find.byType(ListTile), findsAtLeast(2));
+    expect(find.text('Factors route'), findsOneWidget);
   });
 
   testWidgetsSafe('quick capture FAB currently requires outer repo provider', (

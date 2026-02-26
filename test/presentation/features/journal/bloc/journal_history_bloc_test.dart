@@ -42,6 +42,7 @@ void main() {
       ),
     );
     registerFallbackValue(SettingsKey.microLearningSeen('fallback-tip-id'));
+    registerFallbackValue(SettingsKey.pageDisplay(PageKey.journal));
   });
   setUp(setUpTestEnvironment);
 
@@ -118,6 +119,11 @@ void main() {
       ),
     ).thenAnswer((_) async => true);
     when(
+      () => settingsRepository.load(
+        SettingsKey.pageDisplay(PageKey.journal),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
       () => settingsRepository.save<bool>(
         any(),
         any<bool>(),
@@ -128,6 +134,12 @@ void main() {
       () => settingsRepository.save<bool>(
         any(),
         any<bool>(),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => settingsRepository.save<DisplayPreferences?>(
+        any(),
+        any<DisplayPreferences?>(),
       ),
     ).thenAnswer((_) async {});
   });
@@ -141,7 +153,7 @@ void main() {
   });
 
   blocTestSafe<JournalHistoryBloc, JournalHistoryState>(
-    'filters days by mood minimum',
+    'filters days by selected factors',
     build: buildBloc,
     act: (bloc) {
       final moodTracker = TrackerDefinition(
@@ -158,7 +170,18 @@ void main() {
         systemKey: 'mood',
       );
 
-      defsController.emit([moodTracker]);
+      final energyTracker = TrackerDefinition(
+        id: 'energy-1',
+        name: 'Energy',
+        scope: 'entry',
+        valueType: 'rating',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        valueKind: 'rating',
+        opKind: 'set',
+        isActive: true,
+      );
+      defsController.emit([moodTracker, energyTracker]);
 
       final day1 = DateTime.utc(2026, 1, 10);
       final day2 = DateTime.utc(2026, 1, 11);
@@ -205,11 +228,23 @@ void main() {
           occurredAt: day2,
           recordedAt: day2,
         ),
+        TrackerEvent(
+          id: 'ev3',
+          trackerId: 'energy-1',
+          anchorType: 'entry',
+          entryId: 'e2',
+          op: 'set',
+          value: 4,
+          occurredAt: day2,
+          recordedAt: day2,
+        ),
       ]);
 
       bloc.add(
         JournalHistoryFiltersChanged(
-          JournalHistoryFilters.initial().copyWith(moodMinValue: 4),
+          JournalHistoryFilters.initial().copyWith(
+            factorTrackerIds: const {'energy-1'},
+          ),
         ),
       );
     },
@@ -219,9 +254,9 @@ void main() {
         isA<JournalHistoryLoaded>()
             .having((s) => s.days.length, 'days.length', 1)
             .having(
-              (s) => s.filters.moodMinValue,
-              'filters.moodMinValue',
-              4,
+              (s) => s.filters.factorTrackerIds,
+              'filters.factorTrackerIds',
+              contains('energy-1'),
             ),
       );
     },
@@ -455,4 +490,113 @@ void main() {
       ).called(1);
     },
   );
+
+  testSafe('density toggle persists compact/rich preference', () async {
+    when(
+      () => settingsRepository.load(
+        SettingsKey.pageDisplay(PageKey.journal),
+      ),
+    ).thenAnswer(
+      (_) async => const DisplayPreferences(density: DisplayDensity.compact),
+    );
+
+    final bloc = buildBloc();
+    addTearDown(bloc.close);
+
+    bloc.add(const JournalHistoryStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    bloc.add(const JournalHistoryDensityToggled());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    final state = bloc.state as JournalHistoryLoaded;
+    expect(state.density, DisplayDensity.standard);
+    verify(
+      () => settingsRepository.save<DisplayPreferences?>(
+        SettingsKey.pageDisplay(PageKey.journal),
+        const DisplayPreferences(density: DisplayDensity.standard),
+      ),
+    ).called(1);
+  });
+
+  testSafe('builds top insight only when thresholds are met', () async {
+    final moodTracker = TrackerDefinition(
+      id: 'mood-1',
+      name: 'Mood',
+      scope: 'entry',
+      valueType: 'rating',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+      valueKind: 'rating',
+      opKind: 'set',
+      isActive: true,
+      isOutcome: true,
+      systemKey: 'mood',
+    );
+    final factorTracker = TrackerDefinition(
+      id: 'social-1',
+      name: 'Social time',
+      scope: 'entry',
+      valueType: 'yes_no',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+      isActive: true,
+    );
+    defsController.emit([moodTracker, factorTracker]);
+
+    final entries = <JournalEntry>[];
+    final events = <TrackerEvent>[];
+    for (var i = 0; i < 20; i++) {
+      final day = DateTime.utc(2026, 1, 20 - i, 10);
+      final entryId = 'entry-$i';
+      entries.add(
+        JournalEntry(
+          id: entryId,
+          entryDate: day,
+          entryTime: day,
+          occurredAt: day,
+          localDate: day,
+          createdAt: day,
+          updatedAt: day,
+        ),
+      );
+      events.add(
+        TrackerEvent(
+          id: 'mood-$i',
+          trackerId: 'mood-1',
+          anchorType: 'entry',
+          entryId: entryId,
+          op: 'set',
+          value: i < 10 ? 5 : 3,
+          occurredAt: day,
+          recordedAt: day,
+        ),
+      );
+      if (i < 10) {
+        events.add(
+          TrackerEvent(
+            id: 'factor-$i',
+            trackerId: 'social-1',
+            anchorType: 'entry',
+            entryId: entryId,
+            op: 'set',
+            value: true,
+            occurredAt: day,
+            recordedAt: day,
+          ),
+        );
+      }
+    }
+    entriesController.emit(entries);
+    eventsController.emit(events);
+
+    final bloc = buildBloc();
+    addTearDown(bloc.close);
+    bloc.add(const JournalHistoryStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+
+    final state = bloc.state as JournalHistoryLoaded;
+    expect(state.topInsight, isNotNull);
+    expect(state.showInsightsNudge, isFalse);
+  });
 }

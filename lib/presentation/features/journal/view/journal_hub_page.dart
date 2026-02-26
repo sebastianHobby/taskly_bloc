@@ -11,6 +11,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -63,10 +64,13 @@ class _JournalHubPageState extends State<JournalHubPage> {
   Future<void> _showFilters(
     BuildContext context,
     JournalHistoryFilters filters,
+    List<TrackerDefinition> factorDefinitions,
+    List<TrackerGroup> factorGroups,
   ) async {
     DateTime? rangeStart = filters.rangeStart;
     DateTime? rangeEnd = filters.rangeEnd;
-    int? moodMin = filters.moodMinValue;
+    final selectedFactorIds = <String>{...filters.factorTrackerIds};
+    String? factorGroupId = filters.factorGroupId;
 
     await showModalBottomSheet<void>(
       context: context,
@@ -79,9 +83,6 @@ class _JournalHubPageState extends State<JournalHubPage> {
                 ? context.l10n.journalAnyTimeLabel
                 : '${DateFormat.yMMMd().format(rangeStart!.toLocal())} - '
                       '${DateFormat.yMMMd().format(rangeEnd!.toLocal())}';
-
-            final moodValue = (moodMin ?? 3).toDouble();
-            final moodEnabled = moodMin != null;
 
             return Padding(
               padding: EdgeInsets.only(
@@ -124,28 +125,54 @@ class _JournalHubPageState extends State<JournalHubPage> {
                       });
                     },
                   ),
-                  SwitchListTile(
-                    title: Text(context.l10n.journalMoodMinimumTitle),
-                    value: moodEnabled,
+                  DropdownButtonFormField<String?>(
+                    value: factorGroupId,
+                    decoration: InputDecoration(
+                      labelText: context.l10n.groupsTitle,
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text(context.l10n.allLabel),
+                      ),
+                      for (final group in factorGroups)
+                        DropdownMenuItem<String?>(
+                          value: group.id,
+                          child: Text(group.name),
+                        ),
+                    ],
                     onChanged: (value) {
                       setState(() {
-                        moodMin = value ? 3 : null;
+                        factorGroupId = value;
                       });
                     },
                   ),
-                  if (moodEnabled)
-                    Slider(
-                      value: moodValue,
-                      min: 1,
-                      max: 5,
-                      divisions: 4,
-                      label: moodValue.round().toString(),
-                      onChanged: (value) {
-                        setState(() {
-                          moodMin = value.round();
-                        });
-                      },
-                    ),
+                  SizedBox(height: TasklyTokens.of(context).spaceSm),
+                  Text(
+                    context.l10n.journalTrackersTitle,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  SizedBox(height: TasklyTokens.of(context).spaceXs),
+                  Wrap(
+                    spacing: TasklyTokens.of(context).spaceXs,
+                    runSpacing: TasklyTokens.of(context).spaceXs,
+                    children: [
+                      for (final definition in factorDefinitions)
+                        FilterChip(
+                          label: Text(definition.name),
+                          selected: selectedFactorIds.contains(definition.id),
+                          onSelected: (selected) {
+                            setState(() {
+                              if (selected) {
+                                selectedFactorIds.add(definition.id);
+                              } else {
+                                selectedFactorIds.remove(definition.id);
+                              }
+                            });
+                          },
+                        ),
+                    ],
+                  ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
                   Row(
                     children: [
@@ -154,7 +181,8 @@ class _JournalHubPageState extends State<JournalHubPage> {
                           setState(() {
                             rangeStart = null;
                             rangeEnd = null;
-                            moodMin = null;
+                            factorGroupId = null;
+                            selectedFactorIds.clear();
                           });
                         },
                         child: Text(context.l10n.clearLabel),
@@ -171,7 +199,8 @@ class _JournalHubPageState extends State<JournalHubPage> {
                               filters.copyWith(
                                 rangeStart: rangeStart,
                                 rangeEnd: rangeEnd,
-                                moodMinValue: moodMin,
+                                factorGroupId: factorGroupId,
+                                factorTrackerIds: selectedFactorIds,
                               ),
                             ),
                           );
@@ -308,40 +337,6 @@ class _JournalHubPageState extends State<JournalHubPage> {
     }
   }
 
-  Future<void> _showManageSheet(BuildContext context) async {
-    final l10n = context.l10n;
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.calendar_today_outlined),
-                title: Text(l10n.journalDailyCheckInsTitle),
-                subtitle: Text(l10n.journalDailyAppliesTodaySubtitle),
-                onTap: () => Navigator.of(sheetContext).pop('daily'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.tune),
-                title: Text(l10n.journalTrackersTitle),
-                subtitle: Text(l10n.journalTrackerPerLogSubtitle),
-                onTap: () => Navigator.of(sheetContext).pop('trackers'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-    if (!context.mounted || selected == null) return;
-    final routeKey = selected == 'daily'
-        ? 'journal_manage_daily_checkins'
-        : 'journal_manage_trackers';
-    Routing.pushScreenKey(context, routeKey);
-  }
-
   void _onSearchChanged(String value, JournalHistoryFilters filters) {
     context.read<JournalHistoryBloc>().add(
       JournalHistoryFiltersChanged(
@@ -405,6 +400,9 @@ class _JournalHubPageState extends State<JournalHubPage> {
                 days: days,
                 isLoadingMore: _isLoadMoreInFlight,
                 scrollController: _scrollController,
+                density: state.density,
+                topInsight: state.topInsight,
+                showInsightsNudge: state.showInsightsNudge,
               ),
             };
 
@@ -413,12 +411,40 @@ class _JournalHubPageState extends State<JournalHubPage> {
                 actions: [
                   IconButton(
                     tooltip: context.l10n.filtersLabel,
-                    onPressed: () => _showFilters(context, filters),
+                    onPressed: () {
+                      final loaded = state is JournalHistoryLoaded
+                          ? state
+                          : null;
+                      _showFilters(
+                        context,
+                        filters,
+                        loaded?.factorDefinitions ??
+                            const <TrackerDefinition>[],
+                        loaded?.factorGroups ?? const <TrackerGroup>[],
+                      );
+                    },
                     icon: const Icon(Icons.tune),
                   ),
+                  if (state is JournalHistoryLoaded)
+                    IconButton(
+                      tooltip: state.density == DisplayDensity.compact
+                          ? context.l10n.displayDensityStandard
+                          : context.l10n.displayDensityCompact,
+                      onPressed: () => context.read<JournalHistoryBloc>().add(
+                        const JournalHistoryDensityToggled(),
+                      ),
+                      icon: Icon(
+                        state.density == DisplayDensity.compact
+                            ? Icons.view_agenda_outlined
+                            : Icons.view_stream_outlined,
+                      ),
+                    ),
                   IconButton(
                     tooltip: context.l10n.journalManageTrackersTitle,
-                    onPressed: () => _showManageSheet(context),
+                    onPressed: () => Routing.pushScreenKey(
+                      context,
+                      'journal_manage_factors',
+                    ),
                     icon: const Icon(Icons.monitor_heart_outlined),
                   ),
                 ],
@@ -557,11 +583,17 @@ class _TimelineList extends StatelessWidget {
     required this.days,
     required this.isLoadingMore,
     required this.scrollController,
+    required this.density,
+    required this.topInsight,
+    required this.showInsightsNudge,
   });
 
   final List<JournalHistoryDaySummary> days;
   final bool isLoadingMore;
   final ScrollController scrollController;
+  final DisplayDensity density;
+  final JournalTopInsight? topInsight;
+  final bool showInsightsNudge;
 
   @override
   Widget build(BuildContext context) {
@@ -577,9 +609,26 @@ class _TimelineList extends StatelessWidget {
         TasklyTokens.of(context).spaceLg,
         TasklyTokens.of(context).spaceLg,
       ),
-      itemCount: days.length + (isLoadingMore ? 1 : 0),
+      itemCount: days.length + (isLoadingMore ? 1 : 0) + 1,
       itemBuilder: (context, index) {
-        if (index >= days.length) {
+        if (index == 0) {
+          final topDay = days.first;
+          return Padding(
+            padding: EdgeInsets.only(bottom: TasklyTokens.of(context).spaceMd),
+            child: Column(
+              children: [
+                _YourDayCard(summary: topDay),
+                SizedBox(height: TasklyTokens.of(context).spaceSm),
+                if (topInsight != null)
+                  _TopInsightCard(insight: topInsight!)
+                else if (showInsightsNudge)
+                  _TopInsightNudgeCard(),
+              ],
+            ),
+          );
+        }
+        final adjustedIndex = index - 1;
+        if (adjustedIndex >= days.length) {
           return Padding(
             padding: EdgeInsets.symmetric(
               vertical: TasklyTokens.of(context).spaceMd,
@@ -593,16 +642,132 @@ class _TimelineList extends StatelessWidget {
             ),
           );
         }
-        return _DayTimelineSection(summary: days[index]);
+        return _DayTimelineSection(
+          summary: days[adjustedIndex],
+          density: density,
+        );
       },
     );
   }
 }
 
-class _DayTimelineSection extends StatelessWidget {
-  const _DayTimelineSection({required this.summary});
+class _YourDayCard extends StatelessWidget {
+  const _YourDayCard({required this.summary});
 
   final JournalHistoryDaySummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final moodText = summary.moodAverage == null
+        ? context.l10n.journalMoodAverageEmpty
+        : context.l10n.journalMoodAverageValue(
+            summary.moodAverage!.toStringAsFixed(1),
+          );
+    return Card(
+      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spaceMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              DateFormat.yMMMEd().format(summary.day.toLocal()),
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            SizedBox(height: tokens.spaceXxs),
+            Text(
+              context.l10n.journalDailyCheckInsTitle,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: tokens.spaceXxs),
+            Text(
+              '${context.l10n.journalEntryCountLabel(summary.entries.length)} · $moodText',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TopInsightCard extends StatelessWidget {
+  const _TopInsightCard({required this.insight});
+
+  final JournalTopInsight insight;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final deltaValue = insight.deltaMood.abs().toStringAsFixed(1);
+    final delta = insight.deltaMood >= 0 ? '+$deltaValue' : '-$deltaValue';
+    final confidenceLabel = insight.confidence == JournalInsightConfidence.high
+        ? context.l10n.journalInsightHighConfidence
+        : context.l10n.journalInsightMediumConfidence;
+    return Card(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spaceMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.l10n.insightTypeCorrelationDiscovery,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            SizedBox(height: tokens.spaceXxs),
+            Text(
+              context.l10n.journalTopInsightAssociated(
+                insight.factorName,
+                delta,
+              ),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            SizedBox(height: tokens.spaceXxs),
+            Text(
+              context.l10n.journalTopInsightMeta(
+                confidenceLabel,
+                insight.sampleSize,
+                insight.windowDays,
+              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TopInsightNudgeCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    return Card(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spaceMd),
+        child: Text(
+          context.l10n.journalInsightsNudge,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ),
+    );
+  }
+}
+
+class _DayTimelineSection extends StatelessWidget {
+  const _DayTimelineSection({required this.summary, required this.density});
+
+  final JournalHistoryDaySummary summary;
+  final DisplayDensity density;
 
   @override
   Widget build(BuildContext context) {
@@ -686,6 +851,7 @@ class _DayTimelineSection extends StatelessWidget {
                 moodTrackerId: summary.moodTrackerId,
                 dayQuantityTotalsByTrackerId:
                     summary.dayQuantityTotalsByTrackerId,
+                density: density,
                 onTap: () => Routing.toJournalEntryEdit(context, entry.id),
               ),
             ),

@@ -5380,6 +5380,39 @@
     "notNowLabel": "Ahora no",
     "@notNowLabel": {
         "description": "Action label for postponing immediate completion"
+    },
+    "journalTopInsightAssociated": "{factor} se asocia con {delta} de estado de animo en esta muestra.",
+    "@journalTopInsightAssociated": {
+        "description": "Top journal insight association statement",
+        "placeholders": {
+            "factor": {},
+            "delta": {}
+        }
+    },
+    "journalTopInsightMeta": "{confidence} - {sample} entradas - Ultimos {days} dias",
+    "@journalTopInsightMeta": {
+        "description": "Top journal insight metadata line",
+        "placeholders": {
+            "confidence": {},
+            "sample": {
+                "type": "int"
+            },
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "journalInsightHighConfidence": "Alta confianza",
+    "@journalInsightHighConfidence": {
+        "description": "High confidence label for journal insights"
+    },
+    "journalInsightMediumConfidence": "Confianza media",
+    "@journalInsightMediumConfidence": {
+        "description": "Medium confidence label for journal insights"
+    },
+    "journalInsightsNudge": "Sigue registrando momentos y factores para desbloquear ideas.",
+    "@journalInsightsNudge": {
+        "description": "Nudge shown on journal home when there is not enough insight evidence"
     }
 }
 

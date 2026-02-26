@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/preferences.dart';
 
 import '../../../helpers/test_imports.dart';
 
@@ -110,6 +111,7 @@ void main() {
             definitionById: defs,
             moodTrackerId: 'mood',
             dayQuantityTotalsByTrackerId: const <String, double>{'water': 300},
+            density: DisplayDensity.standard,
             onTap: () {},
           ),
         ),
@@ -172,6 +174,7 @@ void main() {
           definitionById: defs,
           moodTrackerId: null,
           dayQuantityTotalsByTrackerId: const <String, double>{},
+          density: DisplayDensity.standard,
           onTap: () {},
         ),
       ),

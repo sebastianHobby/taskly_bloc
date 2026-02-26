@@ -26,6 +26,9 @@ enum PageKey {
   /// Scheduled page
   scheduled('scheduled'),
 
+  /// Journal page
+  journal('journal'),
+
   /// Labels overview page
   labelOverview('label_overview');
 

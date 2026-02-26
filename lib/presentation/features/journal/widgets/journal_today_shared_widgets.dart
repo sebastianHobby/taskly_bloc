@@ -4,6 +4,7 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalLogCard extends StatelessWidget {
@@ -13,6 +14,7 @@ class JournalLogCard extends StatelessWidget {
     required this.definitionById,
     required this.moodTrackerId,
     required this.dayQuantityTotalsByTrackerId,
+    required this.density,
     required this.onTap,
     super.key,
   });
@@ -22,6 +24,7 @@ class JournalLogCard extends StatelessWidget {
   final Map<String, TrackerDefinition> definitionById;
   final String? moodTrackerId;
   final Map<String, double> dayQuantityTotalsByTrackerId;
+  final DisplayDensity density;
   final VoidCallback onTap;
 
   @override
@@ -35,6 +38,7 @@ class JournalLogCard extends StatelessWidget {
     final summaryItems = _buildSummaryItems(l10n);
 
     final note = entry.journalText?.trim();
+    final isRich = density == DisplayDensity.standard;
 
     final surface = theme.colorScheme.surfaceContainerHigh;
     final border = theme.colorScheme.outlineVariant;
@@ -110,7 +114,7 @@ class JournalLogCard extends StatelessWidget {
                     ),
                 ],
               ),
-              if (note != null && note.isNotEmpty) ...[
+              if (isRich && note != null && note.isNotEmpty) ...[
                 SizedBox(height: tokens.spaceSm),
                 Text(
                   note,
@@ -125,7 +129,8 @@ class JournalLogCard extends StatelessWidget {
                   spacing: tokens.spaceSm,
                   runSpacing: tokens.spaceSm,
                   children: [
-                    for (final item in summaryItems)
+                    for (final item
+                        in (isRich ? summaryItems : summaryItems.take(2)))
                       Container(
                         padding: EdgeInsets.symmetric(
                           horizontal: tokens.spaceSm,

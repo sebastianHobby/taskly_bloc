@@ -30,6 +30,10 @@ final class JournalHistoryLoadMoreRequested extends JournalHistoryEvent {
   const JournalHistoryLoadMoreRequested();
 }
 
+final class JournalHistoryDensityToggled extends JournalHistoryEvent {
+  const JournalHistoryDensityToggled();
+}
+
 final class JournalHistoryStarterPackDismissed extends JournalHistoryEvent {
   const JournalHistoryStarterPackDismissed();
 }
@@ -56,12 +60,22 @@ final class JournalHistoryLoaded extends JournalHistoryState {
     required this.filters,
     required this.showStarterPack,
     required this.starterOptions,
+    required this.density,
+    required this.factorDefinitions,
+    required this.factorGroups,
+    required this.topInsight,
+    required this.showInsightsNudge,
   });
 
   final List<JournalHistoryDaySummary> days;
   final JournalHistoryFilters filters;
   final bool showStarterPack;
   final List<JournalStarterOption> starterOptions;
+  final DisplayDensity density;
+  final List<TrackerDefinition> factorDefinitions;
+  final List<TrackerGroup> factorGroups;
+  final JournalTopInsight? topInsight;
+  final bool showInsightsNudge;
 }
 
 final class JournalHistoryError extends JournalHistoryState {
@@ -92,6 +106,10 @@ class JournalHistoryBloc
       _onLoadMoreRequested,
       transformer: droppable(),
     );
+    on<JournalHistoryDensityToggled>(
+      _onDensityToggled,
+      transformer: sequential(),
+    );
     on<JournalHistoryStarterPackDismissed>(
       _onStarterPackDismissed,
       transformer: sequential(),
@@ -105,6 +123,7 @@ class JournalHistoryBloc
   static const int _windowStepDays = 30;
   static const int _maxLookbackDays = 3650;
   static const String _starterPackSeenKey = 'journal_starter_pack_start_01b';
+  static const PageKey _journalPageKey = PageKey.journal;
 
   final JournalRepositoryContract _repository;
   final HomeDayKeyService _dayKeyService;
@@ -113,6 +132,7 @@ class JournalHistoryBloc
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
   bool _starterPackSeen = false;
+  DisplayDensity _density = DisplayDensity.compact;
 
   static const List<JournalStarterOption> _starterOptions =
       <JournalStarterOption>[
@@ -265,6 +285,10 @@ class JournalHistoryBloc
     _starterPackSeen = await _settingsRepository.load(
       SettingsKey.microLearningSeen(_starterPackSeenKey),
     );
+    final displayPrefs = await _settingsRepository.load(
+      SettingsKey.pageDisplay(_journalPageKey),
+    );
+    _density = displayPrefs?.density ?? DisplayDensity.compact;
     await _onFiltersChanged(
       JournalHistoryFiltersChanged(JournalHistoryFilters.initial()),
       emit,
@@ -287,6 +311,7 @@ class JournalHistoryBloc
         .subtract(const Duration(microseconds: 1));
 
     final defs$ = _repository.watchTrackerDefinitions();
+    final groups$ = _repository.watchTrackerGroups();
     final entries$ = _repository.watchJournalEntriesByQuery(
       _buildQuery(filters, todayDayKeyUtc: todayDayKeyUtc),
     );
@@ -296,41 +321,54 @@ class JournalHistoryBloc
     );
 
     await emit.onEach<JournalHistoryLoaded>(
-      Rx.combineLatest3<
+      Rx.combineLatest4<
         List<TrackerDefinition>,
+        List<TrackerGroup>,
         List<JournalEntry>,
         List<TrackerEvent>,
         JournalHistoryLoaded
       >(
         defs$,
+        groups$,
         entries$,
         events$,
-        (defs, entries, events) {
+        (defs, groups, entries, events) {
           var days = _buildDaySummaries(
             defs: defs,
             entries: entries,
             events: events,
           );
-
-          final moodMin = filters.moodMinValue;
-          if (moodMin != null) {
-            days = days
-                .where(
-                  (d) => d.moodAverage != null && d.moodAverage! >= moodMin,
-                )
-                .toList(growable: false);
-          }
+          days = _applyFactorFilters(days: days, filters: filters);
 
           final hasCustomTracker = defs.any(
             (d) => d.isActive && d.deletedAt == null && d.systemKey == null,
           );
           final showStarterPack = !_starterPackSeen && !hasCustomTracker;
+          final factorDefinitions =
+              defs
+                  .where(
+                    (d) =>
+                        d.isActive &&
+                        d.deletedAt == null &&
+                        d.systemKey != 'mood',
+                  )
+                  .toList(growable: false)
+                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+          final factorGroups =
+              groups.where((g) => g.isActive).toList(growable: false)
+                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+          final topInsight = _buildTopInsight(days: days);
 
           return JournalHistoryLoaded(
             days: days,
             filters: filters,
             showStarterPack: showStarterPack,
             starterOptions: _starterOptions,
+            density: _density,
+            factorDefinitions: factorDefinitions,
+            factorGroups: factorGroups,
+            topInsight: topInsight,
+            showInsightsNudge: topInsight == null,
           );
         },
       ),
@@ -379,6 +417,39 @@ class JournalHistoryBloc
         filters: current.filters,
         showStarterPack: false,
         starterOptions: current.starterOptions,
+        density: current.density,
+        factorDefinitions: current.factorDefinitions,
+        factorGroups: current.factorGroups,
+        topInsight: current.topInsight,
+        showInsightsNudge: current.showInsightsNudge,
+      ),
+    );
+  }
+
+  Future<void> _onDensityToggled(
+    JournalHistoryDensityToggled event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    final current = state;
+    if (current is! JournalHistoryLoaded) return;
+    _density = current.density == DisplayDensity.compact
+        ? DisplayDensity.standard
+        : DisplayDensity.compact;
+    await _settingsRepository.save<DisplayPreferences?>(
+      SettingsKey.pageDisplay(_journalPageKey),
+      DisplayPreferences(density: _density),
+    );
+    emit(
+      JournalHistoryLoaded(
+        days: current.days,
+        filters: current.filters,
+        showStarterPack: current.showStarterPack,
+        starterOptions: current.starterOptions,
+        density: _density,
+        factorDefinitions: current.factorDefinitions,
+        factorGroups: current.factorGroups,
+        topInsight: current.topInsight,
+        showInsightsNudge: current.showInsightsNudge,
       ),
     );
   }
@@ -627,17 +698,127 @@ class JournalHistoryBloc
 
     return [
       for (final day in days)
-        JournalHistoryDaySummary(
-          day: day,
-          entries: entriesByDay[day] ?? const <JournalEntry>[],
-          eventsByEntryId: eventsByEntryId,
-          definitionById: definitionById,
-          moodTrackerId: moodTrackerId,
-          moodAverage: _average(moodValuesByDay[day]),
-          dayQuantityTotalsByTrackerId:
-              quantityTotalsByDayTracker[day] ?? const <String, double>{},
-        ),
+        () {
+          final dayEntries = entriesByDay[day] ?? const <JournalEntry>[];
+          final factorTrackerIds = <String>{};
+          for (final entry in dayEntries) {
+            final entryEvents =
+                eventsByEntryId[entry.id] ?? const <TrackerEvent>[];
+            for (final event in entryEvents) {
+              if (event.trackerId == moodTrackerId) continue;
+              factorTrackerIds.add(event.trackerId);
+            }
+          }
+          return JournalHistoryDaySummary(
+            day: day,
+            entries: dayEntries,
+            eventsByEntryId: eventsByEntryId,
+            definitionById: definitionById,
+            moodTrackerId: moodTrackerId,
+            moodAverage: _average(moodValuesByDay[day]),
+            dayQuantityTotalsByTrackerId:
+                quantityTotalsByDayTracker[day] ?? const <String, double>{},
+            factorTrackerIds: factorTrackerIds,
+          );
+        }(),
     ];
+  }
+
+  List<JournalHistoryDaySummary> _applyFactorFilters({
+    required List<JournalHistoryDaySummary> days,
+    required JournalHistoryFilters filters,
+  }) {
+    if (filters.factorTrackerIds.isEmpty && filters.factorGroupId == null) {
+      return days;
+    }
+    return days
+        .where((day) {
+          var matchesFactors = true;
+          if (filters.factorTrackerIds.isNotEmpty) {
+            matchesFactors = filters.factorTrackerIds.every(
+              day.factorTrackerIds.contains,
+            );
+          }
+          if (!matchesFactors) return false;
+          final groupId = filters.factorGroupId;
+          if (groupId == null || groupId.trim().isEmpty) return true;
+          return day.factorTrackerIds.any((trackerId) {
+            final definition = day.definitionById[trackerId];
+            return definition?.groupId == groupId;
+          });
+        })
+        .toList(growable: false);
+  }
+
+  JournalTopInsight? _buildTopInsight({
+    required List<JournalHistoryDaySummary> days,
+  }) {
+    if (days.length < 20) return null;
+    final factorStats =
+        <
+          String,
+          ({
+            int withFactor,
+            int withoutFactor,
+            double withSum,
+            double withoutSum,
+          })
+        >{};
+    for (final day in days) {
+      final mood = day.moodAverage;
+      if (mood == null) continue;
+      final allFactorIds = day.definitionById.keys.where(
+        (id) => id != day.moodTrackerId,
+      );
+      final present = day.factorTrackerIds;
+      for (final factorId in allFactorIds) {
+        final stats =
+            factorStats[factorId] ??
+            (withFactor: 0, withoutFactor: 0, withSum: 0.0, withoutSum: 0.0);
+        if (present.contains(factorId)) {
+          factorStats[factorId] = (
+            withFactor: stats.withFactor + 1,
+            withoutFactor: stats.withoutFactor,
+            withSum: stats.withSum + mood,
+            withoutSum: stats.withoutSum,
+          );
+        } else {
+          factorStats[factorId] = (
+            withFactor: stats.withFactor,
+            withoutFactor: stats.withoutFactor + 1,
+            withSum: stats.withSum,
+            withoutSum: stats.withoutSum + mood,
+          );
+        }
+      }
+    }
+
+    JournalTopInsight? best;
+    for (final entry in factorStats.entries) {
+      final stats = entry.value;
+      if (stats.withFactor < 10 || stats.withoutFactor < 10) continue;
+      final withAvg = stats.withSum / stats.withFactor;
+      final withoutAvg = stats.withoutSum / stats.withoutFactor;
+      final delta = withAvg - withoutAvg;
+      if (delta.abs() < 0.5) continue;
+      final definition = days.first.definitionById[entry.key];
+      if (definition == null) continue;
+      final confidence = delta.abs() >= 0.8
+          ? JournalInsightConfidence.high
+          : JournalInsightConfidence.medium;
+      final candidate = JournalTopInsight(
+        factorId: entry.key,
+        factorName: definition.name,
+        deltaMood: delta,
+        sampleSize: stats.withFactor,
+        confidence: confidence,
+        windowDays: 30,
+      );
+      if (best == null || candidate.deltaMood.abs() > best.deltaMood.abs()) {
+        best = candidate;
+      }
+    }
+    return best;
   }
 
   String? _findMoodTrackerId(List<TrackerDefinition> defs) {
@@ -669,6 +850,7 @@ final class JournalHistoryDaySummary {
     required this.moodTrackerId,
     required this.moodAverage,
     required this.dayQuantityTotalsByTrackerId,
+    required this.factorTrackerIds,
   });
 
   final DateTime day;
@@ -678,6 +860,27 @@ final class JournalHistoryDaySummary {
   final String? moodTrackerId;
   final double? moodAverage;
   final Map<String, double> dayQuantityTotalsByTrackerId;
+  final Set<String> factorTrackerIds;
+}
+
+enum JournalInsightConfidence { medium, high }
+
+final class JournalTopInsight {
+  const JournalTopInsight({
+    required this.factorId,
+    required this.factorName,
+    required this.deltaMood,
+    required this.sampleSize,
+    required this.confidence,
+    required this.windowDays,
+  });
+
+  final String factorId;
+  final String factorName;
+  final double deltaMood;
+  final int sampleSize;
+  final JournalInsightConfidence confidence;
+  final int windowDays;
 }
 
 final class JournalStarterOption {
@@ -719,7 +922,8 @@ final class JournalHistoryFilters {
     required this.searchText,
     required this.rangeStart,
     required this.rangeEnd,
-    required this.moodMinValue,
+    required this.factorTrackerIds,
+    required this.factorGroupId,
     required this.lookbackDays,
   });
 
@@ -727,21 +931,24 @@ final class JournalHistoryFilters {
     searchText: '',
     rangeStart: null,
     rangeEnd: null,
-    moodMinValue: null,
+    factorTrackerIds: <String>{},
+    factorGroupId: null,
     lookbackDays: 30,
   );
 
   final String searchText;
   final DateTime? rangeStart;
   final DateTime? rangeEnd;
-  final int? moodMinValue;
+  final Set<String> factorTrackerIds;
+  final String? factorGroupId;
   final int lookbackDays;
 
   JournalHistoryFilters copyWith({
     String? searchText,
     Object? rangeStart = _unset,
     Object? rangeEnd = _unset,
-    Object? moodMinValue = _unset,
+    Set<String>? factorTrackerIds,
+    Object? factorGroupId = _unset,
     int? lookbackDays,
   }) {
     return JournalHistoryFilters(
@@ -752,9 +959,10 @@ final class JournalHistoryFilters {
       rangeEnd: identical(rangeEnd, _unset)
           ? this.rangeEnd
           : rangeEnd as DateTime?,
-      moodMinValue: identical(moodMinValue, _unset)
-          ? this.moodMinValue
-          : moodMinValue as int?,
+      factorTrackerIds: factorTrackerIds ?? this.factorTrackerIds,
+      factorGroupId: identical(factorGroupId, _unset)
+          ? this.factorGroupId
+          : factorGroupId as String?,
       lookbackDays: lookbackDays ?? this.lookbackDays,
     );
   }

@@ -635,7 +635,7 @@ class _JournalEntryEditorRoutePageState
                       trackers: dailyTrackers,
                       isDaily: true,
                       emptyLabel: l10n.journalNoDailyCheckIns,
-                      manageRouteKey: 'journal_manage_daily_checkins',
+                      manageRouteKey: 'journal_manage_factors',
                       subtitle: l10n.journalDailyAppliesTodaySubtitle,
                     ),
                     SizedBox(height: tokens.spaceLg),
@@ -646,7 +646,7 @@ class _JournalEntryEditorRoutePageState
                         trackers: const <TrackerDefinition>[],
                         isDaily: false,
                         emptyLabel: l10n.journalNoEntryTrackers,
-                        manageRouteKey: 'journal_manage_trackers',
+                        manageRouteKey: 'journal_manage_factors',
                       )
                     else
                       for (final group in entryGroups) ...[
@@ -656,7 +656,7 @@ class _JournalEntryEditorRoutePageState
                           trackers: group.trackers,
                           isDaily: false,
                           emptyLabel: l10n.journalNoEntryTrackers,
-                          manageRouteKey: 'journal_manage_trackers',
+                          manageRouteKey: 'journal_manage_factors',
                         ),
                         SizedBox(height: tokens.spaceLg),
                       ],
