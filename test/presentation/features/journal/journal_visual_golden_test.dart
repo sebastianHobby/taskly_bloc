@@ -274,35 +274,45 @@ void main() {
     );
 
     await tester.pumpForStream();
+    final homeReady = await tester.pumpUntilFound(find.byType(JournalHubPage));
+    expect(homeReady, isTrue);
     await expectLater(
-      find.byType(Scaffold).first,
+      find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_home_dark_harness.png'),
     );
 
     await tester.tap(find.byIcon(Icons.tune));
-    await tester.pumpAndSettle();
+    await tester.pumpForStream();
+    final filterReady = await tester.pumpUntilFound(find.byType(BottomSheet));
+    expect(filterReady, isTrue);
     await expectLater(
-      find.byType(Scaffold).first,
+      find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_filter_sheet_dark_harness.png'),
     );
-    Navigator.of(
-      tester.element(find.byType(Scaffold).first),
-      rootNavigator: true,
-    ).pop();
-    await tester.pumpAndSettle();
+    router.pop();
+    await tester.pumpForStream();
+    final homeReadyAfterFilter = await tester.pumpUntilFound(
+      find.byType(JournalHubPage),
+    );
+    expect(homeReadyAfterFilter, isTrue);
 
     router.go('/journal/quick-capture');
-    await tester.pumpAndSettle();
+    await tester.pumpForStream();
+    final captureReady = await tester.pumpUntilFound(find.text('New Moment'));
+    expect(captureReady, isTrue);
     await expectLater(
-      find.byType(Scaffold).first,
+      find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_quick_capture_dark_harness.png'),
     );
 
     router.go('/journal/insights');
-    await tester.pumpAndSettle();
-    expect(find.byType(JournalInsightsPage), findsOneWidget);
+    await tester.pumpForStream();
+    final insightsReady = await tester.pumpUntilFound(
+      find.byType(JournalInsightsPage),
+    );
+    expect(insightsReady, isTrue);
     await expectLater(
-      find.byType(Scaffold).first,
+      find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_insights_dark_harness.png'),
     );
   });
