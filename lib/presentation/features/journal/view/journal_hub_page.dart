@@ -77,6 +77,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      showDragHandle: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
@@ -129,7 +130,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
                     children: [
                       Expanded(
                         child: Text(
-                          context.l10n.filtersLabel,
+                          'Filter Journal',
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.w800,
@@ -145,16 +146,27 @@ class _JournalHubPageState extends State<JournalHubPage> {
                             selectedFactorIds.clear();
                           });
                         },
-                        child: Text(context.l10n.clearLabel),
+                        child: const Text('Reset'),
                       ),
                     ],
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceSm),
-                  Text(
-                    context.l10n.journalDateRangeTitle,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_month,
+                        size: 18,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      SizedBox(width: TasklyTokens.of(context).spaceXs),
+                      Text(
+                        'Date Range',
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: TasklyTokens.of(context).spaceXs),
                   Wrap(
@@ -164,6 +176,13 @@ class _JournalHubPageState extends State<JournalHubPage> {
                       ChoiceChip(
                         label: const Text('Today'),
                         selected: isToday,
+                        selectedColor: Theme.of(context).colorScheme.primary,
+                        labelStyle: TextStyle(
+                          color: isToday
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
                         onSelected: (_) {
                           setState(() {
                             rangeStart = today;
@@ -174,6 +193,13 @@ class _JournalHubPageState extends State<JournalHubPage> {
                       ChoiceChip(
                         label: const Text('Last 7 Days'),
                         selected: isLast7,
+                        selectedColor: Theme.of(context).colorScheme.primary,
+                        labelStyle: TextStyle(
+                          color: isLast7
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
                         onSelected: (_) {
                           setState(() {
                             rangeStart = last7Start;
@@ -184,6 +210,13 @@ class _JournalHubPageState extends State<JournalHubPage> {
                       ChoiceChip(
                         label: const Text('This Month'),
                         selected: isThisMonth,
+                        selectedColor: Theme.of(context).colorScheme.primary,
+                        labelStyle: TextStyle(
+                          color: isThisMonth
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
                         onSelected: (_) {
                           setState(() {
                             rangeStart = thisMonthStart;
@@ -898,11 +931,71 @@ class _YourDayCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final theme = Theme.of(context);
-    final moodText = summary.moodAverage == null
-        ? context.l10n.journalMoodAverageEmpty
-        : context.l10n.journalMoodAverageValue(
-            summary.moodAverage!.toStringAsFixed(1),
-          );
+    final quantityEntries =
+        summary.dayQuantityTotalsByTrackerId.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+    final firstQuantity = quantityEntries.isNotEmpty
+        ? quantityEntries.first
+        : null;
+    final firstQuantityDef = firstQuantity == null
+        ? null
+        : summary.definitionById[firstQuantity.key];
+    final socialDef = summary.definitionById.values
+        .cast<TrackerDefinition?>()
+        .firstWhere(
+          (definition) =>
+              definition?.name.toLowerCase().contains('social') ?? false,
+          orElse: () => null,
+        );
+
+    Widget metricTile({
+      required String title,
+      required String value,
+      required IconData icon,
+      Color? accent,
+    }) {
+      return Container(
+        padding: EdgeInsets.all(tokens.spaceSm),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(tokens.radiusMd),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 14,
+                  color: accent ?? theme.colorScheme.primary,
+                ),
+                SizedBox(width: tokens.spaceXxs),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: tokens.spaceXxs),
+            Text(
+              value,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -921,22 +1014,70 @@ class _YourDayCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              DateFormat.yMMMEd().format(summary.day.toLocal()),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            Row(
+              children: [
+                Expanded(
+                  child: metricTile(
+                    title: 'Mood',
+                    value: summary.moodAverage == null
+                        ? context.l10n.journalMoodAverageEmpty
+                        : summary.moodAverage!.toStringAsFixed(1),
+                    icon: Icons.sentiment_satisfied_alt,
+                    accent: theme.colorScheme.tertiary,
+                  ),
+                ),
+                SizedBox(width: tokens.spaceSm),
+                Expanded(
+                  child: metricTile(
+                    title:
+                        firstQuantityDef?.name ??
+                        context.l10n.journalTrackersTitle,
+                    value: firstQuantity == null
+                        ? '-'
+                        : firstQuantity.value ==
+                              firstQuantity.value.roundToDouble()
+                        ? firstQuantity.value.round().toString()
+                        : firstQuantity.value.toStringAsFixed(1),
+                    icon: Icons.water_drop_outlined,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: tokens.spaceSm),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spaceSm,
+                vertical: tokens.spaceXs,
+              ),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    socialDef == null ? Icons.event_note : Icons.trending_up,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                  SizedBox(width: tokens.spaceXs),
+                  Expanded(
+                    child: Text(
+                      socialDef?.name ?? context.l10n.journalEntriesTitle,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            SizedBox(height: tokens.spaceXxs),
+            SizedBox(height: tokens.spaceXs),
             Text(
-              'Daily Overview',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            SizedBox(height: tokens.spaceXxs),
-            Text(
-              '${context.l10n.journalEntryCountLabel(summary.entries.length)} · $moodText',
+              '${DateFormat.yMMMEd().format(summary.day.toLocal())} · '
+              '${context.l10n.journalEntryCountLabel(summary.entries.length)}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

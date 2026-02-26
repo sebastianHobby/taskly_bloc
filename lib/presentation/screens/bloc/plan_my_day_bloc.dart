@@ -405,6 +405,46 @@ final class PlanMyDayReady extends PlanMyDayState {
   }
 }
 
+@visibleForTesting
+List<PlanMyDayValueSuggestionGroup> filterSuggestionGroupsForCommittedTasks({
+  required List<PlanMyDayValueSuggestionGroup> groups,
+  required Set<String> dueTodayTaskIds,
+  required Set<String> plannedTaskIds,
+}) {
+  final committedTaskIds = {...dueTodayTaskIds, ...plannedTaskIds};
+  if (committedTaskIds.isEmpty) {
+    return groups;
+  }
+
+  final filtered = <PlanMyDayValueSuggestionGroup>[];
+  for (final group in groups) {
+    final tasks = group.tasks
+        .where((task) => !committedTaskIds.contains(task.id))
+        .toList(growable: false);
+    if (tasks.isEmpty) continue;
+
+    final visibleCount = group.visibleCount > tasks.length
+        ? tasks.length
+        : group.visibleCount;
+    filtered.add(
+      PlanMyDayValueSuggestionGroup(
+        valueId: group.valueId,
+        value: group.value,
+        tasks: tasks,
+        averageRating: group.averageRating,
+        trendDelta: group.trendDelta,
+        hasRatings: group.hasRatings,
+        isTrendingDown: group.isTrendingDown,
+        isLowAverage: group.isLowAverage,
+        visibleCount: visibleCount,
+        expanded: group.expanded,
+      ),
+    );
+  }
+
+  return filtered;
+}
+
 class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
   PlanMyDayBloc({
     required SettingsRepositoryContract settingsRepository,
@@ -1404,17 +1444,10 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
       ratings: _ratingHistory,
       nowUtc: _nowService.nowUtc(),
     );
-    final valueGroups = _buildValueSuggestionGroups(
-      suggestedEntries,
-      ratingSummaries: ratingSummaries,
-    );
     final unratedValues = _buildUnratedValues(
       tasks: _incompleteTasks,
       ratingSummaries: ratingSummaries,
     );
-    final suggested = valueGroups
-        .expand((group) => group.tasks)
-        .toList(growable: false);
 
     final snoozedIds =
         snapshot?.snoozed.map((task) => task.id).toSet() ?? const <String>{};
@@ -1430,6 +1463,17 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
     final plannedTasks = activeTasks
         .where((task) => _isPlannedForTodayOrEarlier(task, today))
         .where((task) => !dueIds.contains(task.id))
+        .toList(growable: false);
+    final valueGroups = filterSuggestionGroupsForCommittedTasks(
+      groups: _buildValueSuggestionGroups(
+        suggestedEntries,
+        ratingSummaries: ratingSummaries,
+      ),
+      dueTodayTaskIds: dueIds,
+      plannedTaskIds: plannedTasks.map((task) => task.id).toSet(),
+    );
+    final suggested = valueGroups
+        .expand((group) => group.tasks)
         .toList(growable: false);
 
     final routineItems = _buildRoutineItems();

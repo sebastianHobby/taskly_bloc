@@ -229,23 +229,49 @@ void main() {
     'auto-includes due and planned (start <= today) tasks in selection',
     build: () {
       final value = TestData.value(id: 'value-1', name: 'Health');
+      final project = TestData.project(
+        id: 'project-1',
+        name: 'Health Project',
+        values: [value],
+      ).copyWith(primaryValueId: value.id);
       dueTask = TestData.task(
         id: 'task-due',
         name: 'Due Today',
         deadlineDate: dayKey,
-        values: [value],
+        projectId: project.id,
+        project: project,
       );
       plannedTask = TestData.task(
         id: 'task-planned',
         name: 'Planned For Today',
         startDate: dayKey,
-        values: [value],
+        projectId: project.id,
+        project: project,
       );
       final suggestedTask = TestData.task(
         id: 'task-suggested',
         name: 'Suggested',
-        values: [value],
+        projectId: project.id,
+        project: project,
       );
+
+      final weekStart = DateTime.utc(2025, 1, 13);
+      final ratings = <ValueWeeklyRating>[
+        ValueWeeklyRating(
+          id: 'rating-1',
+          valueId: value.id,
+          weekStartUtc: weekStart,
+          rating: 4,
+          createdAtUtc: weekStart,
+          updatedAtUtc: weekStart,
+        ),
+      ];
+      when(
+        () => valueRatingsRepository.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer((_) async => ratings);
+      when(
+        () => valueRatingsRepository.watchAll(weeks: any(named: 'weeks')),
+      ).thenAnswer((_) => Stream.value(ratings));
 
       when(() => myDayRepository.loadDay(dayKey)).thenAnswer(
         (_) async => my_day.MyDayDayPicks(
@@ -324,6 +350,44 @@ void main() {
           ),
     ],
   );
+
+  testSafe('filters due/planned tasks out of suggestion groups', () async {
+    final value = TestData.value(id: 'value-1', name: 'Health');
+    final due = TestData.task(id: 'task-due', name: 'Due Task');
+    final planned = TestData.task(id: 'task-planned', name: 'Planned Task');
+    final suggested = TestData.task(
+      id: 'task-suggested',
+      name: 'Suggested Task',
+    );
+    final groups = <PlanMyDayValueSuggestionGroup>[
+      PlanMyDayValueSuggestionGroup(
+        valueId: value.id,
+        value: value,
+        tasks: [due, planned, suggested],
+        averageRating: 4.0,
+        trendDelta: -0.5,
+        hasRatings: true,
+        isTrendingDown: false,
+        isLowAverage: true,
+        visibleCount: 2,
+        expanded: true,
+      ),
+    ];
+
+    final filtered = filterSuggestionGroupsForCommittedTasks(
+      groups: groups,
+      dueTodayTaskIds: {due.id},
+      plannedTaskIds: {planned.id},
+    );
+    final suggestionIds = filtered
+        .expand((group) => group.tasks)
+        .map((task) => task.id)
+        .toSet();
+
+    expect(suggestionIds, isNot(contains(due.id)));
+    expect(suggestionIds, isNot(contains(planned.id)));
+    expect(suggestionIds, contains(suggested.id));
+  });
 
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
     'auto-included scheduled routines are emitted as selected items',

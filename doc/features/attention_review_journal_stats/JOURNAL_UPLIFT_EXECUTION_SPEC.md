@@ -2,7 +2,7 @@
 
 Status: Active
 Owner: Codex (implementation session)
-Last updated: 2026-02-26
+Last updated: 2026-02-27
 
 ## Objective
 
@@ -75,6 +75,12 @@ Target mockup surfaces:
 - [x] Summarize residual visual gaps (if any).
 - [ ] Commit and push with hooks enabled.
 
+### Phase 7: Plan My Day duplication bugfix (test-first)
+
+- [x] Add regression test proving due/planned tasks must not appear in suggestions.
+- [x] Fix business logic to filter due/planned tasks at suggestion source.
+- [x] Re-run impacted tests.
+
 ## Progress log
 
 - 2026-02-26: Phase 1 completed with deterministic golden harness + baseline.
@@ -83,6 +89,9 @@ Target mockup surfaces:
 - 2026-02-26: Phase 4 completed with quick-capture/editor visual uplift preserving existing behavior semantics.
 - 2026-02-26: Phase 5 completed with dedicated insights page visual uplift.
 - 2026-02-26: Phase 6 validation complete (analyze + targeted journal tests + goldens); commit/push pending.
+- 2026-02-27: Phase 7 completed. Added domain regression test and fixed suggestion filtering in `TaskSuggestionService` so due/planned tasks are excluded before shelf rendering.
+- 2026-02-27: Journal uplift additional alignment pass started (quick-capture mood control restyle, insights hero/evidence card restyle, filter sheet visual updates, refreshed golden harness behavior).
+- 2026-02-27: Phase 6 revalidated after additional alignment and test updates (`dart analyze` + journal/plan-my-day/domain tests + refreshed goldens).
 
 ## Validation commands
 

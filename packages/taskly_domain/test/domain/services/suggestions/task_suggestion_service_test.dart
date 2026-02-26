@@ -146,6 +146,54 @@ void main() {
       expect(snapshot.suggested.single.task.id, 'repo-task');
     },
   );
+
+  testSafe(
+    'getSnapshot excludes due and planned tasks from suggested shelf',
+    () async {
+      final now = DateTime.utc(2026, 2, 22, 9);
+      final dayKey = DateTime.utc(2026, 2, 22);
+      final value = _value('v1');
+      final dueTask = _task(
+        id: 'task-due',
+        value: value,
+        deadlineDate: dayKey,
+      );
+      final plannedTask = _task(
+        id: 'task-planned',
+        value: value,
+        startDate: dayKey,
+      );
+      final suggestedTask = _task(id: 'task-suggested', value: value);
+
+      final orchestrator = _StubAllocationOrchestrator(
+        batchResult: _allocation(
+          [dueTask, plannedTask, suggestedTask],
+          valueId: value.id,
+        ),
+        targetResult: _allocation(
+          [dueTask, plannedTask, suggestedTask],
+          valueId: value.id,
+        ),
+      );
+      final service = TaskSuggestionService(
+        allocationOrchestrator: orchestrator,
+        taskRepository: _TaskRepoFake(),
+        valueRatingsRepository: _RatingsRepoFake(),
+        dayKeyService: _dayKeyService(),
+        clock: _FixedClock(now),
+      );
+
+      final snapshot = await service.getSnapshot(
+        batchCount: 1,
+        tasksOverride: [dueTask, plannedTask, suggestedTask],
+        nowUtc: now,
+      );
+
+      expect(snapshot.suggested.map((entry) => entry.task.id), [
+        suggestedTask.id,
+      ]);
+    },
+  );
 }
 
 HomeDayKeyService _dayKeyService() {
@@ -185,6 +233,8 @@ Task _task({
   required String id,
   required Value value,
   DateTime? snoozedUntilUtc,
+  DateTime? deadlineDate,
+  DateTime? startDate,
 }) {
   final now = DateTime.utc(2026, 1, 1);
   return Task(
@@ -194,6 +244,8 @@ Task _task({
     name: 'Task $id',
     completed: false,
     myDaySnoozedUntilUtc: snoozedUntilUtc,
+    deadlineDate: deadlineDate,
+    startDate: startDate,
     project: Project(
       id: 'p_$id',
       createdAt: now,

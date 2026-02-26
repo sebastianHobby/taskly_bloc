@@ -5,7 +5,7 @@ import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
 import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
-import 'package:taskly_domain/time.dart' show dateOnly;
+import 'package:taskly_domain/time.dart' show dateOnly, dateOnlyOrNull;
 import 'package:taskly_domain/telemetry.dart';
 
 final class SuggestedTask {
@@ -118,7 +118,11 @@ final class TaskSuggestionService {
       allocation,
       excludedIds: snoozedIds,
     );
-    final rankedSuggested = _applyRanks(baseSuggested);
+    final triageFilteredSuggested = _excludeDueAndPlannedTasks(
+      baseSuggested,
+      dayKeyUtc: dayKeyUtc,
+    );
+    final rankedSuggested = _applyRanks(triageFilteredSuggested);
     final pooledSuggested = _applyPerValuePools(
       rankedSuggested,
       ratingSummaries: ratingSummaries,
@@ -180,6 +184,24 @@ final class TaskSuggestionService {
           reasonCodes: suggested[i].reasonCodes,
         ),
     ];
+  }
+
+  List<SuggestedTask> _excludeDueAndPlannedTasks(
+    List<SuggestedTask> suggested, {
+    required DateTime dayKeyUtc,
+  }) {
+    final day = dateOnly(dayKeyUtc);
+    return suggested
+        .where((entry) {
+          final deadline = dateOnlyOrNull(entry.task.deadlineDate);
+          final start = dateOnlyOrNull(entry.task.startDate);
+          final isDueTodayOrOverdue =
+              deadline != null && !deadline.isAfter(day);
+          final isPlannedForTodayOrEarlier =
+              start != null && !start.isAfter(day);
+          return !isDueTodayOrOverdue && !isPlannedForTodayOrEarlier;
+        })
+        .toList(growable: false);
   }
 
   List<SuggestedTask> _applyPerValuePools(

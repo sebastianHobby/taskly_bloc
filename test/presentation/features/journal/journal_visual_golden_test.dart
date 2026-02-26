@@ -7,9 +7,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_insights_page.dart';
-import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -140,7 +140,7 @@ void main() {
     await groupsSubject.close();
   });
 
-  testWidgetsSafe('journal home and insights dark snapshots', (tester) async {
+  void seedHomeData() {
     final day = DateTime(2025, 10, 24, 8, 30);
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     final waterDef = _trackerDef(
@@ -179,9 +179,34 @@ void main() {
       ),
       _event('social-a', socialDef.id, entryA.id, 4, day),
     ]);
+  }
 
-    final router = GoRouter(
-      initialLocation: '/journal',
+  void seedInsightsData() {
+    final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
+    final socialDef = _trackerDef('social', 'Social Time');
+    defsSubject.add([moodDef, socialDef]);
+
+    final entries = <JournalEntry>[];
+    final events = <TrackerEvent>[];
+    final start = DateTime(2025, 9, 25, 10);
+    for (var i = 0; i < 30; i++) {
+      final when = start.add(Duration(days: i));
+      final id = 'entry-$i';
+      entries.add(_entry(when, id: id, text: 'Day $i'));
+      final hasSocial = i.isEven;
+      final mood = hasSocial ? 4 : 3;
+      events.add(_event('mood-$i', moodDef.id, id, mood, when));
+      if (hasSocial) {
+        events.add(_event('social-$i', socialDef.id, id, 1, when));
+      }
+    }
+    entriesSubject.add(entries);
+    eventsSubject.add(events);
+  }
+
+  GoRouter buildRouter({required String initialLocation}) {
+    return GoRouter(
+      initialLocation: initialLocation,
       routes: [
         GoRoute(
           path: '/journal',
@@ -256,7 +281,12 @@ void main() {
         ),
       ],
     );
+  }
 
+  Future<void> pumpHarness(
+    WidgetTester tester, {
+    required GoRouter router,
+  }) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -264,6 +294,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp.router(
+        debugShowCheckedModeBanner: false,
         theme: AppTheme.tasklyTheme(),
         darkTheme: AppTheme.tasklyTheme(),
         themeMode: ThemeMode.dark,
@@ -272,45 +303,62 @@ void main() {
         routerConfig: router,
       ),
     );
-
     await tester.pumpForStream();
-    final homeReady = await tester.pumpUntilFound(find.byType(JournalHubPage));
-    expect(homeReady, isTrue);
+  }
+
+  testWidgetsSafe('journal home dark snapshot', (tester) async {
+    seedHomeData();
+    final router = buildRouter(initialLocation: '/journal');
+    await pumpHarness(tester, router: router);
+    final ready = await tester.pumpUntilFound(find.byType(JournalHubPage));
+    expect(ready, isTrue);
+
     await expectLater(
       find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_home_dark_harness.png'),
     );
+  });
+
+  testWidgetsSafe('journal filter sheet dark snapshot', (tester) async {
+    seedHomeData();
+    final router = buildRouter(initialLocation: '/journal');
+    await pumpHarness(tester, router: router);
+    final ready = await tester.pumpUntilFound(find.byType(JournalHubPage));
+    expect(ready, isTrue);
 
     await tester.tap(find.byIcon(Icons.tune));
     await tester.pumpForStream();
     final filterReady = await tester.pumpUntilFound(find.byType(BottomSheet));
     expect(filterReady, isTrue);
+
     await expectLater(
       find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_filter_sheet_dark_harness.png'),
     );
-    router.pop();
-    await tester.pumpForStream();
-    final homeReadyAfterFilter = await tester.pumpUntilFound(
-      find.byType(JournalHubPage),
-    );
-    expect(homeReadyAfterFilter, isTrue);
+  });
 
-    router.go('/journal/quick-capture');
-    await tester.pumpForStream();
-    final captureReady = await tester.pumpUntilFound(find.text('New Moment'));
-    expect(captureReady, isTrue);
+  testWidgetsSafe('journal quick capture dark snapshot', (tester) async {
+    seedHomeData();
+    final router = buildRouter(initialLocation: '/journal/quick-capture');
+    await pumpHarness(tester, router: router);
+    final ready = await tester.pumpUntilFound(find.text('New Moment'));
+    expect(ready, isTrue);
+    await tester.tap(find.text('Good'));
+    await tester.pumpAndSettle();
+
     await expectLater(
       find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_quick_capture_dark_harness.png'),
     );
+  });
 
-    router.go('/journal/insights');
-    await tester.pumpForStream();
-    final insightsReady = await tester.pumpUntilFound(
-      find.byType(JournalInsightsPage),
-    );
-    expect(insightsReady, isTrue);
+  testWidgetsSafe('journal insights dark snapshot', (tester) async {
+    seedInsightsData();
+    final router = buildRouter(initialLocation: '/journal/insights');
+    await pumpHarness(tester, router: router);
+    final ready = await tester.pumpUntilFound(find.byType(JournalInsightsPage));
+    expect(ready, isTrue);
+
     await expectLater(
       find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_insights_dark_harness.png'),

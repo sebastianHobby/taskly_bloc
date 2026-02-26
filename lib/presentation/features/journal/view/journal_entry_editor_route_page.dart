@@ -875,18 +875,21 @@ class _MoodScalePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        for (final mood in MoodRating.values)
-          _MoodOptionButton(
-            mood: mood,
-            enabled: enabled,
-            selected: value == mood,
-            onTap: () => onChanged(mood),
-          ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final mood in MoodRating.values) ...[
+            _MoodOptionButton(
+              mood: mood,
+              enabled: enabled,
+              selected: value == mood,
+              onTap: () => onChanged(mood),
+            ),
+            if (mood != MoodRating.values.last) const SizedBox(width: 8),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -910,10 +913,10 @@ class _MoodOptionButton extends StatelessWidget {
     final moodColor = _getMoodColor(mood, theme.colorScheme);
     final bg = selected
         ? moodColor.withValues(alpha: 0.18)
-        : theme.colorScheme.surface;
+        : theme.colorScheme.surfaceContainerLow;
     final border = selected
         ? BorderSide(color: moodColor, width: 2)
-        : BorderSide(color: theme.dividerColor);
+        : BorderSide(color: theme.colorScheme.outlineVariant);
 
     return Semantics(
       button: true,
@@ -927,7 +930,7 @@ class _MoodOptionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          width: 84,
+          width: 68,
           padding: EdgeInsets.symmetric(
             horizontal: TasklyTokens.of(context).spaceSm,
             vertical: TasklyTokens.of(context).spaceXs,
@@ -942,14 +945,24 @@ class _MoodOptionButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                mood.emoji,
-                style: TextStyle(
-                  fontSize: 26,
-                  color: enabled ? null : theme.disabledColor,
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: moodColor.withValues(alpha: selected ? 0.2 : 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    _moodFace(mood),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: enabled ? moodColor : theme.disabledColor,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
                 ),
               ),
-              SizedBox(height: TasklyTokens.of(context).spaceSm),
+              SizedBox(height: TasklyTokens.of(context).spaceXs),
               Text(
                 mood.localizedLabel(context.l10n),
                 textAlign: TextAlign.center,
@@ -977,5 +990,15 @@ Color _getMoodColor(MoodRating mood, ColorScheme colorScheme) {
     MoodRating.neutral => colorScheme.onSurfaceVariant,
     MoodRating.good => colorScheme.tertiary,
     MoodRating.excellent => colorScheme.primary,
+  };
+}
+
+String _moodFace(MoodRating mood) {
+  return switch (mood) {
+    MoodRating.veryLow => 'x(',
+    MoodRating.low => ':(',
+    MoodRating.neutral => ':|',
+    MoodRating.good => ':)',
+    MoodRating.excellent => ':D',
   };
 }

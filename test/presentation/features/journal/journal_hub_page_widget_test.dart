@@ -327,7 +327,8 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.byType(FilterChip), findsNothing);
-    expect(find.text('Trackers'), findsOneWidget);
+    expect(find.text('Filter Journal'), findsOneWidget);
+    expect(find.text('Date Range'), findsOneWidget);
   });
 
   testWidgetsSafe('shows applied filters row when filters are active', (
