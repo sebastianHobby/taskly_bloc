@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -59,6 +61,10 @@ class _JournalEntryEditorRoutePageState
     extends State<JournalEntryEditorRoutePage> {
   late final TextEditingController _noteController;
   String? _expandedTrackerId;
+  bool _showPostMoodDaily = false;
+  bool _showPostMoodGroups = false;
+  bool _lastHasMood = false;
+  Timer? _groupsRevealTimer;
 
   @override
   void initState() {
@@ -68,8 +74,41 @@ class _JournalEntryEditorRoutePageState
 
   @override
   void dispose() {
+    _groupsRevealTimer?.cancel();
     _noteController.dispose();
     super.dispose();
+  }
+
+  void _syncPostMoodReveal(bool hasMood) {
+    if (hasMood == _lastHasMood) return;
+    _lastHasMood = hasMood;
+    _groupsRevealTimer?.cancel();
+
+    if (!hasMood) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() {
+          _showPostMoodDaily = false;
+          _showPostMoodGroups = false;
+          _expandedTrackerId = null;
+        });
+      });
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        _showPostMoodDaily = true;
+        _showPostMoodGroups = false;
+      });
+      _groupsRevealTimer = Timer(const Duration(milliseconds: 80), () {
+        if (!mounted) return;
+        setState(() {
+          _showPostMoodGroups = true;
+        });
+      });
+    });
   }
 
   bool _hasMeaningfulValue(Object? value) {
@@ -309,6 +348,7 @@ class _JournalEntryEditorRoutePageState
             ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
           final dailyValues = effectiveDailyValues();
           final hasMood = state.mood != null;
+          _syncPostMoodReveal(hasMood);
 
           String dailyTrackerValueLabel({
             required TrackerDefinition definition,
@@ -491,8 +531,19 @@ class _JournalEntryEditorRoutePageState
             required String manageRouteKey,
             String? subtitle,
           }) {
-            return Card(
-              color: theme.colorScheme.surfaceContainerHigh,
+            return Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.surfaceContainerHigh,
+                    theme.colorScheme.surfaceContainerLow,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(tokens.radiusLg),
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+              ),
               child: Padding(
                 padding: EdgeInsets.all(tokens.spaceMd),
                 child: Column(
@@ -532,8 +583,6 @@ class _JournalEntryEditorRoutePageState
                           child: Text(l10n.manageLabel),
                         ),
                       )
-                    else if (!hasMood)
-                      moodGateHint()
                     else
                       for (final definition in trackers)
                         trackerRowTile(
@@ -629,37 +678,58 @@ class _JournalEntryEditorRoutePageState
                           .add(JournalEntryEditorMoodChanged(m)),
                     ),
                     SizedBox(height: tokens.spaceLg),
-                    trackerGroupCard(
-                      title: l10n.journalDailyCheckInsTitle,
-                      icon: Icons.calendar_today_outlined,
-                      trackers: dailyTrackers,
-                      isDaily: true,
-                      emptyLabel: l10n.journalNoDailyCheckIns,
-                      manageRouteKey: 'journal_manage_factors',
-                      subtitle: l10n.journalDailyAppliesTodaySubtitle,
+                    if (!hasMood) moodGateHint(),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child: _showPostMoodDaily
+                          ? Padding(
+                              padding: EdgeInsets.only(top: tokens.spaceLg),
+                              child: trackerGroupCard(
+                                title: l10n.journalDailyCheckInsTitle,
+                                icon: Icons.calendar_today_outlined,
+                                trackers: dailyTrackers,
+                                isDaily: true,
+                                emptyLabel: l10n.journalNoDailyCheckIns,
+                                manageRouteKey: 'journal_manage_factors',
+                                subtitle: l10n.journalDailyAppliesTodaySubtitle,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
                     ),
-                    SizedBox(height: tokens.spaceLg),
-                    if (entryGroups.isEmpty)
-                      trackerGroupCard(
-                        title: l10n.journalTrackersTitle,
-                        icon: Icons.tune,
-                        trackers: const <TrackerDefinition>[],
-                        isDaily: false,
-                        emptyLabel: l10n.journalNoEntryTrackers,
-                        manageRouteKey: 'journal_manage_factors',
-                      )
-                    else
-                      for (final group in entryGroups) ...[
-                        trackerGroupCard(
-                          title: group.title,
-                          icon: Icons.tune,
-                          trackers: group.trackers,
-                          isDaily: false,
-                          emptyLabel: l10n.journalNoEntryTrackers,
-                          manageRouteKey: 'journal_manage_factors',
-                        ),
-                        SizedBox(height: tokens.spaceLg),
-                      ],
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child: _showPostMoodGroups
+                          ? Padding(
+                              padding: EdgeInsets.only(top: tokens.spaceLg),
+                              child: entryGroups.isEmpty
+                                  ? trackerGroupCard(
+                                      title: l10n.journalTrackersTitle,
+                                      icon: Icons.tune,
+                                      trackers: const <TrackerDefinition>[],
+                                      isDaily: false,
+                                      emptyLabel: l10n.journalNoEntryTrackers,
+                                      manageRouteKey: 'journal_manage_factors',
+                                    )
+                                  : Column(
+                                      children: [
+                                        for (final group in entryGroups) ...[
+                                          trackerGroupCard(
+                                            title: group.title,
+                                            icon: Icons.tune,
+                                            trackers: group.trackers,
+                                            isDaily: false,
+                                            emptyLabel:
+                                                l10n.journalNoEntryTrackers,
+                                            manageRouteKey:
+                                                'journal_manage_factors',
+                                          ),
+                                          SizedBox(height: tokens.spaceLg),
+                                        ],
+                                      ],
+                                    ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                     if (hasMood) ...[
                       TextField(
                         controller: _noteController,
@@ -698,46 +768,69 @@ class _JournalEntryEditorRoutePageState
 
           if (widget.quickCapture) {
             return SafeArea(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      tokens.spaceMd,
-                      tokens.spaceSm,
-                      tokens.spaceMd,
-                      0,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      theme.colorScheme.surface,
+                      theme.colorScheme.surfaceContainerLow,
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 4,
+                      margin: EdgeInsets.only(top: tokens.spaceSm),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.35,
+                        ),
+                        borderRadius: BorderRadius.circular(tokens.radiusPill),
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Text(
-                          l10n.journalNewLogTitle,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        tokens.spaceMd,
+                        tokens.spaceSm,
+                        tokens.spaceMd,
+                        0,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            'New Moment',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          tooltip: l10n.closeLabel,
-                          onPressed: () => context.pop(false),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
+                          const Spacer(),
+                          IconButton(
+                            tooltip: l10n.closeLabel,
+                            onPressed: () => context.pop(false),
+                            icon: const Icon(Icons.close),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Expanded(child: body),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      tokens.spaceMd,
-                      0,
-                      tokens.spaceMd,
-                      tokens.spaceMd,
+                    Expanded(child: body),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        tokens.spaceMd,
+                        0,
+                        tokens.spaceMd,
+                        tokens.spaceMd,
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: saveButton,
+                      ),
                     ),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: saveButton,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }

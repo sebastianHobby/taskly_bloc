@@ -103,6 +103,11 @@ void main() {
       ),
     ).thenAnswer((_) async => null);
     when(
+      () => settingsRepository.load(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
       () => settingsRepository.save(
         SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
         any(),
@@ -113,6 +118,13 @@ void main() {
       () => settingsRepository.save<DisplayPreferences?>(
         SettingsKey.pageDisplay(PageKey.journal),
         any<DisplayPreferences?>(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => settingsRepository.save<JournalHistoryFilterPreferences?>(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+        any<JournalHistoryFilterPreferences?>(),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
@@ -316,6 +328,39 @@ void main() {
 
     expect(find.byType(FilterChip), findsNothing);
     expect(find.text('Trackers'), findsOneWidget);
+  });
+
+  testWidgetsSafe('shows applied filters row when filters are active', (
+    tester,
+  ) async {
+    when(
+      () => settingsRepository.load(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+      ),
+    ).thenAnswer(
+      (_) async => const JournalHistoryFilterPreferences(
+        factorTrackerIds: <String>['energy'],
+      ),
+    );
+
+    final mood = _trackerDef('mood', 'Mood', systemKey: 'mood');
+    final energy = TrackerDefinition(
+      id: 'energy',
+      name: 'Energy',
+      scope: 'entry',
+      valueType: 'rating',
+      createdAt: DateTime(2025, 1, 15),
+      updatedAt: DateTime(2025, 1, 15),
+      source: 'user',
+    );
+    defsSubject.add([mood, energy]);
+    entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    expect(find.text('Applied filters'), findsOneWidget);
+    expect(find.text('Energy'), findsOneWidget);
   });
 
   testWidgetsSafe('starter pack prompt can be dismissed with Not now', (

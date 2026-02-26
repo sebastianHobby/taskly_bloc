@@ -5527,5 +5527,41 @@
     "journalInsightsNudge": "Keep logging moments and factors to unlock insights.",
     "@journalInsightsNudge": {
         "description": "Nudge shown on journal home when there is not enough insight evidence"
+    },
+    "journalAppliedFiltersLabel": "Applied filters",
+    "@journalAppliedFiltersLabel": {
+        "description": "Heading for applied filter chips on journal home"
+    },
+    "journalNoMatchingMomentsForFilters": "No moments match these filters yet.",
+    "@journalNoMatchingMomentsForFilters": {
+        "description": "Empty-state message when journal filters exclude all moments"
+    },
+    "journalRemovedTrackerFilterLabel": "Removed tracker",
+    "@journalRemovedTrackerFilterLabel": {
+        "description": "Chip label for a previously-selected tracker filter that no longer exists"
+    },
+    "journalStarterPackTitle": "Set up your starter trackers",
+    "@journalStarterPackTitle": {
+        "description": "Title shown in the starter pack setup sheet on journal home"
+    },
+    "journalStarterPackSubtitle": "Choose what to add now. You can edit anytime.",
+    "@journalStarterPackSubtitle": {
+        "description": "Subtitle shown in the starter pack setup sheet on journal home"
+    },
+    "journalStarterPackOptionMeta": "{valueType} · {scope}",
+    "@journalStarterPackOptionMeta": {
+        "description": "Metadata line for each starter pack option",
+        "placeholders": {
+            "valueType": {},
+            "scope": {}
+        }
+    },
+    "journalAddSelectedLabel": "Add selected",
+    "@journalAddSelectedLabel": {
+        "description": "Primary action label for applying selected starter pack options"
+    },
+    "journalInsightsTitle": "Insights",
+    "@journalInsightsTitle": {
+        "description": "Title for the dedicated journal insights screen"
     }
 }

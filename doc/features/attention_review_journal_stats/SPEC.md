@@ -24,6 +24,9 @@ Defines support signals, weekly review cards, journal integration, and stats con
   and edits are ID-targeted (never day-level upsert/merge by `entry_date`).
 - Journal history is not a separate screen; search and filters live on the main
   Journal feed.
+- Journal has a dedicated Insights screen (`/journal/insights`) for expanded
+  evidence cards; journal home still shows the top insight card (or nudge) as
+  the summary-first entry point.
 - Journal home timeline supports infinite scroll by expanding the date window
   as the user reaches the end of the list.
 - Journal uses strict hybrid semantics:

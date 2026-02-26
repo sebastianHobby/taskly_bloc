@@ -25,6 +25,7 @@ import 'package:taskly_bloc/presentation/features/projects/view/project_editor_r
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_insights_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_manage_factors_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_editor_route_page.dart';
@@ -436,6 +437,10 @@ GoRouter createRouter({
           GoRoute(
             path: Routing.screenPath('journal'),
             builder: (_, __) => const JournalHubPage(),
+          ),
+          GoRoute(
+            path: '/journal/insights',
+            builder: (_, __) => const JournalInsightsPage(),
           ),
           GoRoute(
             path: Routing.screenPath('values'),

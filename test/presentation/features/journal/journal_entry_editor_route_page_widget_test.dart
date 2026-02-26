@@ -150,9 +150,12 @@ void main() {
 
     expect(find.text('Save log'), findsOneWidget);
     expect(find.text(_l10n(tester).journalMoodGateHelper), findsOneWidget);
+    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsNothing);
 
     await _tapMood(tester, _l10n(tester).moodGoodLabel);
     await tester.pumpForStream();
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsOneWidget);
     expect(find.text('Energy'), findsOneWidget);
   });
 
@@ -447,13 +450,15 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsOneWidget);
+    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsNothing);
     expect(find.text('Gratitude'), findsNothing);
 
     await _tapMood(tester, _l10n(tester).moodGoodLabel);
     await tester.pumpForStream();
+    await tester.pump(const Duration(milliseconds: 120));
 
     expect(find.text('Mindset'), findsOneWidget);
+    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsOneWidget);
     expect(find.text('Gratitude'), findsOneWidget);
 
     await _tapTextButton(tester, 'Gratitude');

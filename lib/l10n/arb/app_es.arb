@@ -5413,6 +5413,42 @@
     "journalInsightsNudge": "Sigue registrando momentos y factores para desbloquear ideas.",
     "@journalInsightsNudge": {
         "description": "Nudge shown on journal home when there is not enough insight evidence"
+    },
+    "journalAppliedFiltersLabel": "Filtros aplicados",
+    "@journalAppliedFiltersLabel": {
+        "description": "Heading for applied filter chips on journal home"
+    },
+    "journalNoMatchingMomentsForFilters": "Aun no hay momentos que coincidan con estos filtros.",
+    "@journalNoMatchingMomentsForFilters": {
+        "description": "Empty-state message when journal filters exclude all moments"
+    },
+    "journalRemovedTrackerFilterLabel": "Tracker eliminado",
+    "@journalRemovedTrackerFilterLabel": {
+        "description": "Chip label for a previously-selected tracker filter that no longer exists"
+    },
+    "journalStarterPackTitle": "Configura tus trackers iniciales",
+    "@journalStarterPackTitle": {
+        "description": "Title shown in the starter pack setup sheet on journal home"
+    },
+    "journalStarterPackSubtitle": "Elige que agregar ahora. Puedes editarlo cuando quieras.",
+    "@journalStarterPackSubtitle": {
+        "description": "Subtitle shown in the starter pack setup sheet on journal home"
+    },
+    "journalStarterPackOptionMeta": "{valueType} · {scope}",
+    "@journalStarterPackOptionMeta": {
+        "description": "Metadata line for each starter pack option",
+        "placeholders": {
+            "valueType": {},
+            "scope": {}
+        }
+    },
+    "journalAddSelectedLabel": "Agregar seleccionados",
+    "@journalAddSelectedLabel": {
+        "description": "Primary action label for applying selected starter pack options"
+    },
+    "journalInsightsTitle": "Insights",
+    "@journalInsightsTitle": {
+        "description": "Title for the dedicated journal insights screen"
     }
 }
 

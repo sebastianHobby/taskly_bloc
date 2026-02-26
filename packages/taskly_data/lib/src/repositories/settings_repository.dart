@@ -342,6 +342,13 @@ class SettingsRepository implements SettingsRepositoryContract {
               pageKey: subKey,
             )
             as T,
+      'pageJournalFilters' =>
+        _decodePageJournalFilters(
+              profileId: profileId,
+              overrides: overrides,
+              pageKey: subKey,
+            )
+            as T,
       'microLearningSeen' =>
         _decodeMicroLearningSeen(
               profileId: profileId,
@@ -480,6 +487,49 @@ class SettingsRepository implements SettingsRepositoryContract {
     return DisplayPreferences.fromJson(value);
   }
 
+  JournalHistoryFilterPreferences? _decodePageJournalFilters({
+    required String profileId,
+    required Map<String, dynamic> overrides,
+    required String pageKey,
+  }) {
+    final group = overrides['pageJournalFilters'];
+    if (group == null) return null;
+    if (group is! Map<String, dynamic>) {
+      final repaired = Map<String, dynamic>.from(overrides)
+        ..remove('pageJournalFilters');
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'pageJournalFilters',
+          repairedFrom: group,
+          reason: 'pageJournalFilters_not_a_map',
+        ),
+      );
+      return null;
+    }
+
+    final value = group[pageKey];
+    if (value == null) return null;
+    if (value is! Map<String, dynamic>) {
+      final repairedGroup = Map<String, dynamic>.from(group)..remove(pageKey);
+      final repaired = Map<String, dynamic>.from(overrides)
+        ..['pageJournalFilters'] = repairedGroup;
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'pageJournalFilters:$pageKey',
+          repairedFrom: value,
+          reason: 'pageJournalFilters_entry_not_a_map',
+        ),
+      );
+      return null;
+    }
+
+    return JournalHistoryFilterPreferences.fromJson(value);
+  }
+
   T _decodeSingleton<T>({
     required String keyName,
     required Map<String, dynamic> overrides,
@@ -590,6 +640,23 @@ class SettingsRepository implements SettingsRepositoryContract {
           updated['microLearningSeen'] = group;
         }
         return updated;
+      case 'pageJournalFilters':
+        final group = Map<String, dynamic>.from(
+          (updated['pageJournalFilters'] as Map<String, dynamic>?) ??
+              const <String, dynamic>{},
+        );
+        final prefs = value as JournalHistoryFilterPreferences?;
+        if (prefs == null) {
+          group.remove(subKey);
+        } else {
+          group[subKey] = prefs.toJson();
+        }
+        if (group.isEmpty) {
+          updated.remove('pageJournalFilters');
+        } else {
+          updated['pageJournalFilters'] = group;
+        }
+        return updated;
 
       default:
         throw ArgumentError('Unknown keyed key: $name');
@@ -607,6 +674,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     return switch (name) {
       'pageSort' => null as T,
       'pageDisplay' => null as T,
+      'pageJournalFilters' => null as T,
       'microLearningSeen' => false as T,
       _ => throw ArgumentError('Unknown SettingsKey default: $key'),
     };

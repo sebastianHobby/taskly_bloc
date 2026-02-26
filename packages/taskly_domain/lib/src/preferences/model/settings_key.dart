@@ -1,6 +1,7 @@
 import 'package:taskly_domain/src/settings/settings.dart';
 import 'package:taskly_domain/src/preferences/model/page_key.dart';
 import 'package:taskly_domain/src/preferences/model/display_preferences.dart';
+import 'package:taskly_domain/src/preferences/model/journal_history_filter_preferences.dart';
 import 'package:taskly_domain/src/preferences/model/sort_preferences.dart';
 
 /// Type-safe key for accessing settings.
@@ -32,6 +33,14 @@ sealed class SettingsKey<T> {
   /// Display preferences (row density) for a specific page.
   static SettingsKey<DisplayPreferences?> pageDisplay(PageKey page) =>
       _KeyedKey<DisplayPreferences?>('pageDisplay', page.key);
+
+  /// Journal history filters for a specific page.
+  static SettingsKey<JournalHistoryFilterPreferences?> pageJournalFilters(
+    PageKey page,
+  ) => _KeyedKey<JournalHistoryFilterPreferences?>(
+    'pageJournalFilters',
+    page.key,
+  );
 
   /// One-time micro-learning acknowledgement for a specific tip id.
   static SettingsKey<bool> microLearningSeen(String tipId) =>

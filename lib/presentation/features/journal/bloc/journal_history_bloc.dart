@@ -64,6 +64,7 @@ final class JournalHistoryLoaded extends JournalHistoryState {
     required this.factorDefinitions,
     required this.factorGroups,
     required this.topInsight,
+    required this.insights,
     required this.showInsightsNudge,
   });
 
@@ -75,6 +76,7 @@ final class JournalHistoryLoaded extends JournalHistoryState {
   final List<TrackerDefinition> factorDefinitions;
   final List<TrackerGroup> factorGroups;
   final JournalTopInsight? topInsight;
+  final List<JournalTopInsight> insights;
   final bool showInsightsNudge;
 }
 
@@ -133,6 +135,7 @@ class JournalHistoryBloc
       const OperationContextFactory();
   bool _starterPackSeen = false;
   DisplayDensity _density = DisplayDensity.compact;
+  JournalHistoryFilterPreferences? _savedFilterPreferences;
 
   static const List<JournalStarterOption> _starterOptions =
       <JournalStarterOption>[
@@ -289,8 +292,12 @@ class JournalHistoryBloc
       SettingsKey.pageDisplay(_journalPageKey),
     );
     _density = displayPrefs?.density ?? DisplayDensity.compact;
+    _savedFilterPreferences = await _settingsRepository.load(
+      SettingsKey.pageJournalFilters(_journalPageKey),
+    );
+    final initialFilters = _filtersFromPreferences(_savedFilterPreferences);
     await _onFiltersChanged(
-      JournalHistoryFiltersChanged(JournalHistoryFilters.initial()),
+      JournalHistoryFiltersChanged(initialFilters),
       emit,
     );
   }
@@ -300,6 +307,7 @@ class JournalHistoryBloc
     Emitter<JournalHistoryState> emit,
   ) async {
     final filters = event.filters;
+    await _persistFiltersPreferences(filters);
     if (state is! JournalHistoryLoaded) {
       emit(JournalHistoryLoading(filters));
     }
@@ -348,16 +356,15 @@ class JournalHistoryBloc
               defs
                   .where(
                     (d) =>
-                        d.isActive &&
-                        d.deletedAt == null &&
-                        d.systemKey != 'mood',
+                        d.isActive && d.deletedAt == null && _isUserFactor(d),
                   )
                   .toList(growable: false)
                 ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
           final factorGroups =
               groups.where((g) => g.isActive).toList(growable: false)
                 ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-          final topInsight = _buildTopInsight(days: days);
+          final insights = _buildInsights(days: days);
+          final topInsight = insights.isEmpty ? null : insights.first;
 
           return JournalHistoryLoaded(
             days: days,
@@ -368,6 +375,7 @@ class JournalHistoryBloc
             factorDefinitions: factorDefinitions,
             factorGroups: factorGroups,
             topInsight: topInsight,
+            insights: insights,
             showInsightsNudge: topInsight == null,
           );
         },
@@ -421,6 +429,7 @@ class JournalHistoryBloc
         factorDefinitions: current.factorDefinitions,
         factorGroups: current.factorGroups,
         topInsight: current.topInsight,
+        insights: current.insights,
         showInsightsNudge: current.showInsightsNudge,
       ),
     );
@@ -449,6 +458,7 @@ class JournalHistoryBloc
         factorDefinitions: current.factorDefinitions,
         factorGroups: current.factorGroups,
         topInsight: current.topInsight,
+        insights: current.insights,
         showInsightsNudge: current.showInsightsNudge,
       ),
     );
@@ -750,10 +760,10 @@ class JournalHistoryBloc
         .toList(growable: false);
   }
 
-  JournalTopInsight? _buildTopInsight({
+  List<JournalTopInsight> _buildInsights({
     required List<JournalHistoryDaySummary> days,
   }) {
-    if (days.length < 20) return null;
+    if (days.length < 20) return const <JournalTopInsight>[];
     final factorStats =
         <
           String,
@@ -793,7 +803,7 @@ class JournalHistoryBloc
       }
     }
 
-    JournalTopInsight? best;
+    final insights = <JournalTopInsight>[];
     for (final entry in factorStats.entries) {
       final stats = entry.value;
       if (stats.withFactor < 10 || stats.withoutFactor < 10) continue;
@@ -814,11 +824,10 @@ class JournalHistoryBloc
         confidence: confidence,
         windowDays: 30,
       );
-      if (best == null || candidate.deltaMood.abs() > best.deltaMood.abs()) {
-        best = candidate;
-      }
+      insights.add(candidate);
     }
-    return best;
+    insights.sort((a, b) => b.deltaMood.abs().compareTo(a.deltaMood.abs()));
+    return insights;
   }
 
   String? _findMoodTrackerId(List<TrackerDefinition> defs) {
@@ -838,6 +847,66 @@ class JournalHistoryBloc
     if (values == null || values.isEmpty) return null;
     final sum = values.fold<int>(0, (a, b) => a + b);
     return sum / values.length;
+  }
+
+  bool _isUserFactor(TrackerDefinition definition) {
+    if (definition.systemKey != null) return false;
+    final source = definition.source.trim().toLowerCase();
+    if (source == 'system') return false;
+    return true;
+  }
+
+  JournalHistoryFilters _filtersFromPreferences(
+    JournalHistoryFilterPreferences? preferences,
+  ) {
+    if (preferences == null) return JournalHistoryFilters.initial();
+    final start = _parseIsoDayUtc(preferences.rangeStartIsoDayUtc);
+    final end = _parseIsoDayUtc(preferences.rangeEndIsoDayUtc);
+    return JournalHistoryFilters.initial().copyWith(
+      rangeStart: start,
+      rangeEnd: end,
+      factorTrackerIds: preferences.factorTrackerIds.toSet(),
+      factorGroupId: preferences.factorGroupId,
+      lookbackDays: preferences.lookbackDays,
+    );
+  }
+
+  DateTime? _parseIsoDayUtc(String? isoDayUtc) {
+    if (isoDayUtc == null || isoDayUtc.trim().isEmpty) return null;
+    final parsed = DateTime.tryParse(isoDayUtc);
+    if (parsed == null) return null;
+    return dateOnly(parsed.toUtc());
+  }
+
+  String? _toIsoDayUtc(DateTime? value) {
+    if (value == null) return null;
+    final day = dateOnly(value.toUtc());
+    final month = day.month.toString().padLeft(2, '0');
+    final dayPart = day.day.toString().padLeft(2, '0');
+    return '${day.year}-$month-$dayPart';
+  }
+
+  JournalHistoryFilterPreferences _toPreferences(
+    JournalHistoryFilters filters,
+  ) {
+    return JournalHistoryFilterPreferences(
+      rangeStartIsoDayUtc: _toIsoDayUtc(filters.rangeStart),
+      rangeEndIsoDayUtc: _toIsoDayUtc(filters.rangeEnd),
+      factorTrackerIds: filters.factorTrackerIds.toList(growable: false)
+        ..sort(),
+      factorGroupId: filters.factorGroupId,
+      lookbackDays: filters.lookbackDays,
+    );
+  }
+
+  Future<void> _persistFiltersPreferences(JournalHistoryFilters filters) async {
+    final next = _toPreferences(filters);
+    if (next == _savedFilterPreferences) return;
+    await _settingsRepository.save<JournalHistoryFilterPreferences?>(
+      SettingsKey.pageJournalFilters(_journalPageKey),
+      next,
+    );
+    _savedFilterPreferences = next;
   }
 }
 

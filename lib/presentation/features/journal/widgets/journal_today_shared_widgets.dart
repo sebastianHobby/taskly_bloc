@@ -44,128 +44,152 @@ class JournalLogCard extends StatelessWidget {
     final border = theme.colorScheme.outlineVariant;
     final hasMood = mood != null;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            surface,
-            if (mood == null) theme.colorScheme.surfaceContainerHighest,
-            if (mood != null)
-              Color.lerp(
-                    theme.colorScheme.surfaceContainerHighest,
-                    _moodTint(theme.colorScheme, mood),
-                    0.1,
-                  ) ??
-                  theme.colorScheme.surfaceContainerHighest,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-        border: Border.all(color: border),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spaceLg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: tokens.spaceSm,
-                      vertical: tokens.spaceXs,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(tokens.radiusMd),
-                    ),
-                    child: Text(
-                      timeLabel,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const Spacer(),
-                  if (hasMood)
-                    Tooltip(
-                      message: mood.localizedLabel(l10n),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: tokens.spaceSm,
-                          vertical: tokens.spaceXs,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(tokens.radiusMd),
-                        ),
-                        child: Text(
-                          '${mood.emoji} ${mood.value}',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: theme.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              if (isRich && note != null && note.isNotEmpty) ...[
-                SizedBox(height: tokens.spaceSm),
-                Text(
-                  note,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ],
-              if (summaryItems.isNotEmpty) ...[
-                SizedBox(height: tokens.spaceSm),
-                Wrap(
-                  spacing: tokens.spaceSm,
-                  runSpacing: tokens.spaceSm,
-                  children: [
-                    for (final item
-                        in (isRich ? summaryItems : summaryItems.take(2)))
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: tokens.spaceSm,
-                          vertical: tokens.spaceXs,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(tokens.radiusMd),
-                          border: Border.all(color: border),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              item.icon,
-                              size: 14,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            SizedBox(width: tokens.spaceXxs),
-                            Text(
-                              item.text,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          margin: EdgeInsets.only(top: tokens.spaceSm),
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.tertiary,
+            shape: BoxShape.circle,
           ),
         ),
-      ),
+        SizedBox(width: tokens.spaceSm),
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  surface,
+                  if (mood == null) theme.colorScheme.surfaceContainerHighest,
+                  if (mood != null)
+                    Color.lerp(
+                          theme.colorScheme.surfaceContainerHighest,
+                          _moodTint(theme.colorScheme, mood),
+                          0.1,
+                        ) ??
+                        theme.colorScheme.surfaceContainerHighest,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+              border: Border.all(color: border),
+            ),
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+              child: Padding(
+                padding: EdgeInsets.all(tokens.spaceLg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: tokens.spaceSm,
+                            vertical: tokens.spaceXs,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surface,
+                            borderRadius: BorderRadius.circular(
+                              tokens.radiusMd,
+                            ),
+                          ),
+                          child: Text(
+                            timeLabel,
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        if (hasMood)
+                          Tooltip(
+                            message: mood.localizedLabel(l10n),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: tokens.spaceSm,
+                                vertical: tokens.spaceXs,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(
+                                  tokens.radiusMd,
+                                ),
+                              ),
+                              child: Text(
+                                '${mood.emoji} ${mood.value}',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    if (isRich && note != null && note.isNotEmpty) ...[
+                      SizedBox(height: tokens.spaceSm),
+                      Text(
+                        note,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                    if (summaryItems.isNotEmpty) ...[
+                      SizedBox(height: tokens.spaceSm),
+                      Wrap(
+                        spacing: tokens.spaceSm,
+                        runSpacing: tokens.spaceSm,
+                        children: [
+                          for (final item
+                              in (isRich ? summaryItems : summaryItems.take(2)))
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: tokens.spaceSm,
+                                vertical: tokens.spaceXs,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(
+                                  tokens.radiusMd,
+                                ),
+                                border: Border.all(color: border),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    item.icon,
+                                    size: 14,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                  SizedBox(width: tokens.spaceXxs),
+                                  Text(
+                                    item.text,
+                                    style: theme.textTheme.labelMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

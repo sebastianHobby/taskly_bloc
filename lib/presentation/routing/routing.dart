@@ -300,6 +300,10 @@ abstract final class Routing {
     GoRouter.of(context).push('/journal/daily-checkins/new');
   }
 
+  static void toJournalInsights(BuildContext context) {
+    GoRouter.of(context).push('/journal/insights');
+  }
+
   /// Get onTap callback for entity navigation.
   static VoidCallback onTapEntity(
     BuildContext context,

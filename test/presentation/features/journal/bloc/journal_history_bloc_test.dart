@@ -43,6 +43,7 @@ void main() {
     );
     registerFallbackValue(SettingsKey.microLearningSeen('fallback-tip-id'));
     registerFallbackValue(SettingsKey.pageDisplay(PageKey.journal));
+    registerFallbackValue(SettingsKey.pageJournalFilters(PageKey.journal));
   });
   setUp(setUpTestEnvironment);
 
@@ -124,6 +125,11 @@ void main() {
       ),
     ).thenAnswer((_) async => null);
     when(
+      () => settingsRepository.load(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
       () => settingsRepository.save<bool>(
         any(),
         any<bool>(),
@@ -140,6 +146,12 @@ void main() {
       () => settingsRepository.save<DisplayPreferences?>(
         any(),
         any<DisplayPreferences?>(),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => settingsRepository.save<JournalHistoryFilterPreferences?>(
+        any(),
+        any<JournalHistoryFilterPreferences?>(),
       ),
     ).thenAnswer((_) async {});
   });
@@ -519,6 +531,68 @@ void main() {
     ).called(1);
   });
 
+  testSafe('restores and persists journal filter preferences', () async {
+    when(
+      () => settingsRepository.load(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+      ),
+    ).thenAnswer(
+      (_) async => const JournalHistoryFilterPreferences(
+        factorTrackerIds: <String>['energy-1'],
+        factorGroupId: 'group-1',
+        lookbackDays: 60,
+      ),
+    );
+
+    final moodTracker = TrackerDefinition(
+      id: 'mood-1',
+      name: 'Mood',
+      scope: 'entry',
+      valueType: 'rating',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+      systemKey: 'mood',
+    );
+    final factorTracker = TrackerDefinition(
+      id: 'energy-1',
+      name: 'Energy',
+      scope: 'entry',
+      valueType: 'rating',
+      createdAt: DateTime.utc(2026, 1, 1),
+      updatedAt: DateTime.utc(2026, 1, 1),
+      source: 'user',
+    );
+    defsController.emit([moodTracker, factorTracker]);
+
+    final bloc = buildBloc();
+    addTearDown(bloc.close);
+    bloc.add(const JournalHistoryStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+
+    final startedState = bloc.state as JournalHistoryLoaded;
+    expect(startedState.filters.lookbackDays, 60);
+    expect(startedState.filters.factorTrackerIds, contains('energy-1'));
+    expect(startedState.filters.factorGroupId, 'group-1');
+
+    bloc.add(
+      JournalHistoryFiltersChanged(
+        startedState.filters.copyWith(
+          factorGroupId: null,
+          factorTrackerIds: const <String>{},
+          lookbackDays: 30,
+        ),
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+
+    verify(
+      () => settingsRepository.save<JournalHistoryFilterPreferences?>(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+        any<JournalHistoryFilterPreferences?>(),
+      ),
+    ).called(greaterThan(0));
+  });
+
   testSafe('builds top insight only when thresholds are met', () async {
     final moodTracker = TrackerDefinition(
       id: 'mood-1',
@@ -598,5 +672,45 @@ void main() {
     final state = bloc.state as JournalHistoryLoaded;
     expect(state.topInsight, isNotNull);
     expect(state.showInsightsNudge, isFalse);
+  });
+
+  testSafe('exposes only user-defined factors for filter picker', () async {
+    defsController.emit([
+      TrackerDefinition(
+        id: 'mood-1',
+        name: 'Mood',
+        scope: 'entry',
+        valueType: 'rating',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        systemKey: 'mood',
+      ),
+      TrackerDefinition(
+        id: 'system-1',
+        name: 'System tracker',
+        scope: 'entry',
+        valueType: 'yes_no',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        source: 'system',
+      ),
+      TrackerDefinition(
+        id: 'user-1',
+        name: 'Energy',
+        scope: 'entry',
+        valueType: 'rating',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        source: 'user',
+      ),
+    ]);
+
+    final bloc = buildBloc();
+    addTearDown(bloc.close);
+    bloc.add(const JournalHistoryStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+
+    final state = bloc.state as JournalHistoryLoaded;
+    expect(state.factorDefinitions.map((d) => d.id), ['user-1']);
   });
 }

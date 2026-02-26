@@ -24,12 +24,16 @@ void main() {
       final c = SettingsKey.pageSort(PageKey.tasksToday);
       final d = SettingsKey.pageDisplay(PageKey.projectOverview);
       final e = SettingsKey.pageDisplay(PageKey.projectOverview);
+      final f = SettingsKey.pageJournalFilters(PageKey.journal);
+      final g = SettingsKey.pageJournalFilters(PageKey.journal);
 
       expect(a, equals(b));
       expect(a, isNot(equals(c)));
       expect(a.toString(), contains('(tasks_inbox)'));
       expect(d, equals(e));
       expect(d.toString(), contains('(project_overview)'));
+      expect(f, equals(g));
+      expect(f.toString(), contains('(journal)'));
     },
   );
 }

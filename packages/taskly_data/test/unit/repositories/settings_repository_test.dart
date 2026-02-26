@@ -96,6 +96,32 @@ void main() {
       expect(cleared, matcher.isNull);
     });
 
+    testSafe('save and load page journal filters preferences', () async {
+      final db = createAutoClosingDb();
+      final repo = SettingsRepository(driftDb: db);
+
+      const prefs = JournalHistoryFilterPreferences(
+        rangeStartIsoDayUtc: '2026-02-20',
+        rangeEndIsoDayUtc: '2026-02-26',
+        factorTrackerIds: <String>['sleep', 'water'],
+        factorGroupId: 'group-1',
+        lookbackDays: 60,
+      );
+
+      await repo.save(SettingsKey.pageJournalFilters(PageKey.journal), prefs);
+      final loaded = await repo.load(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+      );
+
+      expect(loaded, equals(prefs));
+
+      await repo.save(SettingsKey.pageJournalFilters(PageKey.journal), null);
+      final cleared = await repo.load(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+      );
+      expect(cleared, matcher.isNull);
+    });
+
     testSafe('save and load micro-learning seen flag', () async {
       final db = createAutoClosingDb();
       final repo = SettingsRepository(driftDb: db);
@@ -173,6 +199,7 @@ void main() {
             UserProfileTableCompanion.insert(
               settingsOverrides: const drift.Value(
                 '{"pageSort":"oops","pageDisplay":{"project_overview":"oops"},'
+                '"pageJournalFilters":{"journal":"oops"},'
                 '"microLearningSeen":{"tip":"yes"}}',
               ),
               createdAt: drift.Value(DateTime.utc(2024, 1, 1)),
@@ -184,10 +211,14 @@ void main() {
       final display = await repo.load(
         SettingsKey.pageDisplay(PageKey.projectOverview),
       );
+      final journalFilters = await repo.load(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+      );
       final tipSeen = await repo.load(SettingsKey.microLearningSeen('tip'));
 
       expect(sort, isNull);
       expect(display, isNull);
+      expect(journalFilters, isNull);
       expect(tipSeen, isFalse);
     });
 
@@ -295,7 +326,8 @@ void main() {
               UserProfileTableCompanion.insert(
                 settingsOverrides: const drift.Value(
                   '{"pageSort":{"tasks_inbox":"oops"},'
-                  '"pageDisplay":"oops"}',
+                  '"pageDisplay":"oops",'
+                  '"pageJournalFilters":"oops"}',
                 ),
                 createdAt: drift.Value(DateTime.utc(2024, 1, 4)),
                 updatedAt: drift.Value(DateTime.utc(2024, 1, 4)),
@@ -306,8 +338,12 @@ void main() {
         final display = await repo.load(
           SettingsKey.pageDisplay(PageKey.projectOverview),
         );
+        final journalFilters = await repo.load(
+          SettingsKey.pageJournalFilters(PageKey.journal),
+        );
         expect(sort, isNull);
         expect(display, isNull);
+        expect(journalFilters, isNull);
       },
     );
   });
