@@ -312,7 +312,10 @@ void main() {
           .single;
       expect(datePredicate.operator, DateOperator.between);
       expect(dateOnly(datePredicate.startDate!), dateOnly(start));
-      expect(dateOnly(datePredicate.endDate!), dateOnly(end));
+      final expectedEnd = dateOnly(
+        end,
+      ).add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
+      expect(datePredicate.endDate, expectedEnd);
     },
   );
 

@@ -121,8 +121,11 @@ void main() {
     ).thenAnswer((_) => dayStateController.stream);
     when(
       () => repository.watchTrackerEvents(
+        range: any(named: 'range'),
         anchorType: any(named: 'anchorType'),
         entryId: any(named: 'entryId'),
+        anchorDate: any(named: 'anchorDate'),
+        trackerId: any(named: 'trackerId'),
       ),
     ).thenAnswer((_) => eventsController.stream);
     when(() => repository.getJournalEntryById(any())).thenAnswer(

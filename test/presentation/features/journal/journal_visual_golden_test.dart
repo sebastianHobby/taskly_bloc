@@ -10,6 +10,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_insights_page.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -238,6 +239,26 @@ void main() {
           ),
         ),
         GoRoute(
+          path: '/journal/history',
+          builder: (_, __) => MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<JournalRepositoryContract>.value(
+                value: repository,
+              ),
+              RepositoryProvider<NowService>.value(
+                value: _FakeNowService(DateTime(2025, 10, 24, 9)),
+              ),
+              RepositoryProvider<HomeDayKeyService>.value(
+                value: homeDayKeyService,
+              ),
+              RepositoryProvider<SettingsRepositoryContract>.value(
+                value: settingsRepository,
+              ),
+            ],
+            child: const JournalHistoryPage(),
+          ),
+        ),
+        GoRoute(
           path: '/journal/insights',
           builder: (_, __) => MultiRepositoryProvider(
             providers: [
@@ -325,12 +346,12 @@ void main() {
 
   testWidgetsSafe('journal filter sheet dark snapshot', (tester) async {
     seedHomeData();
-    final router = buildRouter(initialLocation: '/journal');
+    final router = buildRouter(initialLocation: '/journal/history');
     await pumpHarness(tester, router: router);
-    final ready = await tester.pumpUntilFound(find.byType(JournalHubPage));
+    final ready = await tester.pumpUntilFound(find.byType(JournalHistoryPage));
     expect(ready, isTrue);
 
-    await tester.tap(find.byIcon(Icons.tune));
+    await tester.tap(find.byTooltip('Filters'));
     await tester.pumpForStream();
     final filterReady = await tester.pumpUntilFound(find.byType(BottomSheet));
     expect(filterReady, isTrue);

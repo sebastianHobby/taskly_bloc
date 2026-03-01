@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Taskly Home with Aggregates</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ecb6",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#10221d",
+                        "surface-dark": "#1c2e28",
+                        "surface-border": "#283935",
+                        "text-muted": "#9db9b2",
+                        "card-highlight": "#233630"
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem", // 2px
+                        "lg": "0.25rem", // 4px
+                        "xl": "0.5rem", // 8px
+                        "2xl": "1rem", // 16px
+                        "full": "9999px" 
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-hidden relative">
+<header class="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm border-b border-surface-border px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Today, Feb 28</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center w-9 h-9 rounded-full hover:bg-surface-dark transition-colors text-text-muted hover:text-white">
+<span class="material-symbols-outlined text-[24px]">history</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto scrollbar-hide pb-24">
+<section class="px-4 py-4">
+<div class="flex items-center justify-between mb-3">
+<h2 class="text-sm font-bold text-white uppercase tracking-wider opacity-90">Daily Summary</h2>
+<button class="text-xs text-primary font-medium hover:text-primary/80">View All</button>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-surface-dark border border-surface-border rounded-xl p-3 flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">water_drop</span>
+</div>
+<span class="text-xs text-text-muted">Target: 3000</span>
+</div>
+<div>
+<span class="text-2xl font-bold text-white">2500</span>
+<span class="text-xs text-text-muted ml-0.5">ml</span>
+</div>
+</div>
+<div class="bg-surface-dark border border-surface-border rounded-xl p-3 flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">bedtime</span>
+</div>
+<span class="text-xs text-text-muted">Target: 8h</span>
+</div>
+<div>
+<span class="text-2xl font-bold text-white">7<span class="text-base font-normal text-text-muted">h</span> 30<span class="text-base font-normal text-text-muted">m</span></span>
+</div>
+</div>
+<div class="bg-surface-dark border border-surface-border rounded-xl p-3 flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">directions_walk</span>
+</div>
+<span class="text-xs text-text-muted">Target: 10k</span>
+</div>
+<div>
+<span class="text-2xl font-bold text-white">8,200</span>
+</div>
+</div>
+<div class="bg-surface-dark border border-surface-border rounded-xl p-3 flex flex-col justify-between h-24">
+<div class="flex justify-between items-start">
+<div class="w-8 h-8 rounded-lg bg-yellow-500/20 text-yellow-400 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">bolt</span>
+</div>
+<span class="text-xs text-text-muted">Avg</span>
+</div>
+<div>
+<span class="text-2xl font-bold text-white">4</span>
+<span class="text-lg text-text-muted">/5</span>
+</div>
+</div>
+</div>
+</section>
+<section class="px-4 py-2 mt-2">
+<h2 class="text-sm font-bold text-white uppercase tracking-wider opacity-90 mb-4">Moments</h2>
+<div class="flex flex-col gap-4 relative">
+<div class="absolute left-[19px] top-4 bottom-4 w-0.5 bg-surface-border z-0"></div>
+<div class="flex gap-4 relative z-10">
+<div class="flex flex-col items-center gap-1 min-w-[40px]">
+<div class="w-10 h-10 rounded-full bg-card-highlight border border-surface-border flex items-center justify-center text-xl shadow-sm z-10">
+                        🙂
+                    </div>
+<span class="text-[10px] text-text-muted font-medium mt-1">18:30</span>
+</div>
+<div class="flex-1 bg-surface-dark border border-surface-border rounded-xl p-3.5 hover:bg-card-highlight transition-colors cursor-pointer">
+<p class="text-sm text-slate-200 mb-2 leading-relaxed line-clamp-2">Evening jog was refreshing, beat my personal best time by 2 minutes!</p>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-medium border border-emerald-500/20">
+                            🏃 Running
+                        </span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-purple-500/10 text-purple-400 text-[10px] font-medium border border-purple-500/20">
+                            🎧 Music
+                        </span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-500/10 text-blue-400 text-[10px] font-medium border border-blue-500/20">
+                            💧 Hydrated
+                        </span>
+</div>
+</div>
+</div>
+<div class="flex gap-4 relative z-10">
+<div class="flex flex-col items-center gap-1 min-w-[40px]">
+<div class="w-10 h-10 rounded-full bg-card-highlight border border-surface-border flex items-center justify-center text-xl shadow-sm z-10">
+                        😐
+                    </div>
+<span class="text-[10px] text-text-muted font-medium mt-1">14:15</span>
+</div>
+<div class="flex-1 bg-surface-dark border border-surface-border rounded-xl p-3.5 hover:bg-card-highlight transition-colors cursor-pointer">
+<p class="text-sm text-slate-200 mb-2 leading-relaxed line-clamp-2">Long meeting with the marketing team. Felt a bit drained afterwards.</p>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-amber-500/10 text-amber-400 text-[10px] font-medium border border-amber-500/20">
+                            💼 Work
+                        </span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-red-500/10 text-red-400 text-[10px] font-medium border border-red-500/20">
+                            🔋 Low Energy
+                        </span>
+</div>
+</div>
+</div>
+<div class="flex gap-4 relative z-10">
+<div class="flex flex-col items-center gap-1 min-w-[40px]">
+<div class="w-10 h-10 rounded-full bg-card-highlight border border-surface-border flex items-center justify-center text-xl shadow-sm z-10">
+                        😄
+                    </div>
+<span class="text-[10px] text-text-muted font-medium mt-1">08:00</span>
+</div>
+<div class="flex-1 bg-surface-dark border border-surface-border rounded-xl p-3.5 hover:bg-card-highlight transition-colors cursor-pointer">
+<p class="text-sm text-slate-200 mb-2 leading-relaxed line-clamp-2">Woke up feeling great. Smoothie bowl for breakfast was delicious.</p>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-pink-500/10 text-pink-400 text-[10px] font-medium border border-pink-500/20">
+                            🧘 Mindfulness
+                        </span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-teal-500/10 text-teal-400 text-[10px] font-medium border border-teal-500/20">
+                            🥑 Healthy Eating
+                        </span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<button class="fixed bottom-24 right-4 w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/20 flex items-center justify-center text-background-dark hover:scale-105 transition-transform z-50">
+<span class="material-symbols-outlined text-[32px]">add</span>
+</button>
+<nav class="fixed bottom-0 left-0 w-full z-50 border-t border-surface-border bg-[#1c2724] px-4 pb-5 pt-2">
+<div class="flex gap-2 justify-between">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">home</span>
+</div>
+<p class="text-[10px] font-bold leading-normal tracking-wide">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-text-muted hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">book_2</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-wide">Journal</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-text-muted hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">bar_chart</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-wide">Stats</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-text-muted hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-wide">Settings</p>
+</a>
+</div>
+</nav>
+
+</body></html>

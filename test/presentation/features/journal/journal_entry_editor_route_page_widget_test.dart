@@ -141,7 +141,7 @@ void main() {
 
   testWidgetsSafe('renders editor content when loaded', (tester) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
-    final tracker = _trackerDef('tracker-1', 'Energy', scope: 'daily');
+    final tracker = _trackerDef('tracker-1', 'Energy', scope: 'entry');
 
     defsSubject.add([moodDef, tracker]);
 
@@ -150,12 +150,11 @@ void main() {
 
     expect(find.text('Save log'), findsOneWidget);
     expect(find.text(_l10n(tester).journalMoodGateHelper), findsOneWidget);
-    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsNothing);
+    expect(find.text('Energy'), findsNothing);
 
     await _tapMood(tester, _l10n(tester).moodGoodLabel);
     await tester.pumpForStream();
-    await tester.pump(const Duration(milliseconds: 120));
-    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Energy'), findsOneWidget);
   });
 
@@ -325,8 +324,8 @@ void main() {
     tester,
   ) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
-    final trackerA = _trackerDef('tracker-1', 'Energy', scope: 'daily');
-    final trackerB = _trackerDef('tracker-2', 'Focus', scope: 'daily');
+    final trackerA = _trackerDef('tracker-1', 'Energy', scope: 'entry');
+    final trackerB = _trackerDef('tracker-2', 'Focus', scope: 'entry');
 
     defsSubject.add([moodDef, trackerA]);
 
@@ -334,6 +333,7 @@ void main() {
     await tester.pumpForStream();
     await _tapMood(tester, _l10n(tester).moodGoodLabel);
     await tester.pumpForStream();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Energy'), findsOneWidget);
 
@@ -348,7 +348,7 @@ void main() {
     final choiceDef = _trackerDef(
       'choice-1',
       'Location',
-      scope: 'daily',
+      scope: 'entry',
       valueType: 'choice',
       valueKind: 'single_choice',
     );
@@ -388,7 +388,8 @@ void main() {
     await tester.pumpForStream();
     await _tapMood(tester, _l10n(tester).moodGoodLabel);
     await tester.pumpForStream();
-    await _expandDailyModule(tester, 'Location');
+    await tester.pump(const Duration(milliseconds: 300));
+    await _expandTrackerModule(tester, 'Location');
 
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Work'), findsOneWidget);
@@ -412,7 +413,7 @@ void main() {
     final ratingDef = _trackerDef(
       'rating-1',
       'Energy',
-      scope: 'daily',
+      scope: 'entry',
       valueType: 'rating',
       minInt: 2,
       maxInt: 8,
@@ -424,7 +425,8 @@ void main() {
     await tester.pumpForStream();
     await _tapMood(tester, _l10n(tester).moodGoodLabel);
     await tester.pumpForStream();
-    await _expandDailyModule(tester, 'Energy');
+    await tester.pump(const Duration(milliseconds: 300));
+    await _expandTrackerModule(tester, 'Energy');
 
     expect(find.widgetWithText(ChoiceChip, '2'), findsOneWidget);
     expect(find.widgetWithText(ChoiceChip, '8'), findsOneWidget);
@@ -450,15 +452,13 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsNothing);
     expect(find.text('Gratitude'), findsNothing);
 
     await _tapMood(tester, _l10n(tester).moodGoodLabel);
     await tester.pumpForStream();
-    await tester.pump(const Duration(milliseconds: 120));
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Mindset'), findsOneWidget);
-    expect(find.text(_l10n(tester).journalDailyCheckInsTitle), findsOneWidget);
     expect(find.text('Gratitude'), findsOneWidget);
 
     await _tapTextButton(tester, 'Gratitude');
@@ -472,7 +472,7 @@ void main() {
     final quantityDef = _trackerDef(
       'quantity-1',
       'Water',
-      scope: 'daily',
+      scope: 'entry',
       valueType: 'quantity',
       valueKind: 'number',
       minInt: 2,
@@ -485,7 +485,8 @@ void main() {
     await tester.pumpForStream();
     await _tapMood(tester, _l10n(tester).moodGoodLabel);
     await tester.pumpForStream();
-    await _expandDailyModule(tester, 'Water');
+    await tester.pump(const Duration(milliseconds: 300));
+    await _expandTrackerModule(tester, 'Water');
 
     expect(find.text('0'), findsOneWidget);
 
@@ -520,7 +521,7 @@ void main() {
     final choiceDef = _trackerDef(
       'choice-1',
       'Context',
-      scope: 'daily',
+      scope: 'entry',
       valueType: 'choice',
       valueKind: 'single_choice',
     );
@@ -558,7 +559,8 @@ void main() {
     await tester.pumpForStream();
     await _tapMood(tester, _l10n(tester).moodGoodLabel);
     await tester.pumpForStream();
-    await _expandDailyModule(tester, 'Context');
+    await tester.pump(const Duration(milliseconds: 300));
+    await _expandTrackerModule(tester, 'Context');
 
     final l10n = _l10n(tester);
     await _tapTextButton(tester, l10n.journalChooseOptionLabel);
@@ -625,7 +627,10 @@ Future<void> _tapTextButton(WidgetTester tester, String text) async {
   await tester.tap(finder.first, warnIfMissed: false);
 }
 
-Future<void> _expandDailyModule(WidgetTester tester, String trackerName) async {
+Future<void> _expandTrackerModule(
+  WidgetTester tester,
+  String trackerName,
+) async {
   final tileFinder = find.text(trackerName);
   if (tileFinder.evaluate().isEmpty) return;
   await tester.ensureVisible(tileFinder.first);

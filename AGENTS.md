@@ -20,10 +20,7 @@ You are an expert in Flutter and Dart development.
 Before any non-trivial change (more than a tiny local refactor) or when giving
 design options:
 
-- Read doc/architecture/README.md.
-- Read doc/architecture/INVARIANTS.md and comply.
-- Read only the additional relevant doc/architecture guides/specs for the area
-  being changed (do not blanket-read the entire folder).
+- Follow `doc/agents/START_HERE.md`.
 
 When changes affect architecture (new boundaries, responsibilities, data flow,
 storage/sync behavior, cross-feature patterns), update the relevant files under
@@ -49,8 +46,7 @@ always offer to delete / tidy up the unused legacy code (confirming it's not use
   - Widgets/pages must not call repositories/services directly.
   - Widgets/pages must not subscribe to domain/data streams directly.
 - Shared UI lives in packages/taskly_ui and must remain pure UI.
-  - Governance and boundaries are defined in doc/architecture/INVARIANTS.md and
-    doc/architecture/guides/TASKLY_UI_GOVERNANCE.md.
+  - Governance and boundaries are defined in doc/architecture/INVARIANTS.md.
 
 ## UI/UX tasks
 

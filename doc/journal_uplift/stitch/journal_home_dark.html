@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Journal Home Dark</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#13eca4",
+              "background-light": "#f6f8f7",
+              "background-dark": "#10221c",
+              // Deriving neutrals from the primary hue (approx 160)
+              "neutral-800": "#162e26", // Darker card bg
+              "neutral-700": "#1e3d33", // Card bg
+              "neutral-600": "#2a5246", // Border/hover
+              "neutral-400": "#5c8a7b", // Muted text
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden relative">
+<!-- Content Wrapper with padding for bottom nav -->
+<main class="flex-1 overflow-y-auto pb-24 scrollbar-hide">
+<!-- Header Section -->
+<header class="sticky top-0 z-10 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800">
+<div class="flex items-center gap-3">
+<button class="p-2 -ml-2 rounded-full hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-neutral-400">menu</span>
+</button>
+<div>
+<h2 class="text-xl font-bold tracking-tight">Today, Oct 24</h2>
+<p class="text-xs text-slate-500 dark:text-neutral-400 font-medium">Daily Overview</p>
+</div>
+</div>
+<button class="flex items-center justify-center size-10 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">
+<span class="material-symbols-outlined text-primary">calendar_month</span>
+</button>
+</header>
+<!-- Your Day Section -->
+<section class="px-4 py-6">
+<h2 class="text-2xl font-bold mb-4 tracking-tight">Your Day</h2>
+<!-- Metrics Grid -->
+<div class="grid grid-cols-2 gap-3 mb-6">
+<!-- Sleep Card -->
+<div class="col-span-1 bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow-sm border border-neutral-100 dark:border-neutral-700 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-4xl text-primary">bedtime</span>
+</div>
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-[20px]">bedtime</span>
+<span class="text-sm font-medium text-slate-600 dark:text-neutral-400">Sleep</span>
+</div>
+<div class="flex items-end gap-2">
+<span class="text-2xl font-bold tracking-tight">7h 30m</span>
+<span class="text-xs font-semibold text-primary mb-1.5">+5%</span>
+</div>
+<div class="w-full bg-neutral-100 dark:bg-neutral-700 h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary h-full rounded-full w-[75%]"></div>
+</div>
+</div>
+<!-- Water Card -->
+<div class="col-span-1 bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow-sm border border-neutral-100 dark:border-neutral-700 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-4xl text-blue-400">water_drop</span>
+</div>
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-blue-400 text-[20px] filled">water_drop</span>
+<span class="text-sm font-medium text-slate-600 dark:text-neutral-400">Water</span>
+</div>
+<div class="flex items-end gap-2">
+<span class="text-2xl font-bold tracking-tight">48 oz</span>
+<span class="text-xs font-semibold text-primary mb-1.5">+12</span>
+</div>
+<div class="w-full bg-neutral-100 dark:bg-neutral-700 h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-blue-400 h-full rounded-full w-[60%]"></div>
+</div>
+</div>
+<!-- Social Card (Full Width) -->
+<div class="col-span-2 bg-white dark:bg-neutral-800 rounded-2xl p-4 shadow-sm border border-neutral-100 dark:border-neutral-700 flex items-center justify-between">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-purple-400 text-[20px]">groups</span>
+<span class="text-sm font-medium text-slate-600 dark:text-neutral-400">Social Energy</span>
+</div>
+<span class="text-xl font-bold tracking-tight">High Engagement</span>
+</div>
+<div class="h-10 w-10 rounded-full bg-purple-400/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-purple-400">trending_up</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Moments Timeline Section -->
+<section class="px-4">
+<div class="flex items-center justify-between mb-4">
+<h1 class="text-xl font-bold tracking-tight">Moments</h1>
+<button class="text-sm font-medium text-primary hover:text-primary/80">View All</button>
+</div>
+<div class="relative pl-4 space-y-6 before:absolute before:inset-0 before:ml-4 before:h-full before:w-0.5 before:-translate-x-1/2 before:bg-gradient-to-b before:from-neutral-200 before:via-neutral-200 before:to-transparent dark:before:from-neutral-700 dark:before:via-neutral-800 dark:before:to-transparent">
+<!-- Timeline Item 1 -->
+<div class="relative flex gap-4 group">
+<div class="absolute left-0 -ml-1.5 mt-1.5 size-3 rounded-full border-2 border-background-light dark:border-background-dark bg-primary shadow-sm ring-4 ring-background-light dark:ring-background-dark"></div>
+<div class="flex-1 bg-white dark:bg-neutral-800 rounded-xl p-4 shadow-sm border border-neutral-100 dark:border-neutral-700">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-yellow-500 filled text-[20px]">sunny</span>
+<span class="font-semibold text-sm">Morning Reflection</span>
+</div>
+<span class="text-xs text-slate-400 dark:text-neutral-500 font-medium">08:30 AM</span>
+</div>
+<p class="text-sm text-slate-600 dark:text-neutral-300 leading-relaxed">
+                            Feeling optimistic about the project presentation today. Slept well and ready to tackle the challenges.
+                        </p>
+<div class="mt-3 flex gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-500/10 text-green-500 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">sentiment_satisfied</span> Happy
+                            </span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 text-blue-500 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">bolt</span> Energetic
+                            </span>
+</div>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="relative flex gap-4 group">
+<div class="absolute left-0 -ml-1.5 mt-1.5 size-3 rounded-full border-2 border-background-light dark:border-background-dark bg-neutral-400 shadow-sm ring-4 ring-background-light dark:ring-background-dark"></div>
+<div class="flex-1 bg-white dark:bg-neutral-800 rounded-xl p-4 shadow-sm border border-neutral-100 dark:border-neutral-700">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-orange-400 filled text-[20px]">local_cafe</span>
+<span class="font-semibold text-sm">Midday Break</span>
+</div>
+<span class="text-xs text-slate-400 dark:text-neutral-500 font-medium">01:15 PM</span>
+</div>
+<p class="text-sm text-slate-600 dark:text-neutral-300 leading-relaxed">
+                            Quick coffee with Sarah. Discussed weekend plans. Slightly anxious about the deadline.
+                        </p>
+<div class="mt-3 flex gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-orange-500/10 text-orange-500 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">sentiment_neutral</span> Neutral
+                            </span>
+</div>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="relative flex gap-4 group">
+<div class="absolute left-0 -ml-1.5 mt-1.5 size-3 rounded-full border-2 border-background-light dark:border-background-dark bg-purple-400 shadow-sm ring-4 ring-background-light dark:ring-background-dark"></div>
+<!-- Placeholder for photo -->
+<div class="flex-1 bg-white dark:bg-neutral-800 rounded-xl p-0 overflow-hidden shadow-sm border border-neutral-100 dark:border-neutral-700">
+<div class="h-32 w-full relative bg-neutral-700">
+<!-- Background gradient representing a photo -->
+<div class="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80" data-alt="Abstract gradient representing a calm evening sky"></div>
+<div class="absolute bottom-0 left-0 p-4 w-full bg-gradient-to-t from-black/60 to-transparent">
+<span class="text-xs text-white/80 font-medium block">06:45 PM</span>
+<span class="text-white font-semibold text-sm">Evening Walk</span>
+</div>
+</div>
+<div class="p-4 pt-2">
+<p class="text-sm text-slate-600 dark:text-neutral-300 leading-relaxed">
+                                Cleared my head. Beautiful sunset.
+                            </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Insight Strip -->
+<div class="mt-8 mb-4">
+<div class="bg-gradient-to-r from-neutral-800 to-neutral-700 rounded-xl p-4 border border-neutral-700 flex items-center gap-4">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary">lightbulb</span>
+</div>
+<div>
+<p class="text-xs text-primary font-bold uppercase tracking-wider mb-0.5">Insight</p>
+<p class="text-sm text-slate-200">You tend to feel more energetic when you drink &gt;40oz of water before noon.</p>
+</div>
+</div>
+</div>
+<!-- Spacer for scroll -->
+<div class="h-8"></div>
+</section>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-24 right-4 z-20 size-14 rounded-full bg-primary text-background-dark shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full bg-background-light/95 dark:bg-background-dark/95 backdrop-blur border-t border-neutral-200 dark:border-neutral-800 pb-safe pt-2 z-30">
+<div class="flex justify-around items-end pb-3 px-2">
+<!-- Active Item -->
+<a class="flex flex-1 flex-col items-center gap-1 group" href="#">
+<div class="relative p-1.5 rounded-full bg-primary/10">
+<span class="material-symbols-outlined text-primary filled">book_2</span>
+</div>
+<span class="text-[10px] font-semibold text-primary">Journal</span>
+</a>
+<!-- Inactive Items -->
+<a class="flex flex-1 flex-col items-center gap-1 group text-slate-400 dark:text-neutral-500 hover:text-slate-600 dark:hover:text-neutral-300 transition-colors" href="#">
+<div class="p-1.5">
+<span class="material-symbols-outlined">monitoring</span>
+</div>
+<span class="text-[10px] font-medium">Insights</span>
+</a>
+<a class="flex flex-1 flex-col items-center gap-1 group text-slate-400 dark:text-neutral-500 hover:text-slate-600 dark:hover:text-neutral-300 transition-colors" href="#">
+<div class="p-1.5">
+<span class="material-symbols-outlined">track_changes</span>
+</div>
+<span class="text-[10px] font-medium">Goals</span>
+</a>
+<a class="flex flex-1 flex-col items-center gap-1 group text-slate-400 dark:text-neutral-500 hover:text-slate-600 dark:hover:text-neutral-300 transition-colors" href="#">
+<div class="p-1.5">
+<span class="material-symbols-outlined">person</span>
+</div>
+<span class="text-[10px] font-medium">Profile</span>
+</a>
+</div>
+</nav>
+<!-- Safe area padding fix for mobile browsers with bottom bars -->
+<style>
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+    </style>
+</body></html>

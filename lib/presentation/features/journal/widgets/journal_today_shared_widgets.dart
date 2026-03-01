@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/journal/ui/journal_motion_tokens.dart';
+import 'package:taskly_bloc/presentation/features/journal/ui/tracker_value_formatter.dart';
 import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/journal_factor_token.dart';
 import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
-class JournalLogCard extends StatelessWidget {
+class JournalLogCard extends StatefulWidget {
   const JournalLogCard({
     required this.entry,
     required this.events,
     required this.definitionById,
     required this.moodTrackerId,
-    required this.dayQuantityTotalsByTrackerId,
     required this.density,
     required this.onTap,
+    this.choiceLabelsByTrackerId = const <String, Map<String, String>>{},
     super.key,
   });
 
@@ -23,22 +26,42 @@ class JournalLogCard extends StatelessWidget {
   final List<TrackerEvent> events;
   final Map<String, TrackerDefinition> definitionById;
   final String? moodTrackerId;
-  final Map<String, double> dayQuantityTotalsByTrackerId;
   final DisplayDensity density;
   final VoidCallback onTap;
+  final Map<String, Map<String, String>> choiceLabelsByTrackerId;
+
+  @override
+  State<JournalLogCard> createState() => _JournalLogCardState();
+}
+
+class _JournalLogCardState extends State<JournalLogCard> {
+  bool _expandedSummary = false;
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final timeLabel = DateFormat.jm().format(entry.occurredAt.toLocal());
+    final timeLabel = DateFormat.jm().format(
+      widget.entry.occurredAt.toLocal(),
+    );
     final tokens = TasklyTokens.of(context);
     final l10n = context.l10n;
 
     final mood = _findMood();
     final summaryItems = _buildSummaryItems(l10n);
 
-    final note = entry.journalText?.trim();
-    final isRich = density == DisplayDensity.standard;
+    final note = widget.entry.journalText?.trim();
+    final title = _deriveTitle(note);
+    final excerpt = _deriveExcerpt(note: note, title: title);
+    final fallbackTitle = _deriveFallbackTitle(
+      l10n: l10n,
+      mood: mood,
+      summaryItems: summaryItems,
+      timeLabel: timeLabel,
+    );
+    final displayTitle = title ?? fallbackTitle;
+    final isRich = widget.density == DisplayDensity.standard;
+    final maxChips = widget.density == DisplayDensity.compact ? 2 : 4;
 
     final surface = theme.colorScheme.surfaceContainerHigh;
     final border = theme.colorScheme.outlineVariant;
@@ -48,12 +71,16 @@ class JournalLogCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          margin: EdgeInsets.only(top: tokens.spaceSm),
+          margin: EdgeInsets.only(top: tokens.spaceMd),
           width: 8,
           height: 8,
           decoration: BoxDecoration(
-            color: theme.colorScheme.tertiary,
+            color: theme.colorScheme.secondary,
             shape: BoxShape.circle,
+            border: Border.all(
+              color: theme.colorScheme.surface,
+              width: 1.5,
+            ),
           ),
         ),
         SizedBox(width: tokens.spaceSm),
@@ -79,111 +106,123 @@ class JournalLogCard extends StatelessWidget {
               border: Border.all(color: border),
             ),
             child: InkWell(
-              onTap: onTap,
+              onTap: widget.onTap,
+              onHighlightChanged: (value) {
+                if (_pressed == value) return;
+                setState(() => _pressed = value);
+              },
               borderRadius: BorderRadius.circular(tokens.radiusMd),
-              child: Padding(
-                padding: EdgeInsets.all(tokens.spaceLg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
+              child: AnimatedScale(
+                duration: kJournalMotionDuration,
+                curve: kJournalMotionCurve,
+                scale: _pressed ? 0.985 : 1,
+                child: Padding(
+                  padding: EdgeInsets.all(tokens.spaceMd),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hasMood)
                         Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.spaceSm,
-                            vertical: tokens.spaceXs,
-                          ),
+                          height: 3,
                           decoration: BoxDecoration(
-                            color: theme.colorScheme.surface,
+                            color: _moodTint(theme.colorScheme, mood),
                             borderRadius: BorderRadius.circular(
-                              tokens.radiusMd,
-                            ),
-                          ),
-                          child: Text(
-                            timeLabel,
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
+                              tokens.radiusPill,
                             ),
                           ),
                         ),
-                        const Spacer(),
-                        if (hasMood)
-                          Tooltip(
-                            message: mood.localizedLabel(l10n),
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: tokens.spaceSm,
-                                vertical: tokens.spaceXs,
+                      if (hasMood) SizedBox(height: tokens.spaceSm),
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: tokens.spaceSm,
+                              vertical: tokens.spaceXs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surface,
+                              borderRadius: BorderRadius.circular(
+                                tokens.radiusMd,
                               ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(
-                                  tokens.radiusMd,
-                                ),
-                              ),
-                              child: Text(
-                                '${mood.emoji} ${mood.value}',
-                                style: theme.textTheme.labelLarge?.copyWith(
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            ),
+                            child: Text(
+                              timeLabel,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                      ],
-                    ),
-                    if (isRich && note != null && note.isNotEmpty) ...[
-                      SizedBox(height: tokens.spaceSm),
-                      Text(
-                        note,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ],
-                    if (summaryItems.isNotEmpty) ...[
-                      SizedBox(height: tokens.spaceSm),
-                      Wrap(
-                        spacing: tokens.spaceSm,
-                        runSpacing: tokens.spaceSm,
-                        children: [
-                          for (final item
-                              in (isRich ? summaryItems : summaryItems.take(2)))
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: tokens.spaceSm,
-                                vertical: tokens.spaceXs,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surface,
-                                borderRadius: BorderRadius.circular(
-                                  tokens.radiusMd,
+                          const Spacer(),
+                          if (hasMood)
+                            Tooltip(
+                              message: mood.localizedLabel(l10n),
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: tokens.spaceSm,
+                                  vertical: tokens.spaceXs,
                                 ),
-                                border: Border.all(color: border),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    item.icon,
-                                    size: 14,
-                                    color: theme.colorScheme.onSurfaceVariant,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(
+                                    tokens.radiusMd,
                                   ),
-                                  SizedBox(width: tokens.spaceXxs),
-                                  Text(
-                                    item.text,
-                                    style: theme.textTheme.labelMedium
-                                        ?.copyWith(
-                                          fontWeight: FontWeight.w600,
-                                        ),
+                                ),
+                                child: Text(
+                                  '${mood.emoji} ${mood.value}',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                         ],
                       ),
+                      if (displayTitle.isNotEmpty) ...[
+                        SizedBox(height: tokens.spaceSm),
+                        Text(
+                          displayTitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                      if (excerpt != null) ...[
+                        SizedBox(height: tokens.spaceSm),
+                        Text(
+                          excerpt,
+                          maxLines: isRich ? 3 : 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                      if (summaryItems.isNotEmpty) ...[
+                        SizedBox(height: tokens.spaceSm),
+                        Wrap(
+                          spacing: tokens.spaceSm,
+                          runSpacing: tokens.spaceSm,
+                          children: [
+                            for (final item in _visibleSummaryItems(
+                              allItems: summaryItems,
+                              maxChips: maxChips,
+                            ))
+                              JournalFactorToken(
+                                icon: item.icon,
+                                text: item.text,
+                                state: item.state,
+                                onTap: item.isOverflow
+                                    ? () => setState(() {
+                                        _expandedSummary = true;
+                                      })
+                                    : null,
+                              ),
+                          ],
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -194,11 +233,11 @@ class JournalLogCard extends StatelessWidget {
   }
 
   MoodRating? _findMood() {
-    final id = moodTrackerId;
+    final id = widget.moodTrackerId;
     if (id == null) return null;
 
     TrackerEvent? latestMoodEvent;
-    for (final e in events) {
+    for (final e in widget.events) {
       if (e.trackerId != id || e.value is! int) continue;
       if (latestMoodEvent == null ||
           latestMoodEvent.occurredAt.isBefore(e.occurredAt)) {
@@ -213,10 +252,10 @@ class JournalLogCard extends StatelessWidget {
 
   List<_TrackerSummaryChip> _buildSummaryItems(AppLocalizations l10n) {
     final candidates = <_TrackerSummaryChip>[];
-    final moodId = moodTrackerId;
+    final moodId = widget.moodTrackerId;
     final latestByTrackerId = <String, TrackerEvent>{};
 
-    for (final e in events) {
+    for (final e in widget.events) {
       if (moodId != null && e.trackerId == moodId) continue;
       final previous = latestByTrackerId[e.trackerId];
       if (previous == null || previous.occurredAt.isBefore(e.occurredAt)) {
@@ -224,114 +263,105 @@ class JournalLogCard extends StatelessWidget {
       }
     }
 
-    for (final e in latestByTrackerId.values) {
+    final orderedEvents = latestByTrackerId.values.toList(growable: false)
+      ..sort((a, b) => a.trackerId.compareTo(b.trackerId));
+    for (final e in orderedEvents) {
       if (moodId != null && e.trackerId == moodId) continue;
 
-      final definition = definitionById[e.trackerId];
+      final definition = widget.definitionById[e.trackerId];
       final name = definition?.name ?? l10n.journalTrackerFallbackName;
-      final value = e.value;
       final icon = definition == null
           ? Icons.track_changes_outlined
           : trackerIconData(definition);
-      final quantity = definition != null && _isQuantity(definition);
-      final unit = (definition?.unitKind ?? '').trim();
-
-      if (quantity) {
-        final total = dayQuantityTotalsByTrackerId[e.trackerId];
-        if (total == null) continue;
-        final rendered = _formatNumber(total);
-        final valueText = unit.isEmpty ? rendered : '$rendered $unit';
-        candidates.add(
-          _TrackerSummaryChip(
-            text: l10n.journalTrackerValueLabel(name, valueText),
-            icon: icon,
-          ),
-        );
-        continue;
-      }
-
-      if (value is bool) {
-        if (!value) continue;
-        candidates.add(
-          _TrackerSummaryChip(
-            text: name,
-            icon: icon,
-          ),
-        );
-        continue;
-      }
-
-      if (value is int) {
-        candidates.add(
-          _TrackerSummaryChip(
-            text: l10n.journalTrackerValueLabel(name, '$value'),
-            icon: icon,
-          ),
-        );
-        continue;
-      }
-
-      if (value is double) {
-        candidates.add(
-          _TrackerSummaryChip(
-            text: l10n.journalTrackerValueLabel(name, value.toStringAsFixed(1)),
-            icon: icon,
-          ),
-        );
-        continue;
-      }
-
-      if (value is String) {
-        candidates.add(
-          _TrackerSummaryChip(
-            text: l10n.journalTrackerValueLabel(name, value),
-            icon: icon,
-          ),
-        );
-        continue;
-      }
-
-      if (value != null) {
-        candidates.add(
-          _TrackerSummaryChip(
-            text: l10n.journalTrackerValueLabel(name, '$value'),
-            icon: icon,
-          ),
-        );
-      }
+      final formatted = JournalTrackerValueFormatter.format(
+        l10n: l10n,
+        label: name,
+        definition: definition,
+        rawValue: e.value,
+        choiceLabelsByTrackerId: widget.choiceLabelsByTrackerId,
+      );
+      candidates.add(
+        _TrackerSummaryChip(
+          text: formatted.text,
+          icon: icon,
+          state: formatted.state,
+        ),
+      );
     }
+    return candidates;
+  }
 
-    if (candidates.length <= 4) return candidates;
-
-    final remaining = candidates.length - 3;
+  List<_TrackerSummaryChip> _visibleSummaryItems({
+    required List<_TrackerSummaryChip> allItems,
+    required int maxChips,
+  }) {
+    if (_expandedSummary || allItems.length <= maxChips) return allItems;
+    final remaining = allItems.length - maxChips;
     return [
-      ...candidates.take(3),
+      ...allItems.take(maxChips),
       _TrackerSummaryChip(
-        text: l10n.journalTrackerMoreLabel(remaining),
+        text: '+$remaining',
         icon: Icons.more_horiz,
+        state: JournalTrackerValueState.normal,
+        isOverflow: true,
       ),
     ];
   }
 
-  bool _isQuantity(TrackerDefinition definition) {
-    final type = definition.valueType.trim().toLowerCase();
-    final kind = (definition.valueKind ?? '').trim().toLowerCase();
-    return type == 'quantity' || kind == 'number';
+  String? _deriveTitle(String? note) {
+    if (note == null || note.isEmpty) return null;
+    final firstSentence = note.split('.').first.trim();
+    if (firstSentence.isEmpty) return null;
+    final words = firstSentence.split(RegExp(r'\s+'));
+    if (words.length <= 4) return firstSentence;
+    return words.take(4).join(' ');
   }
 
-  String _formatNumber(double value) {
-    if (value == value.roundToDouble()) {
-      return value.toStringAsFixed(0);
+  String? _deriveExcerpt({required String? note, required String? title}) {
+    if (note == null || note.isEmpty) return null;
+    final trimmed = note.trim();
+    if (trimmed.isEmpty) return null;
+    if (title == null || title.isEmpty) return trimmed;
+    final normalizedTitle = title.trim().toLowerCase();
+    final normalizedNote = trimmed.toLowerCase();
+    if (normalizedNote == normalizedTitle) return null;
+    if (normalizedNote.startsWith(normalizedTitle)) {
+      final suffix = trimmed.substring(title.length).trimLeft();
+      if (suffix.isEmpty) return null;
+      return suffix;
     }
-    return value.toStringAsFixed(1);
+    return trimmed;
+  }
+
+  String _deriveFallbackTitle({
+    required AppLocalizations l10n,
+    required MoodRating? mood,
+    required List<_TrackerSummaryChip> summaryItems,
+    required String timeLabel,
+  }) {
+    if (summaryItems.isNotEmpty) {
+      final first = summaryItems.first.text.trim();
+      if (first.isNotEmpty) return first;
+    }
+    if (mood != null) {
+      return l10n.journalMoodSemanticsLabel(mood.localizedLabel(l10n));
+    }
+    return timeLabel;
   }
 }
 
 final class _TrackerSummaryChip {
-  const _TrackerSummaryChip({required this.text, required this.icon});
+  const _TrackerSummaryChip({
+    required this.text,
+    required this.icon,
+    required this.state,
+    this.isOverflow = false,
+  });
 
   final String text;
   final IconData icon;
+  final JournalTrackerValueState state;
+  final bool isOverflow;
 }
 
 Color _moodTint(ColorScheme scheme, MoodRating mood) {

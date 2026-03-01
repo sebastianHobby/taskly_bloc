@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Add Tracker with Groups</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ecb6",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#10221d",
+                        "surface-dark": "#1c2e28",
+                        "surface-border": "#283935",
+                        "text-muted": "#9db9b2"
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem", // 2px
+                        "lg": "0.25rem", // 4px
+                        "xl": "0.5rem", // 8px
+                        "full": "0.75rem" // 12px
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+        input[type="text"]:focus {
+            box-shadow: none;
+            border-color: #13ecb6;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-hidden">
+<header class="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm border-b border-surface-border px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-surface-dark transition-colors text-text-muted hover:text-white">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Add New Tracker</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-text-muted hover:text-primary text-sm font-medium">Cancel</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto scrollbar-hide pb-24 px-4 pt-6">
+<section class="flex flex-col gap-6">
+<div>
+<label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2" for="tracker-name">Tracker Name</label>
+<div class="bg-surface-dark border border-surface-border rounded-lg flex items-center p-1 focus-within:border-primary transition-colors">
+<input class="w-full bg-transparent border-none text-white placeholder-text-muted/50 focus:ring-0 text-base py-2.5 px-3" id="tracker-name" placeholder="e.g. Morning Jog" type="text"/>
+</div>
+</div>
+<div>
+<label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Icon</label>
+<div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+<button class="flex-shrink-0 w-12 h-12 rounded-lg bg-surface-dark border border-surface-border hover:border-primary text-text-muted hover:text-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[24px]">add_reaction</span>
+</button>
+<button class="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/20 border border-primary text-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">directions_run</span>
+</button>
+<button class="flex-shrink-0 w-12 h-12 rounded-lg bg-surface-dark border border-surface-border hover:border-primary text-text-muted hover:text-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[24px]">self_improvement</span>
+</button>
+<button class="flex-shrink-0 w-12 h-12 rounded-lg bg-surface-dark border border-surface-border hover:border-primary text-text-muted hover:text-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[24px]">fitness_center</span>
+</button>
+<button class="flex-shrink-0 w-12 h-12 rounded-lg bg-surface-dark border border-surface-border hover:border-primary text-text-muted hover:text-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[24px]">menu_book</span>
+</button>
+<button class="flex-shrink-0 w-12 h-12 rounded-lg bg-surface-dark border border-surface-border hover:border-primary text-text-muted hover:text-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[24px]">code</span>
+</button>
+<button class="flex-shrink-0 w-12 h-12 rounded-lg bg-surface-dark border border-surface-border hover:border-primary text-text-muted hover:text-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[24px]">brush</span>
+</button>
+</div>
+</div>
+<div>
+<div class="flex items-center justify-between mb-3">
+<label class="block text-xs font-semibold text-text-muted uppercase tracking-wider">Select Group</label>
+<span class="text-[10px] text-text-muted bg-surface-dark px-2 py-0.5 rounded border border-surface-border">Optional</span>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<label class="relative cursor-pointer group">
+<input class="peer sr-only" name="tracker-group" type="radio" value="sport"/>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-dark border border-surface-border peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-border/50 transition-all">
+<div class="w-8 h-8 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">sports_soccer</span>
+</div>
+<span class="text-sm font-medium text-slate-200 peer-checked:text-primary">Sport</span>
+</div>
+<div class="absolute top-3 right-3 w-4 h-4 rounded-full border border-surface-border bg-background-dark peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-background-dark opacity-0 peer-checked:opacity-100 font-bold">check</span>
+</div>
+</label>
+<label class="relative cursor-pointer group">
+<input class="peer sr-only" name="tracker-group" type="radio" value="health"/>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-dark border border-surface-border peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-border/50 transition-all">
+<div class="w-8 h-8 rounded bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">ecg_heart</span>
+</div>
+<span class="text-sm font-medium text-slate-200 peer-checked:text-primary">Health</span>
+</div>
+<div class="absolute top-3 right-3 w-4 h-4 rounded-full border border-surface-border bg-background-dark peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-background-dark opacity-0 peer-checked:opacity-100 font-bold">check</span>
+</div>
+</label>
+<label class="relative cursor-pointer group">
+<input class="peer sr-only" name="tracker-group" type="radio" value="social"/>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-dark border border-surface-border peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-border/50 transition-all">
+<div class="w-8 h-8 rounded bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">group</span>
+</div>
+<span class="text-sm font-medium text-slate-200 peer-checked:text-primary">Social</span>
+</div>
+<div class="absolute top-3 right-3 w-4 h-4 rounded-full border border-surface-border bg-background-dark peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-background-dark opacity-0 peer-checked:opacity-100 font-bold">check</span>
+</div>
+</label>
+<label class="relative cursor-pointer group">
+<input class="peer sr-only" name="tracker-group" type="radio" value="work"/>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-dark border border-surface-border peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-border/50 transition-all">
+<div class="w-8 h-8 rounded bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">work</span>
+</div>
+<span class="text-sm font-medium text-slate-200 peer-checked:text-primary">Work</span>
+</div>
+<div class="absolute top-3 right-3 w-4 h-4 rounded-full border border-surface-border bg-background-dark peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-background-dark opacity-0 peer-checked:opacity-100 font-bold">check</span>
+</div>
+</label>
+<label class="relative cursor-pointer group">
+<input class="peer sr-only" name="tracker-group" type="radio" value="hobby"/>
+<div class="flex items-center gap-3 p-3 rounded-lg bg-surface-dark border border-surface-border peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-surface-border/50 transition-all">
+<div class="w-8 h-8 rounded bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[18px]">palette</span>
+</div>
+<span class="text-sm font-medium text-slate-200 peer-checked:text-primary">Hobby</span>
+</div>
+<div class="absolute top-3 right-3 w-4 h-4 rounded-full border border-surface-border bg-background-dark peer-checked:border-primary peer-checked:bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[10px] text-background-dark opacity-0 peer-checked:opacity-100 font-bold">check</span>
+</div>
+</label>
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg bg-transparent border border-dashed border-surface-border hover:border-primary hover:bg-surface-dark text-text-muted hover:text-white transition-all h-full min-h-[58px]">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="text-xs font-medium">+ New Group</span>
+</button>
+</div>
+</div>
+<div>
+<label class="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">Description</label>
+<div class="bg-surface-dark border border-surface-border rounded-lg flex items-start p-1 focus-within:border-primary transition-colors">
+<textarea class="w-full bg-transparent border-none text-white placeholder-text-muted/50 focus:ring-0 text-sm py-2.5 px-3 resize-none h-24" placeholder="Add a short description..."></textarea>
+</div>
+</div>
+</section>
+</main>
+<div class="fixed bottom-0 left-0 w-full z-50 border-t border-surface-border bg-[#1c2724] px-4 py-4 pb-8">
+<button class="w-full py-3 px-4 bg-primary hover:bg-primary/90 text-background-dark font-bold rounded-lg shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">check</span>
+        Create Tracker
+    </button>
+</div>
+</body></html>

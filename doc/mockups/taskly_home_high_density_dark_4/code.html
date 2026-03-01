@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Manage Trackers Categorized</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ecb6",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#10221d",
+                        "surface-dark": "#1c2e28",
+                        "surface-border": "#283935",
+                        "text-muted": "#9db9b2"
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem", // 2px
+                        "lg": "0.25rem", // 4px
+                        "xl": "0.5rem", // 8px
+                        "full": "0.75rem" // 12px
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-hidden">
+<header class="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm border-b border-surface-border px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-surface-dark transition-colors text-text-muted hover:text-white">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Manage Trackers</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center w-8 h-8 rounded-full bg-surface-dark border border-surface-border text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto scrollbar-hide pb-24">
+<div class="px-4 pt-4 pb-2 sticky top-0 z-40 bg-background-dark">
+<div class="flex p-1 bg-surface-dark rounded-lg border border-surface-border">
+<button class="flex-1 py-1.5 px-3 rounded text-xs font-semibold bg-primary text-background-dark shadow-sm">
+                    Activity Trackers
+                </button>
+<button class="flex-1 py-1.5 px-3 rounded text-xs font-medium text-text-muted hover:text-white transition-colors">
+                    Aggregate Trackers
+                </button>
+</div>
+<p class="text-[10px] text-text-muted mt-2 px-1">
+                Manage tags grouped by category. These appear when logging a specific event.
+            </p>
+</div>
+<div class="px-4 py-2 mt-2">
+<h2 class="text-xs font-bold text-white uppercase tracking-wider opacity-60 mb-2 pl-1">Sport</h2>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+<span class="material-symbols-outlined text-[18px]">directions_run</span>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-slate-100">Running</h3>
+<p class="text-[10px] text-text-muted">Fitness • Cardio</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-orange-400">
+<span class="material-symbols-outlined text-[18px]">fitness_center</span>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-slate-100">Gym</h3>
+<p class="text-[10px] text-text-muted">Strength • Training</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-lime-500/10 border border-lime-500/20 flex items-center justify-center text-lime-400">
+<span class="material-symbols-outlined text-[18px]">sports_soccer</span>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-slate-100">Soccer</h3>
+<p class="text-[10px] text-text-muted">Team • Cardio</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="px-4 py-2">
+<h2 class="text-xs font-bold text-white uppercase tracking-wider opacity-60 mb-2 pl-1">Social</h2>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400">
+<span class="material-symbols-outlined text-[18px]">family_restroom</span>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-slate-100">Family</h3>
+<p class="text-[10px] text-text-muted">Quality Time • Home</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+<span class="material-symbols-outlined text-[18px]">diversity_3</span>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-slate-100">Friends</h3>
+<p class="text-[10px] text-text-muted">Outing • Social</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="px-4 py-2">
+<h2 class="text-xs font-bold text-white uppercase tracking-wider opacity-60 mb-2 pl-1">Health</h2>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border group">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+<span class="material-symbols-outlined text-[18px]">self_improvement</span>
+</div>
+<div>
+<h3 class="text-sm font-semibold text-slate-100">Meditation</h3>
+<p class="text-[10px] text-text-muted">Mindfulness • Morning</p>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-white hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<nav class="fixed bottom-0 left-0 w-full z-50 border-t border-surface-border bg-[#1c2724] px-4 pb-5 pt-2">
+<div class="flex gap-2 justify-between">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-text-muted hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">home</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-wide">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-text-muted hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">book_2</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-wide">Journal</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-text-muted hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">bar_chart</span>
+</div>
+<p class="text-[10px] font-medium leading-normal tracking-wide">Stats</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 rounded-full text-primary" href="#">
+<div class="flex h-7 items-center justify-center">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">settings</span>
+</div>
+<p class="text-[10px] font-bold leading-normal tracking-wide">Settings</p>
+</a>
+</div>
+</nav>
+
+</body></html>

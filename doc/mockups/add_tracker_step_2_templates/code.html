@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Add Tracker - Templates</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#13ecb6",
+                        "primary-dark": "#0ea882",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#10221d",
+                        "surface-dark": "#1c2e28",
+                        "surface-border": "#2a4038",
+                        "text-secondary": "#9db9b2",
+                    },
+                    fontFamily: {
+                        display: ["Manrope", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.125rem",
+                        lg: "0.25rem", // 4px
+                        xl: "0.5rem",
+                        full: "0.75rem",
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen flex flex-col antialiased selection:bg-primary/30 selection:text-primary">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-50 flex items-center justify-between bg-background-light dark:bg-background-dark p-4 border-b border-gray-200 dark:border-surface-border">
+<button class="text-slate-900 dark:text-white flex size-10 shrink-0 items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">Select Template</h2>
+</header>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col p-4 gap-6 max-w-md mx-auto w-full">
+<!-- Section: Popular Trackers -->
+<section>
+<h3 class="text-slate-900 dark:text-white text-xl font-bold leading-tight mb-4">Popular Trackers</h3>
+<div class="grid grid-cols-2 gap-3">
+<!-- Card 1: Caffeine -->
+<button class="group flex flex-col gap-3 rounded-lg border border-gray-200 dark:border-surface-border bg-white dark:bg-surface-dark p-4 text-left transition-all hover:border-primary hover:shadow-[0_0_15px_-3px_rgba(19,236,182,0.2)] dark:hover:border-primary">
+<div class="flex items-center justify-between w-full">
+<div class="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary-dark dark:text-primary">
+<span class="material-symbols-outlined">local_cafe</span>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors text-xl">add_circle</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="text-slate-900 dark:text-white text-sm font-bold leading-tight">Caffeine Intake</span>
+<span class="text-slate-500 dark:text-text-secondary text-xs font-medium">Sum (mg)</span>
+</div>
+</button>
+<!-- Card 2: Happiness -->
+<button class="group flex flex-col gap-3 rounded-lg border border-gray-200 dark:border-surface-border bg-white dark:bg-surface-dark p-4 text-left transition-all hover:border-primary hover:shadow-[0_0_15px_-3px_rgba(19,236,182,0.2)] dark:hover:border-primary">
+<div class="flex items-center justify-between w-full">
+<div class="flex size-10 items-center justify-center rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined">sentiment_satisfied</span>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors text-xl">add_circle</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="text-slate-900 dark:text-white text-sm font-bold leading-tight">Happiness Level</span>
+<span class="text-slate-500 dark:text-text-secondary text-xs font-medium">Average (1-5)</span>
+</div>
+</button>
+<!-- Card 3: Productivity -->
+<button class="group flex flex-col gap-3 rounded-lg border border-gray-200 dark:border-surface-border bg-white dark:bg-surface-dark p-4 text-left transition-all hover:border-primary hover:shadow-[0_0_15px_-3px_rgba(19,236,182,0.2)] dark:hover:border-primary">
+<div class="flex items-center justify-between w-full">
+<div class="flex size-10 items-center justify-center rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors text-xl">add_circle</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="text-slate-900 dark:text-white text-sm font-bold leading-tight">Productivity</span>
+<span class="text-slate-500 dark:text-text-secondary text-xs font-medium">Scale (1-10)</span>
+</div>
+</button>
+<!-- Card 4: Water -->
+<button class="group flex flex-col gap-3 rounded-lg border border-gray-200 dark:border-surface-border bg-white dark:bg-surface-dark p-4 text-left transition-all hover:border-primary hover:shadow-[0_0_15px_-3px_rgba(19,236,182,0.2)] dark:hover:border-primary">
+<div class="flex items-center justify-between w-full">
+<div class="flex size-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
+<span class="material-symbols-outlined">water_drop</span>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors text-xl">add_circle</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="text-slate-900 dark:text-white text-sm font-bold leading-tight">Water Intake</span>
+<span class="text-slate-500 dark:text-text-secondary text-xs font-medium">Sum (oz)</span>
+</div>
+</button>
+<!-- Card 5: Sleep -->
+<button class="group flex flex-col gap-3 rounded-lg border border-gray-200 dark:border-surface-border bg-white dark:bg-surface-dark p-4 text-left transition-all hover:border-primary hover:shadow-[0_0_15px_-3px_rgba(19,236,182,0.2)] dark:hover:border-primary">
+<div class="flex items-center justify-between w-full">
+<div class="flex size-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+<span class="material-symbols-outlined">bedtime</span>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors text-xl">add_circle</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="text-slate-900 dark:text-white text-sm font-bold leading-tight">Sleep Duration</span>
+<span class="text-slate-500 dark:text-text-secondary text-xs font-medium">Hours (Total)</span>
+</div>
+</button>
+<!-- Card 6: Mood Tags -->
+<button class="group flex flex-col gap-3 rounded-lg border border-gray-200 dark:border-surface-border bg-white dark:bg-surface-dark p-4 text-left transition-all hover:border-primary hover:shadow-[0_0_15px_-3px_rgba(19,236,182,0.2)] dark:hover:border-primary">
+<div class="flex items-center justify-between w-full">
+<div class="flex size-10 items-center justify-center rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400">
+<span class="material-symbols-outlined">theater_comedy</span>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors text-xl">add_circle</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="text-slate-900 dark:text-white text-sm font-bold leading-tight">Mood Swings</span>
+<span class="text-slate-500 dark:text-text-secondary text-xs font-medium">Tags</span>
+</div>
+</button>
+</div>
+</section>
+<!-- Section: Custom -->
+<section class="mt-2">
+<h3 class="text-slate-900 dark:text-white text-xl font-bold leading-tight mb-4">Custom</h3>
+<button class="group w-full flex items-center justify-between p-4 rounded-lg border border-dashed border-gray-300 dark:border-surface-border bg-transparent hover:bg-white dark:hover:bg-surface-dark hover:border-primary dark:hover:border-primary transition-all">
+<div class="flex items-center gap-4">
+<div class="flex size-12 items-center justify-center rounded-lg bg-primary text-background-dark shadow-md group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined">add</span>
+</div>
+<div class="flex flex-col items-start gap-0.5">
+<span class="text-slate-900 dark:text-white text-base font-bold leading-tight">Create from scratch</span>
+<span class="text-slate-500 dark:text-text-secondary text-xs font-medium text-left">Define your own parameters and logic</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all">chevron_right</span>
+</button>
+<div class="mt-4 p-4 rounded-lg bg-gradient-to-br from-surface-dark to-background-dark border border-surface-border overflow-hidden relative">
+<div class="relative z-10 flex flex-col gap-2">
+<div class="flex items-center gap-2 text-primary text-xs font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-base">lightbulb</span>
+                         Pro Tip
+                     </div>
+<p class="text-sm text-text-secondary leading-relaxed">
+                         Can't find what you need? You can combine multiple properties into a single tracker using "Composite" mode later.
+                     </p>
+</div>
+<!-- Abstract decoration -->
+<div class="absolute -bottom-10 -right-10 w-32 h-32 bg-primary/5 rounded-full blur-2xl"></div>
+</div>
+</section>
+</main>
+<!-- Bottom spacing for iOS safe area -->
+<div class="h-6 w-full bg-background-light dark:bg-background-dark"></div>
+</body></html>

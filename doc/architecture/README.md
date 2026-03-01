@@ -5,8 +5,8 @@ Architecture docs are split into normative rules, indexes, contracts, and operat
 ## Start order
 
 1. Mental model: [ARCHITECTURE_OVERVIEW.md](ARCHITECTURE_OVERVIEW.md)
-2. Normative rules: [INVARIANTS.md](INVARIANTS.md)
-3. Invariant quick index: [INVARIANT_INDEX.md](INVARIANT_INDEX.md)
+2. Invariant quick index: [INVARIANT_INDEX.md](INVARIANT_INDEX.md)
+3. Normative rules (targeted sections only): [INVARIANTS.md](INVARIANTS.md)
 4. Guardrail mapping: [GUARDRAIL_TO_INVARIANT_MAP.md](GUARDRAIL_TO_INVARIANT_MAP.md)
 
 ## Contracts and runbooks
@@ -35,7 +35,6 @@ Authoritative feature behavior lives under:
 
 ## Archive notes
 
-Legacy guides and deep dives were archived.
-Compatibility placeholders remain in:
-- `doc/architecture/guides/`
-- `doc/architecture/deep_dives/`
+Legacy guides and deep dives were archived under:
+- `doc/archive/architecture/guides/`
+- `doc/archive/architecture/deep_dives/`

@@ -30,6 +30,22 @@ void main() {
     expect(theme.scaffoldBackgroundColor, theme.colorScheme.background);
   });
 
+  testSafe('AppTheme uses secondary seed overrides when configured', () async {
+    const primarySeed = Color(0xFF00F5D4);
+    const secondarySeed = Color(0xFF1DE9B6);
+    final theme = AppTheme.darkTheme(seedColor: primarySeed);
+    final secondaryScheme = ColorScheme.fromSeed(
+      seedColor: secondarySeed,
+      brightness: Brightness.dark,
+    );
+
+    expect(theme.colorScheme.secondary, secondaryScheme.secondary);
+    expect(
+      theme.colorScheme.secondaryContainer,
+      secondaryScheme.secondaryContainer,
+    );
+  });
+
   testSafe('AppTheme.tasklyTheme wires Taskly extensions', () async {
     final theme = AppTheme.tasklyTheme(seedColor: AppColors.blueberry80);
     final scheme = ColorScheme.fromSeed(

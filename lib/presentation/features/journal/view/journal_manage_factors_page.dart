@@ -4,9 +4,12 @@ import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_library_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_ui/taskly_ui_forms.dart';
+import 'package:taskly_ui/taskly_ui_icons.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalManageFactorsPage extends StatelessWidget {
@@ -109,6 +112,24 @@ class _ManageFactorsView extends StatelessWidget {
                           ),
                           trailing: PopupMenuButton<String>(
                             onSelected: (value) async {
+                              if (value == 'icon') {
+                                final selected = await _showIconPickerSheet(
+                                  context,
+                                  selectedIconName: trackerIconNameFromConfig(
+                                    tracker.config,
+                                  ),
+                                );
+                                if (!context.mounted || selected == null) {
+                                  return;
+                                }
+                                await context
+                                    .read<JournalManageLibraryBloc>()
+                                    .setTrackerIcon(
+                                      def: tracker,
+                                      iconName: selected,
+                                    );
+                                return;
+                              }
                               if (value == 'rename') {
                                 final renamed = await _showNameSheet(
                                   context,
@@ -143,6 +164,10 @@ class _ManageFactorsView extends StatelessWidget {
                               }
                             },
                             itemBuilder: (context) => [
+                              PopupMenuItem<String>(
+                                value: 'icon',
+                                child: Text(context.l10n.changeIconLabel),
+                              ),
                               PopupMenuItem<String>(
                                 value: 'rename',
                                 child: Text(context.l10n.renameLabel),
@@ -291,6 +316,37 @@ class _ManageFactorsView extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String?> _showIconPickerSheet(
+    BuildContext context, {
+    required String? selectedIconName,
+  }) {
+    final tokens = TasklyTokens.of(context);
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spaceLg,
+            tokens.spaceSm,
+            tokens.spaceLg,
+            tokens.spaceLg,
+          ),
+          child: TasklyFormIconSearchPicker(
+            icons: tasklySymbolIcons,
+            selectedIconName: selectedIconName,
+            searchHintText: sheetContext.l10n.valueFormIconSearchHint,
+            noIconsFoundLabel: sheetContext.l10n.valueFormIconNoResults,
+            tooltipBuilder: formatIconLabel,
+            onSelected: (iconName) => Navigator.of(sheetContext).pop(iconName),
           ),
         );
       },

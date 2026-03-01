@@ -108,6 +108,7 @@ final class JournalEntryEditorState {
     required this.note,
     required this.entryValues,
     required this.dailyDraftValues,
+    required this.dayEntryTrackerIds,
     required this.isDirty,
   });
 
@@ -126,6 +127,7 @@ final class JournalEntryEditorState {
       note: '',
       entryValues: const <String, Object?>{},
       dailyDraftValues: const <String, Object?>{},
+      dayEntryTrackerIds: const <String>{},
       isDirty: false,
     );
   }
@@ -143,6 +145,7 @@ final class JournalEntryEditorState {
   final String note;
   final Map<String, Object?> entryValues;
   final Map<String, Object?> dailyDraftValues;
+  final Set<String> dayEntryTrackerIds;
   final bool isDirty;
 
   bool get isEditingExisting => entryId != null && entryId!.trim().isNotEmpty;
@@ -161,6 +164,7 @@ final class JournalEntryEditorState {
     String? note,
     Map<String, Object?>? entryValues,
     Map<String, Object?>? dailyDraftValues,
+    Set<String>? dayEntryTrackerIds,
     bool? isDirty,
   }) {
     return JournalEntryEditorState(
@@ -177,6 +181,7 @@ final class JournalEntryEditorState {
       note: note ?? this.note,
       entryValues: entryValues ?? this.entryValues,
       dailyDraftValues: dailyDraftValues ?? this.dailyDraftValues,
+      dayEntryTrackerIds: dayEntryTrackerIds ?? this.dayEntryTrackerIds,
       isDirty: isDirty ?? this.isDirty,
     );
   }
@@ -385,19 +390,42 @@ class JournalEntryEditorBloc
           range: DateRange(start: dayUtc, end: dayUtc),
         )
         .startWith(const <TrackerStateDay>[]);
+    final dayEntryEvents$ = _repository
+        .watchTrackerEvents(
+          range: DateRange(
+            start: dayUtc,
+            end: dayUtc
+                .add(const Duration(days: 1))
+                .subtract(const Duration(microseconds: 1)),
+          ),
+          anchorType: 'entry',
+        )
+        .startWith(const <TrackerEvent>[]);
 
     final combined$ =
-        Rx.combineLatest3<
+        Rx.combineLatest4<
           List<TrackerDefinition>,
           List<TrackerGroup>,
           List<TrackerStateDay>,
+          List<TrackerEvent>,
           ({
             List<TrackerDefinition> defs,
             List<TrackerGroup> groups,
             List<TrackerStateDay> dayStates,
+            List<TrackerEvent> entryEvents,
           })
-        >(defs$, groups$, dayState$, (defs, groups, dayStates) {
-          return (defs: defs, groups: groups, dayStates: dayStates);
+        >(defs$, groups$, dayState$, dayEntryEvents$, (
+          defs,
+          groups,
+          dayStates,
+          entryEvents,
+        ) {
+          return (
+            defs: defs,
+            groups: groups,
+            dayStates: dayStates,
+            entryEvents: entryEvents,
+          );
         });
 
     await emit.forEach(
@@ -437,6 +465,9 @@ class JournalEntryEditorBloc
         final dayStateByTrackerId = {
           for (final s in data.dayStates) s.trackerId: s,
         };
+        final dayEntryTrackerIds = <String>{
+          for (final event in data.entryEvents) event.trackerId,
+        };
 
         return state.copyWith(
           status: const JournalEntryEditorIdle(),
@@ -445,6 +476,7 @@ class JournalEntryEditorBloc
           dailyTrackers: dailyTrackers,
           definitionById: definitionById,
           dayStateByTrackerId: dayStateByTrackerId,
+          dayEntryTrackerIds: dayEntryTrackerIds,
           moodTrackerId: moodTrackerId,
         );
       },

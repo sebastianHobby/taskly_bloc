@@ -13,7 +13,7 @@ void main() {
   setUp(setUpTestEnvironment);
 
   testWidgetsSafe(
-    'JournalLogCard deduplicates by tracker and uses day quantity totals',
+    'JournalLogCard deduplicates by tracker and uses per-entry quantity values',
     (
       tester,
     ) async {
@@ -110,7 +110,6 @@ void main() {
             events: events,
             definitionById: defs,
             moodTrackerId: 'mood',
-            dayQuantityTotalsByTrackerId: const <String, double>{'water': 300},
             density: DisplayDensity.standard,
             onTap: () {},
           ),
@@ -120,8 +119,8 @@ void main() {
       await tester.pumpForStream();
 
       expect(find.text('Morning note'), findsOneWidget);
-      expect(find.text('Exercise'), findsOneWidget);
-      expect(find.text('Water: 300 ml'), findsOneWidget);
+      expect(find.text('Exercise: Yes'), findsOneWidget);
+      expect(find.text('Water: 200 ml'), findsOneWidget);
     },
   );
 
@@ -173,7 +172,6 @@ void main() {
           events: events,
           definitionById: defs,
           moodTrackerId: null,
-          dayQuantityTotalsByTrackerId: const <String, double>{},
           density: DisplayDensity.standard,
           onTap: () {},
         ),

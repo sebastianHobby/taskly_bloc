@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/presentation/features/journal/utils/journal_unit_catalog.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -578,6 +579,15 @@ class JournalTrackerWizardBloc
     }
 
     if (measurement == JournalTrackerMeasurementType.quantity) {
+      final unitKey = state.quantityUnit.trim().toLowerCase();
+      if (!isCanonicalUnitKey(unitKey)) {
+        emit(
+          state.copyWith(
+            status: const JournalTrackerWizardError('Choose a valid unit.'),
+          ),
+        );
+        return;
+      }
       if (state.quantityStep <= 0) {
         emit(
           state.copyWith(
@@ -692,7 +702,7 @@ class JournalTrackerWizardBloc
           unitKind:
               measurement == JournalTrackerMeasurementType.quantity &&
                   state.quantityUnit.trim().isNotEmpty
-              ? state.quantityUnit.trim()
+              ? state.quantityUnit.trim().toLowerCase()
               : null,
           userId: null,
         ),

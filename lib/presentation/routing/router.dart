@@ -24,7 +24,9 @@ import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_day_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_insights_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_manage_factors_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_wizard_page.dart';
@@ -437,6 +439,21 @@ GoRouter createRouter({
           GoRoute(
             path: Routing.screenPath('journal'),
             builder: (_, __) => const JournalHubPage(),
+          ),
+          GoRoute(
+            path: '/journal/history',
+            builder: (_, __) => const JournalHistoryPage(),
+          ),
+          GoRoute(
+            path: '/journal/day/:day',
+            builder: (_, state) {
+              final raw = state.pathParameters['day'];
+              final parsed = raw == null ? null : DateTime.tryParse(raw);
+              if (parsed == null) {
+                return const NotFoundRoutePage(message: 'Invalid journal day');
+              }
+              return JournalDayDetailPage(dayUtc: parsed.toUtc());
+            },
           ),
           GoRoute(
             path: '/journal/insights',

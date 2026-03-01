@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Compact Moment Entry Horizontal Scroll</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ecb6",
+                        "primary-dark": "#0fb98f",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#10221d",
+                        "surface-dark": "#1c2e28",
+                        "surface-border": "#283935",
+                        "text-muted": "#9db9b2"
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem", // 2px
+                        "lg": "0.25rem", // 4px
+                        "xl": "0.5rem", // 8px
+                        "full": "0.75rem" // 12px
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            opacity: 0.5;
+            cursor: pointer;
+        }
+    </style>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-hidden">
+<header class="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm border-b border-surface-border px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-surface-dark transition-colors text-text-muted hover:text-white">
+<span class="material-symbols-outlined text-[24px]">close</span>
+</button>
+<h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">New Moment</h1>
+</div>
+<button class="text-sm font-bold text-primary hover:text-primary-dark transition-colors">
+            Reset
+        </button>
+</header>
+<main class="flex-1 overflow-y-auto scrollbar-hide pb-32">
+<section class="border-b border-surface-border">
+<div class="px-4 py-4">
+<h2 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                Moment Factors
+            </h2>
+<div class="mb-6">
+<h3 class="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">Current Mood</h3>
+<div class="flex justify-between items-center gap-2">
+<button class="flex flex-col items-center gap-1 group w-full">
+<div class="w-full aspect-square max-w-[56px] rounded-lg bg-surface-dark border border-surface-border flex items-center justify-center text-3xl hover:border-primary/50 hover:bg-surface-dark/80 transition-all">
+                            😩
+                        </div>
+<span class="text-[10px] text-text-muted font-medium group-hover:text-white">Bad</span>
+</button>
+<button class="flex flex-col items-center gap-1 group w-full">
+<div class="w-full aspect-square max-w-[56px] rounded-lg bg-surface-dark border border-surface-border flex items-center justify-center text-3xl hover:border-primary/50 hover:bg-surface-dark/80 transition-all">
+                            😕
+                        </div>
+<span class="text-[10px] text-text-muted font-medium group-hover:text-white">Meh</span>
+</button>
+<button class="flex flex-col items-center gap-1 group w-full">
+<div class="w-full aspect-square max-w-[56px] rounded-lg bg-primary/20 border-2 border-primary flex items-center justify-center text-3xl shadow-[0_0_10px_rgba(19,236,182,0.15)] transition-all transform scale-105">
+                            😌
+                        </div>
+<span class="text-[10px] text-primary font-bold">Good</span>
+</button>
+<button class="flex flex-col items-center gap-1 group w-full">
+<div class="w-full aspect-square max-w-[56px] rounded-lg bg-surface-dark border border-surface-border flex items-center justify-center text-3xl hover:border-primary/50 hover:bg-surface-dark/80 transition-all">
+                            😃
+                        </div>
+<span class="text-[10px] text-text-muted font-medium group-hover:text-white">Great</span>
+</button>
+<button class="flex flex-col items-center gap-1 group w-full">
+<div class="w-full aspect-square max-w-[56px] rounded-lg bg-surface-dark border border-surface-border flex items-center justify-center text-3xl hover:border-primary/50 hover:bg-surface-dark/80 transition-all">
+                            🤩
+                        </div>
+<span class="text-[10px] text-text-muted font-medium group-hover:text-white">Super</span>
+</button>
+</div>
+</div>
+<div class="mb-6 flex items-center justify-between p-3 rounded-lg bg-surface-dark border border-surface-border">
+<div class="flex items-center gap-2 text-text-muted">
+<span class="material-symbols-outlined text-[20px]">schedule</span>
+<span class="text-sm font-medium">Time of moment</span>
+</div>
+<input class="bg-transparent border-0 text-white text-sm focus:ring-0 p-0 text-right w-24" type="time" value="18:30"/>
+</div>
+<div class="mb-2">
+<h3 class="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">Activities</h3>
+<div class="mb-4">
+<h4 class="text-[11px] font-semibold text-text-muted/70 mb-2 pl-1">Sports &amp; Fitness</h4>
+<div class="-mx-4 px-4 overflow-x-auto scrollbar-hide flex gap-2 pb-1">
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">fitness_center</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Gym</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">sports_soccer</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Soccer</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">directions_run</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Running</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">pool</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Swimming</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">self_improvement</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Yoga</span>
+</button>
+</div>
+</div>
+<div class="mb-4">
+<h4 class="text-[11px] font-semibold text-text-muted/70 mb-2 pl-1">Social</h4>
+<div class="-mx-4 px-4 overflow-x-auto scrollbar-hide flex gap-2 pb-1">
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">diversity_3</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Friends</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">family_restroom</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Family</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary whitespace-nowrap">
+<span class="material-symbols-outlined text-[18px] text-primary">favorite</span>
+<span class="text-xs font-bold text-white">Date</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">groups</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Meetup</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">videocam</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Video Call</span>
+</button>
+</div>
+</div>
+<div>
+<h4 class="text-[11px] font-semibold text-text-muted/70 mb-2 pl-1">Productivity</h4>
+<div class="-mx-4 px-4 overflow-x-auto scrollbar-hide flex gap-2 pb-1">
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary whitespace-nowrap">
+<span class="material-symbols-outlined text-[18px] text-primary">menu_book</span>
+<span class="text-xs font-bold text-white">Reading</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">laptop_mac</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Work</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">edit_note</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Journaling</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">school</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Study</span>
+</button>
+<button class="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-dark border border-surface-border hover:border-primary/50 transition-colors whitespace-nowrap group">
+<span class="material-symbols-outlined text-[18px] text-text-muted group-hover:text-white">brush</span>
+<span class="text-xs font-medium text-text-muted group-hover:text-white">Creative</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="border-b border-surface-border bg-surface-dark/30">
+<div class="px-4 py-4">
+<h2 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                Daily Trackers
+            </h2>
+<div class="mb-5">
+<div class="flex justify-between items-center mb-2">
+<h3 class="text-xs font-bold text-text-muted uppercase tracking-wider">Energy Level</h3>
+<span class="text-xs font-bold text-primary">3/5</span>
+</div>
+<div class="bg-surface-dark border border-surface-border rounded-lg p-1.5 flex justify-between gap-1">
+<button class="flex-1 h-9 rounded bg-surface-border/50 hover:bg-surface-border transition-colors text-text-muted font-bold text-sm">1</button>
+<button class="flex-1 h-9 rounded bg-surface-border/50 hover:bg-surface-border transition-colors text-text-muted font-bold text-sm">2</button>
+<button class="flex-1 h-9 rounded bg-primary text-background-dark font-bold text-sm shadow-lg shadow-primary/20">3</button>
+<button class="flex-1 h-9 rounded bg-surface-border/50 hover:bg-surface-border transition-colors text-text-muted font-bold text-sm">4</button>
+<button class="flex-1 h-9 rounded bg-surface-border/50 hover:bg-surface-border transition-colors text-text-muted font-bold text-sm">5</button>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Water Intake</h3>
+<div class="bg-surface-dark border border-surface-border rounded-lg p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-blue-400/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-400">water_drop</span>
+</div>
+<div>
+<div class="text-sm font-bold text-white">1250 ml</div>
+<div class="text-[10px] text-text-muted">Target: 2500 ml</div>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="w-8 h-8 rounded-lg border border-surface-border flex items-center justify-center hover:bg-surface-border transition-colors text-text-muted">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<span class="text-xs font-bold text-text-muted w-8 text-center">250ml</span>
+<button class="w-8 h-8 rounded-lg bg-primary hover:bg-primary-dark text-background-dark flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[18px] font-bold">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="px-4 py-4">
+<h2 class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2">Moment Note</h2>
+<div class="relative">
+<textarea class="w-full bg-surface-dark border border-surface-border rounded-lg p-3 text-sm text-white placeholder-text-muted/50 focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none h-24" placeholder="What's on your mind?"></textarea>
+<div class="absolute bottom-2 right-2">
+<span class="text-[10px] text-text-muted">0/280</span>
+</div>
+</div>
+</section>
+</main>
+<div class="fixed bottom-0 left-0 w-full z-50 bg-[#1c2724] border-t border-surface-border p-4 pb-8">
+<button class="w-full bg-primary hover:bg-primary-dark text-background-dark font-bold py-3.5 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]">save</span>
+            Save Moment
+        </button>
+</div>
+
+</body></html>

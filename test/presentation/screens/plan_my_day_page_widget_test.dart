@@ -296,7 +296,7 @@ void main() {
   });
 
   testWidgetsSafe(
-    'plan my day renders sort label for trending down',
+    'plan my day renders sort label for highest average',
     (tester) async {
       final value = TestData.value(
         id: 'value-spotlight',
@@ -344,7 +344,7 @@ void main() {
             expanded: true,
           ),
         ],
-        valueSort: PlanMyDayValueSort.trendingDown,
+        valueSort: PlanMyDayValueSort.highestAverage,
       );
       const gateState = MyDayGateLoaded(needsValuesSetup: false);
 
@@ -365,11 +365,93 @@ void main() {
       );
       await tester.pumpForStream();
 
-      final label = l10nFor(tester).planMyDaySortTrendingDown;
+      final label = l10nFor(tester).planMyDaySortHighestAverage;
       final header = l10nFor(tester).planMyDaySortByLabel(label);
       expect(find.text(header), findsOneWidget);
     },
   );
+
+  testWidgetsSafe('plan my day sort menu dispatches sort change event', (
+    tester,
+  ) async {
+    final valueA = TestData.value(id: 'value-a', name: 'Family');
+    final valueB = TestData.value(id: 'value-b', name: 'Health');
+    final taskA = TestData.task(
+      id: 'task-a',
+      name: 'Call parents',
+      values: [valueA],
+    );
+    final taskB = TestData.task(
+      id: 'task-b',
+      name: 'Morning walk',
+      values: [valueB],
+    );
+    final state = buildReady(
+      valueGroups: [
+        PlanMyDayValueSuggestionGroup(
+          valueId: valueA.id,
+          value: valueA,
+          tasks: [taskA],
+          averageRating: 5.0,
+          trendDelta: -0.2,
+          hasRatings: true,
+          isTrendingDown: true,
+          isLowAverage: true,
+          visibleCount: 1,
+          expanded: true,
+        ),
+        PlanMyDayValueSuggestionGroup(
+          valueId: valueB.id,
+          value: valueB,
+          tasks: [taskB],
+          averageRating: 7.0,
+          trendDelta: -0.8,
+          hasRatings: true,
+          isTrendingDown: true,
+          isLowAverage: false,
+          visibleCount: 1,
+          expanded: true,
+        ),
+      ],
+      valueSort: PlanMyDayValueSort.lowestAverage,
+    );
+    const gateState = MyDayGateLoaded(needsValuesSetup: false);
+
+    when(() => planBloc.state).thenReturn(state);
+    whenListen(planBloc, Stream.value(state), initialState: state);
+    when(() => gateBloc.state).thenReturn(gateState);
+    whenListen(gateBloc, Stream.value(gateState), initialState: gateState);
+
+    await tester.pumpWidgetWithBlocs(
+      providers: [
+        BlocProvider<PlanMyDayBloc>.value(value: planBloc),
+        BlocProvider<MyDayGateBloc>.value(value: gateBloc),
+      ],
+      child: RepositoryProvider<NowService>.value(
+        value: nowService,
+        child: PlanMyDayPage(onCloseRequested: () {}),
+      ),
+    );
+    await tester.pumpForStream();
+
+    final sortMenu = tester.widget<PopupMenuButton<PlanMyDayValueSort>>(
+      find.byKey(kPlanMyDayValueSortMenuButtonKey),
+    );
+    sortMenu.onSelected?.call(PlanMyDayValueSort.highestAverage);
+    await tester.pumpForStream();
+
+    verify(
+      () => planBloc.add(
+        any(
+          that: isA<PlanMyDayValueSortChanged>().having(
+            (event) => event.sort,
+            'sort',
+            PlanMyDayValueSort.highestAverage,
+          ),
+        ),
+      ),
+    ).called(1);
+  });
 
   testWidgetsSafe('plan my day shows due and planned shelves', (
     tester,

@@ -324,6 +324,10 @@
     "@editLabel": {
         "description": "Etiqueta de acción genrica de editar"
     },
+    "changeIconLabel": "Cambiar icono",
+    "@changeIconLabel": {
+        "description": "Action label for changing an icon selection"
+    },
     "cancelLabel": "Cancelar",
     "@cancelLabel": {
         "description": "Etiqueta de acción genrica de cancelar"
@@ -4223,9 +4227,9 @@
     "@planMyDaySortLowestAverage": {
         "description": "Sort label for lowest average rating in Plan My Day."
     },
-    "planMyDaySortTrendingDown": "Tendencia a la baja",
-    "@planMyDaySortTrendingDown": {
-        "description": "Sort label for trending down values in Plan My Day."
+    "planMyDaySortHighestAverage": "Promedio más alto",
+    "@planMyDaySortHighestAverage": {
+        "description": "Sort label for highest average rating in Plan My Day."
     },
     "planMyDayNeedsRatingTitle": "Necesita valoracion",
     "@planMyDayNeedsRatingTitle": {
@@ -5422,6 +5426,10 @@
     "@journalNoMatchingMomentsForFilters": {
         "description": "Empty-state message when journal filters exclude all moments"
     },
+    "journalLoadOlderEntriesLabel": "Cargar entradas anteriores",
+    "@journalLoadOlderEntriesLabel": {
+        "description": "CTA to load older journal history when no days are shown"
+    },
     "journalRemovedTrackerFilterLabel": "Tracker eliminado",
     "@journalRemovedTrackerFilterLabel": {
         "description": "Chip label for a previously-selected tracker filter that no longer exists"
@@ -5449,6 +5457,192 @@
     "journalInsightsTitle": "Insights",
     "@journalInsightsTitle": {
         "description": "Title for the dedicated journal insights screen"
+    },
+    "resetLabel": "Restablecer",
+    "@resetLabel": {
+        "description": "Generic reset action label"
+    },
+    "dateRangeLabel": "Rango de fechas",
+    "@dateRangeLabel": {
+        "description": "Label for selecting a date range"
+    },
+    "last7DaysLabel": "Últimos 7 días",
+    "@last7DaysLabel": {
+        "description": "Label for the last 7 days date preset"
+    },
+    "thisMonthLabel": "Este mes",
+    "@thisMonthLabel": {
+        "description": "Label for the this month date preset"
+    },
+    "journalCustomizeDayTitle": "Personalizar tu día",
+    "@journalCustomizeDayTitle": {
+        "description": "Title for customize day trackers action"
+    },
+    "journalDayTrackersTitle": "Rastreadores de tu día",
+    "@journalDayTrackersTitle": {
+        "description": "Title for the day trackers preferences sheet"
+    },
+    "journalDayTrackersSubtitle": "Activa u oculta y arrastra para reordenar.",
+    "@journalDayTrackersSubtitle": {
+        "description": "Subtitle for the day trackers preferences sheet"
+    },
+    "journalNoDayTrackersEnabled": "No hay rastreadores diarios activados.",
+    "@journalNoDayTrackersEnabled": {
+        "description": "Empty state text when no day trackers are enabled"
+    },
+    "journalAddTrackerLabel": "Agregar rastreador",
+    "@journalAddTrackerLabel": {
+        "description": "CTA label to add a journal tracker"
+    },
+    "journalDayTrackersLoggedLabel": "{count, plural, =0{No hay rastreadores registrados} =1{1 rastreador registrado} other{{count} rastreadores registrados}}{trendCount, plural, =0{} other{ \u00b7 {trendCount} con tendencia}}",
+    "@journalDayTrackersLoggedLabel": {
+        "description": "Summary label for logged day trackers with optional trend count",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "trendCount": {
+                "type": "int"
+            }
+        }
+    },
+    "journalDailySummaryTitle": "Resumen diario",
+    "@journalDailySummaryTitle": {
+        "description": "Section title for the daily summary on journal home"
+    },
+    "journalDailySummarySubtitle": "Elige que aparece en tu resumen diario.",
+    "@journalDailySummarySubtitle": {
+        "description": "Helper text for the daily summary customization sheet"
+    },
+    "journalCustomizeDailySummaryTitle": "Personalizar",
+    "@journalCustomizeDailySummaryTitle": {
+        "description": "CTA label to customize daily summary items"
+    },
+    "journalDailySummaryEmpty": "Aun no hay rastreadores de resumen.",
+    "@journalDailySummaryEmpty": {
+        "description": "Empty state text when no daily summary items are available"
+    },
+    "journalYourDayTitle": "Tu día",
+    "@journalYourDayTitle": {
+        "description": "Section title for the journal day summary"
+    },
+    "journalMomentsTitle": "Momentos",
+    "@journalMomentsTitle": {
+        "description": "Section title for journal moments list"
+    },
+    "journalBrowseHistoryLabel": "Ver historial",
+    "@journalBrowseHistoryLabel": {
+        "description": "CTA label to open journal history"
+    },
+    "journalOpenEditorLabel": "Abrir editor completo",
+    "@journalOpenEditorLabel": {
+        "description": "CTA label to open the full journal editor"
+    },
+    "journalQuickCaptureLabel": "Captura rápida",
+    "@journalQuickCaptureLabel": {
+        "description": "CTA label for journal quick capture"
+    },
+    "journalTodayEmptyBody": "Registra un chequeo rápido o agrega una nota completa.",
+    "@journalTodayEmptyBody": {
+        "description": "Body text for the journal empty state on today"
+    },
+    "journalNoLogsForDay": "No hay momentos registrados para este día.",
+    "@journalNoLogsForDay": {
+        "description": "Empty state text for a selected day with no moments"
+    },
+    "journalDayDetailTitle": "Detalle del día",
+    "@journalDayDetailTitle": {
+        "description": "Subtitle for journal day detail header"
+    },
+    "journalDaySummaryMetaLabel": "{entryCount, plural, =0{Sin momentos} =1{1 momento} other{{entryCount} momentos}} \u00b7 {factorCount, plural, =0{Sin factores registrados} =1{1 factor registrado} other{{factorCount} factores registrados}}",
+    "@journalDaySummaryMetaLabel": {
+        "description": "Summary metadata for a journal day card",
+        "placeholders": {
+            "entryCount": {
+                "type": "int"
+            },
+            "factorCount": {
+                "type": "int"
+            }
+        }
+    },
+    "viewMoreLabel": "Ver más ({count})",
+    "@viewMoreLabel": {
+        "description": "Label for expanding hidden items",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "collapseLabel": "Contraer",
+    "@collapseLabel": {
+        "description": "Label for collapsing expanded content"
+    },
+    "journalCurrentValueLabel": "Actual: {value}",
+    "@journalCurrentValueLabel": {
+        "description": "Label for current tracker value",
+        "placeholders": {
+            "value": {}
+        }
+    },
+    "journalDailyGoalOptionalLabel": "Meta diaria (opcional)",
+    "@journalDailyGoalOptionalLabel": {
+        "description": "Label for optional daily goal section"
+    },
+    "clearGoalLabel": "Borrar meta",
+    "@clearGoalLabel": {
+        "description": "CTA label to clear a goal"
+    },
+    "yesLabel": "Sí",
+    "@yesLabel": {
+        "description": "Generic yes label"
+    },
+    "noLabel": "No",
+    "@noLabel": {
+        "description": "Generic no label"
+    },
+    "noneLabel": "Ninguno",
+    "@noneLabel": {
+        "description": "Generic none label"
+    },
+    "mediumLabel": "Medio",
+    "@mediumLabel": {
+        "description": "Generic medium label"
+    },
+    "unitLabel": "Unidad",
+    "@unitLabel": {
+        "description": "Label for unit selection"
+    },
+    "minusLabel": "Menos",
+    "@minusLabel": {
+        "description": "Label for decrement action"
+    },
+    "plusLabel": "Más",
+    "@plusLabel": {
+        "description": "Label for increment action"
+    },
+    "journalMeasurementLabel": "Medición: {label}",
+    "@journalMeasurementLabel": {
+        "description": "Label for tracker measurement",
+        "placeholders": {
+            "label": {}
+        }
+    },
+    "journalStepLabel": "Paso {step} {unit}",
+    "@journalStepLabel": {
+        "description": "Label for tracker step size",
+        "placeholders": {
+            "step": {},
+            "unit": {}
+        }
+    },
+    "searchQueryLabel": "Buscar: {query}",
+    "@searchQueryLabel": {
+        "description": "Label for applied search chip",
+        "placeholders": {
+            "query": {}
+        }
     }
 }
 

@@ -14,4 +14,3 @@ Defines the active UI-system alignment rules for shared UI in `packages/taskly_u
 ## Governance
 
 - Shared UI behavior changes require explicit change notes in the PR.
-- Breaking shared UI changes require migration notes for impacted app screens.

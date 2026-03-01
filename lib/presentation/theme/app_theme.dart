@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
+import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Centralized application theme.
@@ -11,29 +12,45 @@ class AppTheme {
   /// Light theme configuration with optional seed color.
   static ThemeData lightTheme({Color? seedColor}) {
     // Respect user-selected seed colors; avoid overriding ColorScheme values.
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: seedColor ?? AppColors.blueberry80,
-    );
+    final resolvedSeed = seedColor ?? AppColors.blueberry80;
+    final palette =
+        AppSeedPalettes.matchBySeedArgb(resolvedSeed.value) ??
+        ThemePaletteOption(
+          id: 'custom',
+          name: 'Custom',
+          seedColor: resolvedSeed,
+        );
+    final colorScheme = palette.schemeFor(Brightness.light);
 
     return _buildTheme(colorScheme);
   }
 
   /// Dark theme configuration with optional seed color.
   static ThemeData darkTheme({Color? seedColor}) {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: seedColor ?? AppColors.blueberry80,
-      brightness: Brightness.dark,
-    );
+    final resolvedSeed = seedColor ?? AppColors.blueberry80;
+    final palette =
+        AppSeedPalettes.matchBySeedArgb(resolvedSeed.value) ??
+        ThemePaletteOption(
+          id: 'custom',
+          name: 'Custom',
+          seedColor: resolvedSeed,
+        );
+    final colorScheme = palette.schemeFor(Brightness.dark);
 
     return _buildTheme(colorScheme);
   }
 
   /// Taskly (Stitch) theme configuration.
   static ThemeData tasklyTheme({Color? seedColor}) {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: seedColor ?? AppColors.blueberry80,
-      brightness: Brightness.dark,
-    );
+    final resolvedSeed = seedColor ?? AppColors.blueberry80;
+    final palette =
+        AppSeedPalettes.matchBySeedArgb(resolvedSeed.value) ??
+        ThemePaletteOption(
+          id: 'custom',
+          name: 'Custom',
+          seedColor: resolvedSeed,
+        );
+    final scheme = palette.schemeFor(Brightness.dark);
 
     final base = ThemeData(
       useMaterial3: true,

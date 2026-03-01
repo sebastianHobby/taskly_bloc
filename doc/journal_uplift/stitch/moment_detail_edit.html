@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Edit Moment</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13eca4",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#10221c",
+                        "surface-dark": "#162e26",
+                        "surface-highlight": "#1e3b31",
+                        "text-primary": "#e0e7e4",
+                        "text-secondary": "#92c9b7",
+                        "text-muted": "#458c74",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding for cleaner mobile look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen flex justify-center">
+<div class="relative flex h-full min-h-screen w-full max-w-md flex-col overflow-x-hidden pb-8">
+<!-- Header -->
+<div class="sticky top-0 z-10 flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between border-b border-surface-highlight">
+<button class="text-slate-900 dark:text-white flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Edit Moment</h2>
+<button class="flex w-12 items-center justify-end text-primary text-base font-bold leading-normal tracking-[0.015em] shrink-0 hover:opacity-80 transition-opacity">
+                Save
+            </button>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto">
+<!-- Time Picker Section -->
+<div class="px-4 pt-6 pb-2">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-text-secondary text-xl">schedule</span>
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Time</h3>
+</div>
+<div class="bg-surface-dark rounded-xl p-4 shadow-sm border border-surface-highlight">
+<div class="flex items-center justify-center gap-8">
+<!-- Hours Column -->
+<div class="flex flex-col items-center gap-1 w-16">
+<button class="text-text-muted text-sm font-bold p-2 hover:text-text-secondary transition-colors">08</button>
+<div class="bg-surface-highlight text-primary text-xl font-bold w-full py-2 rounded-lg text-center shadow-inner">09</div>
+<button class="text-text-muted text-sm font-bold p-2 hover:text-text-secondary transition-colors">10</button>
+</div>
+<div class="text-text-muted font-bold pb-1">:</div>
+<!-- Minutes Column -->
+<div class="flex flex-col items-center gap-1 w-16">
+<button class="text-text-muted text-sm font-bold p-2 hover:text-text-secondary transition-colors">00</button>
+<div class="bg-surface-highlight text-primary text-xl font-bold w-full py-2 rounded-lg text-center shadow-inner">15</div>
+<button class="text-text-muted text-sm font-bold p-2 hover:text-text-secondary transition-colors">30</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Mood & Energy Section -->
+<div class="px-4 py-4">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-text-secondary text-xl">sentiment_satisfied</span>
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Mood &amp; Energy</h3>
+</div>
+<div class="bg-surface-dark rounded-xl p-5 shadow-sm border border-surface-highlight space-y-6">
+<!-- Mood Slider -->
+<div class="flex flex-col gap-3">
+<div class="flex w-full items-center justify-between">
+<p class="text-text-primary text-base font-medium">Mood</p>
+<span class="bg-primary/20 text-primary px-2 py-0.5 rounded text-sm font-bold">Good</span>
+</div>
+<div class="flex h-12 items-center gap-4">
+<span class="material-symbols-outlined text-text-muted">sentiment_dissatisfied</span>
+<div class="relative flex h-2 flex-1 rounded-full bg-surface-highlight">
+<div class="h-full w-[75%] rounded-full bg-primary relative">
+<div class="absolute -right-3 -top-2 size-6 rounded-full bg-primary border-4 border-surface-dark shadow-md cursor-pointer hover:scale-110 transition-transform"></div>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary">sentiment_very_satisfied</span>
+</div>
+</div>
+<!-- Divider -->
+<div class="h-px w-full bg-surface-highlight"></div>
+<!-- Energy Slider -->
+<div class="flex flex-col gap-3">
+<div class="flex w-full items-center justify-between">
+<p class="text-text-primary text-base font-medium">Energy</p>
+<span class="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded text-sm font-bold">High</span>
+</div>
+<div class="flex h-12 items-center gap-4">
+<span class="material-symbols-outlined text-text-muted">battery_0_bar</span>
+<div class="relative flex h-2 flex-1 rounded-full bg-surface-highlight">
+<div class="h-full w-[85%] rounded-full bg-blue-400 relative">
+<div class="absolute -right-3 -top-2 size-6 rounded-full bg-blue-400 border-4 border-surface-dark shadow-md cursor-pointer hover:scale-110 transition-transform"></div>
+</div>
+</div>
+<span class="material-symbols-outlined text-blue-400">battery_full_alt</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Factors / Tags Section -->
+<div class="px-4 py-4">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-text-secondary text-xl">label</span>
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Factors</h3>
+</div>
+<div class="flex flex-wrap gap-2">
+<!-- Selected Tag -->
+<button class="group flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-surface-dark font-medium transition-all hover:brightness-110">
+<span class="material-symbols-outlined text-[18px]">exercise</span>
+<span>Morning Run</span>
+<span class="material-symbols-outlined text-[16px] opacity-60 hover:opacity-100">close</span>
+</button>
+<!-- Selected Tag -->
+<button class="group flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-surface-dark font-medium transition-all hover:brightness-110">
+<span class="material-symbols-outlined text-[18px]">local_cafe</span>
+<span>Coffee</span>
+<span class="material-symbols-outlined text-[16px] opacity-60 hover:opacity-100">close</span>
+</button>
+<!-- Unselected Tag Example -->
+<button class="flex items-center gap-2 rounded-full bg-surface-dark border border-surface-highlight px-4 py-2 text-text-secondary hover:bg-surface-highlight transition-colors">
+<span class="material-symbols-outlined text-[18px]">book</span>
+<span>Reading</span>
+</button>
+<!-- Add More -->
+<button class="flex items-center gap-1 rounded-full border border-dashed border-text-muted px-4 py-2 text-text-muted hover:text-primary hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>Add Factor</span>
+</button>
+</div>
+</div>
+<!-- Note Section -->
+<div class="px-4 py-4">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-text-secondary text-xl">edit_note</span>
+<h3 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">Note</h3>
+</div>
+<div class="relative">
+<textarea class="w-full bg-surface-dark text-text-primary placeholder-text-muted rounded-xl p-4 min-h-[160px] resize-none border border-surface-highlight focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="What's on your mind?...">Managed to wake up early today and felt surprisingly energetic. The coffee helped, but the run was the real game changer.</textarea>
+<!-- Formatting Toolbar (Optional Flair) -->
+<div class="absolute bottom-3 right-3 flex gap-2">
+<button class="p-1.5 text-text-muted hover:text-primary hover:bg-white/5 rounded transition-colors">
+<span class="material-symbols-outlined text-[20px]">format_bold</span>
+</button>
+<button class="p-1.5 text-text-muted hover:text-primary hover:bg-white/5 rounded transition-colors">
+<span class="material-symbols-outlined text-[20px]">format_italic</span>
+</button>
+<button class="p-1.5 text-text-muted hover:text-primary hover:bg-white/5 rounded transition-colors">
+<span class="material-symbols-outlined text-[20px]">list</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="px-4 py-6 flex flex-col gap-4 mt-4 mb-8">
+<button class="w-full bg-primary text-surface-dark text-base font-bold h-12 rounded-xl hover:brightness-110 active:scale-[0.98] transition-all shadow-lg shadow-primary/20">
+                    Update Entry
+                </button>
+<button class="w-full flex items-center justify-center gap-2 text-red-400/80 hover:text-red-400 text-sm font-medium h-10 rounded-lg hover:bg-red-400/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+                    Delete Moment
+                </button>
+</div>
+</div>
+</div>
+</body></html>

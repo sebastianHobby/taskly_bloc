@@ -19,7 +19,7 @@ preserving existing architectural and product constraints.
   - Keep spec and do not introduce minimum mood filter.
   - Keep spec structure for editor flows; adapt visuals only.
   - Add dedicated insights screen flow.
-  - Keep single-screen journal history (no separate history screen).
+  - Allow separate journal history screen (per updated feature spec).
   - Keep factor-group filtering in UI.
 
 ## Scope

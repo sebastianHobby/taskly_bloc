@@ -44,6 +44,64 @@ final class JournalHistoryStarterPackApplied extends JournalHistoryEvent {
   final Set<String> selectedIds;
 }
 
+final class JournalHistoryDayTrackersPreferencesChanged
+    extends JournalHistoryEvent {
+  const JournalHistoryDayTrackersPreferencesChanged({
+    required this.orderedTrackerIds,
+    required this.hiddenTrackerIds,
+  });
+
+  final List<String> orderedTrackerIds;
+  final Set<String> hiddenTrackerIds;
+}
+
+final class JournalHistorySummaryPreferencesChanged
+    extends JournalHistoryEvent {
+  const JournalHistorySummaryPreferencesChanged({
+    required this.hiddenTrackerIds,
+  });
+
+  final Set<String> hiddenTrackerIds;
+}
+
+final class JournalHistoryDayTrackerQuickValueSaved
+    extends JournalHistoryEvent {
+  const JournalHistoryDayTrackerQuickValueSaved({
+    required this.day,
+    required this.trackerId,
+    required this.value,
+  });
+
+  final DateTime day;
+  final String trackerId;
+  final Object? value;
+}
+
+final class JournalHistoryDayTrackerQuickDeltaAdded
+    extends JournalHistoryEvent {
+  const JournalHistoryDayTrackerQuickDeltaAdded({
+    required this.day,
+    required this.trackerId,
+    required this.delta,
+  });
+
+  final DateTime day;
+  final String trackerId;
+  final num delta;
+}
+
+final class JournalHistoryDayTrackerGoalChanged extends JournalHistoryEvent {
+  const JournalHistoryDayTrackerGoalChanged({
+    required this.trackerId,
+    required this.target,
+    required this.unitKey,
+  });
+
+  final String trackerId;
+  final num? target;
+  final String? unitKey;
+}
+
 sealed class JournalHistoryState {
   const JournalHistoryState();
 }
@@ -66,6 +124,11 @@ final class JournalHistoryLoaded extends JournalHistoryState {
     required this.topInsight,
     required this.insights,
     required this.showInsightsNudge,
+    required this.dayTrackerDefinitions,
+    required this.dayTrackerOrderIds,
+    required this.hiddenDayTrackerIds,
+    required this.coreDayTrackerIds,
+    required this.hiddenSummaryTrackerIds,
   });
 
   final List<JournalHistoryDaySummary> days;
@@ -78,6 +141,11 @@ final class JournalHistoryLoaded extends JournalHistoryState {
   final JournalTopInsight? topInsight;
   final List<JournalTopInsight> insights;
   final bool showInsightsNudge;
+  final List<TrackerDefinition> dayTrackerDefinitions;
+  final List<String> dayTrackerOrderIds;
+  final Set<String> hiddenDayTrackerIds;
+  final List<String> coreDayTrackerIds;
+  final Set<String> hiddenSummaryTrackerIds;
 }
 
 final class JournalHistoryError extends JournalHistoryState {
@@ -94,10 +162,14 @@ class JournalHistoryBloc
     required HomeDayKeyService dayKeyService,
     required SettingsRepositoryContract settingsRepository,
     required DateTime Function() nowUtc,
+    JournalHistoryFilters? initialFiltersOverride,
+    bool persistFilters = true,
   }) : _repository = repository,
        _dayKeyService = dayKeyService,
        _settingsRepository = settingsRepository,
        _nowUtc = nowUtc,
+       _initialFiltersOverride = initialFiltersOverride,
+       _persistFilters = persistFilters,
        super(JournalHistoryLoading(JournalHistoryFilters.initial())) {
     on<JournalHistoryStarted>(_onStarted, transformer: restartable());
     on<JournalHistoryFiltersChanged>(
@@ -120,6 +192,26 @@ class JournalHistoryBloc
       _onStarterPackApplied,
       transformer: sequential(),
     );
+    on<JournalHistoryDayTrackersPreferencesChanged>(
+      _onDayTrackersPreferencesChanged,
+      transformer: sequential(),
+    );
+    on<JournalHistoryDayTrackerQuickValueSaved>(
+      _onDayTrackerQuickValueSaved,
+      transformer: sequential(),
+    );
+    on<JournalHistoryDayTrackerQuickDeltaAdded>(
+      _onDayTrackerQuickDeltaAdded,
+      transformer: sequential(),
+    );
+    on<JournalHistoryDayTrackerGoalChanged>(
+      _onDayTrackerGoalChanged,
+      transformer: sequential(),
+    );
+    on<JournalHistorySummaryPreferencesChanged>(
+      _onSummaryPreferencesChanged,
+      transformer: sequential(),
+    );
   }
 
   static const int _windowStepDays = 30;
@@ -131,11 +223,16 @@ class JournalHistoryBloc
   final HomeDayKeyService _dayKeyService;
   final SettingsRepositoryContract _settingsRepository;
   final DateTime Function() _nowUtc;
+  final JournalHistoryFilters? _initialFiltersOverride;
+  final bool _persistFilters;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
   bool _starterPackSeen = false;
   DisplayDensity _density = DisplayDensity.compact;
   JournalHistoryFilterPreferences? _savedFilterPreferences;
+  List<String> _dayTrackerOrderIds = <String>[];
+  Set<String> _hiddenDayTrackerIds = <String>{};
+  Set<String> _hiddenSummaryTrackerIds = <String>{};
 
   static const List<JournalStarterOption> _starterOptions =
       <JournalStarterOption>[
@@ -156,7 +253,7 @@ class JournalHistoryBloc
           id: 'sleep_quality',
           category: 'Essentials',
           name: 'Sleep quality',
-          scope: 'sleep_night',
+          scope: 'entry',
           valueType: 'rating',
           valueKind: 'rating',
           iconName: 'bedtime',
@@ -164,6 +261,21 @@ class JournalHistoryBloc
           minInt: 1,
           maxInt: 5,
           stepInt: 1,
+        ),
+        JournalStarterOption(
+          id: 'sleep_duration',
+          category: 'Essentials',
+          name: 'Sleep duration',
+          scope: 'entry',
+          valueType: 'quantity',
+          valueKind: 'number',
+          iconName: 'bedtime',
+          defaultSelected: true,
+          minInt: 0,
+          maxInt: 24,
+          stepInt: 1,
+          unitKind: 'hours',
+          opKind: 'set',
         ),
         JournalStarterOption(
           id: 'exercise',
@@ -209,7 +321,7 @@ class JournalHistoryBloc
           valueType: 'rating',
           valueKind: 'rating',
           iconName: 'bolt',
-          defaultSelected: false,
+          defaultSelected: true,
           minInt: 1,
           maxInt: 5,
           stepInt: 1,
@@ -295,7 +407,19 @@ class JournalHistoryBloc
     _savedFilterPreferences = await _settingsRepository.load(
       SettingsKey.pageJournalFilters(_journalPageKey),
     );
-    final initialFilters = _filtersFromPreferences(_savedFilterPreferences);
+    _dayTrackerOrderIds = List<String>.from(
+      _savedFilterPreferences?.dayTrackerOrderIds ?? const <String>[],
+    );
+    _hiddenDayTrackerIds = <String>{
+      ...?_savedFilterPreferences?.hiddenDayTrackerIds,
+    };
+    _hiddenSummaryTrackerIds = <String>{
+      ...?_savedFilterPreferences?.hiddenSummaryTrackerIds,
+    };
+    final preferenceFilters = _filtersFromPreferences(_savedFilterPreferences);
+    final initialFilters =
+        _initialFiltersOverride ??
+        (_persistFilters ? preferenceFilters : JournalHistoryFilters.initial());
     await _onFiltersChanged(
       JournalHistoryFiltersChanged(initialFilters),
       emit,
@@ -325,61 +449,97 @@ class JournalHistoryBloc
     );
     final events$ = _repository.watchTrackerEvents(
       range: DateRange(start: range.start, end: endInclusive),
-      anchorType: 'entry',
     );
 
     await emit.onEach<JournalHistoryLoaded>(
       Rx.combineLatest4<
-        List<TrackerDefinition>,
-        List<TrackerGroup>,
-        List<JournalEntry>,
-        List<TrackerEvent>,
-        JournalHistoryLoaded
-      >(
-        defs$,
-        groups$,
-        entries$,
-        events$,
-        (defs, groups, entries, events) {
-          var days = _buildDaySummaries(
-            defs: defs,
-            entries: entries,
-            events: events,
-          );
-          days = _applyFactorFilters(days: days, filters: filters);
+            List<TrackerDefinition>,
+            List<TrackerGroup>,
+            List<JournalEntry>,
+            List<TrackerEvent>,
+            ({
+              List<TrackerDefinition> defs,
+              List<TrackerGroup> groups,
+              List<JournalEntry> entries,
+              List<TrackerEvent> events,
+            })
+          >(
+            defs$,
+            groups$,
+            entries$,
+            events$,
+            (defs, groups, entries, events) => (
+              defs: defs,
+              groups: groups,
+              entries: entries,
+              events: events,
+            ),
+          )
+          .asyncMap((payload) async {
+            final choiceLabelsByTrackerId = await _buildChoiceLabelsByTrackerId(
+              payload.defs,
+            );
+            var days = _buildDaySummaries(
+              defs: payload.defs,
+              entries: payload.entries,
+              events: payload.events,
+              choiceLabelsByTrackerId: choiceLabelsByTrackerId,
+            );
+            days = _applyFactorFilters(days: days, filters: filters);
 
-          final hasCustomTracker = defs.any(
-            (d) => d.isActive && d.deletedAt == null && d.systemKey == null,
-          );
-          final showStarterPack = !_starterPackSeen && !hasCustomTracker;
-          final factorDefinitions =
-              defs
-                  .where(
-                    (d) =>
-                        d.isActive && d.deletedAt == null && _isUserFactor(d),
-                  )
-                  .toList(growable: false)
-                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-          final factorGroups =
-              groups.where((g) => g.isActive).toList(growable: false)
-                ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-          final insights = _buildInsights(days: days);
-          final topInsight = insights.isEmpty ? null : insights.first;
+            final hasCustomTracker = payload.defs.any(
+              (d) => d.isActive && d.deletedAt == null && d.systemKey == null,
+            );
+            final showStarterPack = !_starterPackSeen && !hasCustomTracker;
+            final factorDefinitions =
+                payload.defs
+                    .where(
+                      (d) =>
+                          d.isActive && d.deletedAt == null && _isUserFactor(d),
+                    )
+                    .toList(growable: false)
+                  ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+            final factorGroups =
+                payload.groups.where((g) => g.isActive).toList(growable: false)
+                  ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+            final insights = _buildInsights(days: days);
+            final topInsight = insights.isEmpty ? null : insights.first;
+            final dayTrackerDefinitions = _buildDayTrackerDefinitions(
+              payload.defs,
+            );
+            final coreDayTrackerIds = _resolveCoreDayTrackerIds(
+              dayTrackerDefinitions,
+            );
+            final normalizedOrderIds = _normalizeDayTrackerOrder(
+              definitions: dayTrackerDefinitions,
+              preferredOrderIds: _dayTrackerOrderIds,
+              coreTrackerIds: coreDayTrackerIds,
+            );
+            final normalizedHiddenIds = _normalizeHiddenDayTrackerIds(
+              hiddenIds: _hiddenDayTrackerIds,
+              definitions: dayTrackerDefinitions,
+            );
+            _dayTrackerOrderIds = normalizedOrderIds;
+            _hiddenDayTrackerIds = normalizedHiddenIds;
 
-          return JournalHistoryLoaded(
-            days: days,
-            filters: filters,
-            showStarterPack: showStarterPack,
-            starterOptions: _starterOptions,
-            density: _density,
-            factorDefinitions: factorDefinitions,
-            factorGroups: factorGroups,
-            topInsight: topInsight,
-            insights: insights,
-            showInsightsNudge: topInsight == null,
-          );
-        },
-      ),
+            return JournalHistoryLoaded(
+              days: days,
+              filters: filters,
+              showStarterPack: showStarterPack,
+              starterOptions: _starterOptions,
+              density: _density,
+              factorDefinitions: factorDefinitions,
+              factorGroups: factorGroups,
+              topInsight: topInsight,
+              insights: insights,
+              showInsightsNudge: topInsight == null,
+              dayTrackerDefinitions: dayTrackerDefinitions,
+              dayTrackerOrderIds: normalizedOrderIds,
+              hiddenDayTrackerIds: normalizedHiddenIds,
+              coreDayTrackerIds: coreDayTrackerIds,
+              hiddenSummaryTrackerIds: _hiddenSummaryTrackerIds,
+            );
+          }),
       onData: emit.call,
       onError: (e, _) {
         emit(JournalHistoryError('Failed to load history: $e', filters));
@@ -431,6 +591,11 @@ class JournalHistoryBloc
         topInsight: current.topInsight,
         insights: current.insights,
         showInsightsNudge: current.showInsightsNudge,
+        dayTrackerDefinitions: current.dayTrackerDefinitions,
+        dayTrackerOrderIds: current.dayTrackerOrderIds,
+        hiddenDayTrackerIds: current.hiddenDayTrackerIds,
+        coreDayTrackerIds: current.coreDayTrackerIds,
+        hiddenSummaryTrackerIds: current.hiddenSummaryTrackerIds,
       ),
     );
   }
@@ -460,8 +625,226 @@ class JournalHistoryBloc
         topInsight: current.topInsight,
         insights: current.insights,
         showInsightsNudge: current.showInsightsNudge,
+        dayTrackerDefinitions: current.dayTrackerDefinitions,
+        dayTrackerOrderIds: current.dayTrackerOrderIds,
+        hiddenDayTrackerIds: current.hiddenDayTrackerIds,
+        coreDayTrackerIds: current.coreDayTrackerIds,
+        hiddenSummaryTrackerIds: current.hiddenSummaryTrackerIds,
       ),
     );
+  }
+
+  Future<void> _onDayTrackersPreferencesChanged(
+    JournalHistoryDayTrackersPreferencesChanged event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    final current = state;
+    if (current is! JournalHistoryLoaded) return;
+    final normalizedOrderIds = _normalizeDayTrackerOrder(
+      definitions: current.dayTrackerDefinitions,
+      preferredOrderIds: event.orderedTrackerIds,
+      coreTrackerIds: current.coreDayTrackerIds,
+    );
+    final normalizedHiddenIds = _normalizeHiddenDayTrackerIds(
+      hiddenIds: event.hiddenTrackerIds,
+      definitions: current.dayTrackerDefinitions,
+    );
+    _dayTrackerOrderIds = normalizedOrderIds;
+    _hiddenDayTrackerIds = normalizedHiddenIds;
+    await _persistFiltersPreferences(current.filters);
+    emit(
+      JournalHistoryLoaded(
+        days: current.days,
+        filters: current.filters,
+        showStarterPack: current.showStarterPack,
+        starterOptions: current.starterOptions,
+        density: current.density,
+        factorDefinitions: current.factorDefinitions,
+        factorGroups: current.factorGroups,
+        topInsight: current.topInsight,
+        insights: current.insights,
+        showInsightsNudge: current.showInsightsNudge,
+        dayTrackerDefinitions: current.dayTrackerDefinitions,
+        dayTrackerOrderIds: normalizedOrderIds,
+        hiddenDayTrackerIds: normalizedHiddenIds,
+        coreDayTrackerIds: current.coreDayTrackerIds,
+        hiddenSummaryTrackerIds: current.hiddenSummaryTrackerIds,
+      ),
+    );
+  }
+
+  Future<void> _onSummaryPreferencesChanged(
+    JournalHistorySummaryPreferencesChanged event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    final current = state;
+    if (current is! JournalHistoryLoaded) return;
+    _hiddenSummaryTrackerIds = {...event.hiddenTrackerIds};
+    await _persistFiltersPreferences(current.filters);
+    emit(
+      JournalHistoryLoaded(
+        days: current.days,
+        filters: current.filters,
+        showStarterPack: current.showStarterPack,
+        starterOptions: current.starterOptions,
+        density: current.density,
+        factorDefinitions: current.factorDefinitions,
+        factorGroups: current.factorGroups,
+        topInsight: current.topInsight,
+        insights: current.insights,
+        showInsightsNudge: current.showInsightsNudge,
+        dayTrackerDefinitions: current.dayTrackerDefinitions,
+        dayTrackerOrderIds: current.dayTrackerOrderIds,
+        hiddenDayTrackerIds: current.hiddenDayTrackerIds,
+        coreDayTrackerIds: current.coreDayTrackerIds,
+        hiddenSummaryTrackerIds: _hiddenSummaryTrackerIds,
+      ),
+    );
+  }
+
+  Future<void> _onDayTrackerQuickValueSaved(
+    JournalHistoryDayTrackerQuickValueSaved event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    final current = state;
+    if (current is! JournalHistoryLoaded) return;
+    final trackerId = event.trackerId.trim();
+    if (trackerId.isEmpty) return;
+    TrackerDefinition? definition;
+    for (final d in current.dayTrackerDefinitions) {
+      if (d.id == trackerId) {
+        definition = d;
+        break;
+      }
+    }
+    if (definition == null) return;
+    final now = _nowUtc();
+    final context = _contextFactory.create(
+      feature: 'journal',
+      screen: 'journal_hub',
+      intent: 'quick_edit_day_tracker',
+      operation: 'journal.appendTrackerEvent',
+      entityType: 'tracker_event',
+      entityId: trackerId,
+      extraFields: <String, Object?>{
+        'scope': definition.scope,
+        'valueType': definition.valueType,
+      },
+    );
+    final dayUtc = dateOnly(event.day.toUtc());
+    final opKind = definition.opKind.trim();
+    await _repository.appendTrackerEvent(
+      TrackerEvent(
+        id: '',
+        trackerId: trackerId,
+        anchorType: 'day',
+        anchorDate: dayUtc,
+        op: opKind.isEmpty ? 'set' : opKind,
+        value: event.value,
+        occurredAt: now,
+        recordedAt: now,
+      ),
+      context: context,
+    );
+  }
+
+  Future<void> _onDayTrackerQuickDeltaAdded(
+    JournalHistoryDayTrackerQuickDeltaAdded event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    final current = state;
+    if (current is! JournalHistoryLoaded) return;
+    final trackerId = event.trackerId.trim();
+    if (trackerId.isEmpty) return;
+    TrackerDefinition? definition;
+    for (final d in current.dayTrackerDefinitions) {
+      if (d.id == trackerId) {
+        definition = d;
+        break;
+      }
+    }
+    if (definition == null) return;
+    final now = _nowUtc();
+    final context = _contextFactory.create(
+      feature: 'journal',
+      screen: 'journal_hub',
+      intent: 'quick_edit_day_tracker_delta',
+      operation: 'journal.appendTrackerEvent',
+      entityType: 'tracker_event',
+      entityId: trackerId,
+      extraFields: <String, Object?>{
+        'scope': definition.scope,
+        'valueType': definition.valueType,
+        'delta': event.delta,
+      },
+    );
+    final dayUtc = dateOnly(event.day.toUtc());
+    await _repository.appendTrackerEvent(
+      TrackerEvent(
+        id: '',
+        trackerId: trackerId,
+        anchorType: 'day',
+        anchorDate: dayUtc,
+        op: 'add',
+        value: event.delta,
+        occurredAt: now,
+        recordedAt: now,
+      ),
+      context: context,
+    );
+  }
+
+  Future<void> _onDayTrackerGoalChanged(
+    JournalHistoryDayTrackerGoalChanged event,
+    Emitter<JournalHistoryState> emit,
+  ) async {
+    final current = state;
+    if (current is! JournalHistoryLoaded) return;
+    final trackerId = event.trackerId.trim();
+    if (trackerId.isEmpty) return;
+    TrackerDefinition? definition;
+    for (final d in current.dayTrackerDefinitions) {
+      if (d.id == trackerId) {
+        definition = d;
+        break;
+      }
+    }
+    if (definition == null) return;
+    final now = _nowUtc();
+    final context = _contextFactory.create(
+      feature: 'journal',
+      screen: 'journal_hub',
+      intent: 'update_day_tracker_goal',
+      operation: 'journal.saveTrackerDefinition',
+      entityType: 'tracker_definition',
+      entityId: trackerId,
+    );
+
+    final goal = event.target == null
+        ? const <String, dynamic>{}
+        : <String, dynamic>{
+            'target': event.target,
+            if ((event.unitKey ?? '').trim().isNotEmpty)
+              'unitKey': event.unitKey!.trim().toLowerCase(),
+          };
+
+    await _repository.saveTrackerDefinition(
+      definition.copyWith(
+        goal: goal,
+        updatedAt: now,
+      ),
+      context: context,
+    );
+  }
+
+  Future<List<TrackerDefinitionChoice>> getChoices(String trackerId) async {
+    final trimmed = trackerId.trim();
+    if (trimmed.isEmpty) return const <TrackerDefinitionChoice>[];
+    final all = await _repository
+        .watchTrackerDefinitionChoices(trackerId: trimmed)
+        .first;
+    return all.where((choice) => choice.isActive).toList(growable: false)
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
   }
 
   Future<void> _onStarterPackApplied(
@@ -619,11 +1002,15 @@ class JournalHistoryBloc
     final rangeStart = filters.rangeStart;
     final rangeEnd = filters.rangeEnd;
     if (rangeStart != null && rangeEnd != null) {
+      final startUtc = dateOnly(rangeStart);
+      final endInclusive = dateOnly(
+        rangeEnd,
+      ).add(const Duration(days: 1)).subtract(const Duration(microseconds: 1));
       predicates.add(
         JournalDatePredicate(
           operator: DateOperator.between,
-          startDate: dateOnly(rangeStart),
-          endDate: dateOnly(rangeEnd),
+          startDate: startUtc,
+          endDate: endInclusive,
         ),
       );
     } else {
@@ -664,6 +1051,7 @@ class JournalHistoryBloc
     required List<TrackerDefinition> defs,
     required List<JournalEntry> entries,
     required List<TrackerEvent> events,
+    required Map<String, Map<String, String>> choiceLabelsByTrackerId,
   }) {
     final definitionById = {for (final d in defs) d.id: d};
     final moodTrackerId = _findMoodTrackerId(defs);
@@ -673,10 +1061,15 @@ class JournalHistoryBloc
       final day = dateOnly(entry.entryDate.toUtc());
       (entriesByDay[day] ??= <JournalEntry>[]).add(entry);
     }
+    for (final dayEntries in entriesByDay.values) {
+      dayEntries.sort((a, b) => b.entryTime.compareTo(a.entryTime));
+    }
 
     final eventsByEntryId = <String, List<TrackerEvent>>{};
+    final latestEventByDayTracker = <DateTime, Map<String, TrackerEvent>>{};
     final moodValuesByDay = <DateTime, List<int>>{};
     final quantityTotalsByDayTracker = <DateTime, Map<String, double>>{};
+    final daysWithEvents = <DateTime>{};
     for (final event in events) {
       final entryId = event.entryId;
       if (entryId != null) {
@@ -684,6 +1077,14 @@ class JournalHistoryBloc
       }
 
       final day = dateOnly(event.occurredAt.toUtc());
+      daysWithEvents.add(day);
+      final latestByTracker = latestEventByDayTracker[day] ??=
+          <String, TrackerEvent>{};
+      final previousByTracker = latestByTracker[event.trackerId];
+      if (previousByTracker == null ||
+          previousByTracker.occurredAt.isBefore(event.occurredAt)) {
+        latestByTracker[event.trackerId] = event;
+      }
       final def = definitionById[event.trackerId];
       if (def != null && _isQuantityDefinition(def)) {
         final amount = switch (event.value) {
@@ -704,34 +1105,65 @@ class JournalHistoryBloc
       (moodValuesByDay[day] ??= <int>[]).add(event.value! as int);
     }
 
-    final days = entriesByDay.keys.toList()..sort((a, b) => b.compareTo(a));
+    final allDays = <DateTime>{
+      ...entriesByDay.keys,
+      ...daysWithEvents,
+    };
+    final days = allDays.toList()..sort((a, b) => b.compareTo(a));
 
     return [
       for (final day in days)
         () {
           final dayEntries = entriesByDay[day] ?? const <JournalEntry>[];
           final factorTrackerIds = <String>{};
-          for (final entry in dayEntries) {
-            final entryEvents =
-                eventsByEntryId[entry.id] ?? const <TrackerEvent>[];
-            for (final event in entryEvents) {
-              if (event.trackerId == moodTrackerId) continue;
-              factorTrackerIds.add(event.trackerId);
-            }
+          final latestByTracker =
+              latestEventByDayTracker[day] ?? const <String, TrackerEvent>{};
+          for (final trackerId in latestByTracker.keys) {
+            if (trackerId == moodTrackerId) continue;
+            factorTrackerIds.add(trackerId);
           }
           return JournalHistoryDaySummary(
             day: day,
             entries: dayEntries,
             eventsByEntryId: eventsByEntryId,
+            latestEventByTrackerId: latestByTracker,
             definitionById: definitionById,
             moodTrackerId: moodTrackerId,
             moodAverage: _average(moodValuesByDay[day]),
             dayQuantityTotalsByTrackerId:
                 quantityTotalsByDayTracker[day] ?? const <String, double>{},
             factorTrackerIds: factorTrackerIds,
+            choiceLabelsByTrackerId: choiceLabelsByTrackerId,
           );
         }(),
     ];
+  }
+
+  Future<Map<String, Map<String, String>>> _buildChoiceLabelsByTrackerId(
+    List<TrackerDefinition> definitions,
+  ) async {
+    final choiceDefs = definitions
+        .where((definition) {
+          final type = definition.valueType.trim().toLowerCase();
+          return type == 'choice' || type == 'single_choice';
+        })
+        .toList(growable: false);
+    if (choiceDefs.isEmpty) return const <String, Map<String, String>>{};
+
+    final results = await Future.wait(
+      choiceDefs.map((definition) => getChoices(definition.id)),
+    );
+
+    final map = <String, Map<String, String>>{};
+    for (var i = 0; i < choiceDefs.length; i++) {
+      final definition = choiceDefs[i];
+      final labels = <String, String>{};
+      for (final choice in results[i]) {
+        labels[choice.choiceKey] = choice.label;
+      }
+      if (labels.isNotEmpty) map[definition.id] = labels;
+    }
+    return map;
   }
 
   List<JournalHistoryDaySummary> _applyFactorFilters({
@@ -856,6 +1288,69 @@ class JournalHistoryBloc
     return true;
   }
 
+  List<TrackerDefinition> _buildDayTrackerDefinitions(
+    List<TrackerDefinition> defs,
+  ) {
+    final dayTrackers =
+        defs
+            .where((d) => d.isActive && d.deletedAt == null)
+            .where((d) {
+              final scope = d.scope.trim().toLowerCase();
+              return scope == 'day' ||
+                  scope == 'daily' ||
+                  scope == 'sleep_night';
+            })
+            .toList(growable: false)
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return dayTrackers;
+  }
+
+  List<String> _resolveCoreDayTrackerIds(List<TrackerDefinition> defs) {
+    String? findByKeyword(String keyword) {
+      for (final d in defs) {
+        final normalized = d.name.trim().toLowerCase();
+        if (normalized.contains(keyword)) return d.id;
+      }
+      return null;
+    }
+
+    final ids = <String>[];
+    final sleepId = findByKeyword('sleep');
+    if (sleepId != null) ids.add(sleepId);
+    return ids;
+  }
+
+  List<String> _normalizeDayTrackerOrder({
+    required List<TrackerDefinition> definitions,
+    required List<String> preferredOrderIds,
+    required List<String> coreTrackerIds,
+  }) {
+    final availableIds = <String>{for (final d in definitions) d.id};
+    final ordered = <String>[];
+    for (final id in coreTrackerIds) {
+      if (availableIds.contains(id) && !ordered.contains(id)) {
+        ordered.add(id);
+      }
+    }
+    for (final id in preferredOrderIds) {
+      if (availableIds.contains(id) && !ordered.contains(id)) {
+        ordered.add(id);
+      }
+    }
+    for (final d in definitions) {
+      if (!ordered.contains(d.id)) ordered.add(d.id);
+    }
+    return ordered;
+  }
+
+  Set<String> _normalizeHiddenDayTrackerIds({
+    required Set<String> hiddenIds,
+    required List<TrackerDefinition> definitions,
+  }) {
+    final availableIds = <String>{for (final d in definitions) d.id};
+    return hiddenIds.where(availableIds.contains).toSet();
+  }
+
   JournalHistoryFilters _filtersFromPreferences(
     JournalHistoryFilterPreferences? preferences,
   ) {
@@ -896,10 +1391,15 @@ class JournalHistoryBloc
         ..sort(),
       factorGroupId: filters.factorGroupId,
       lookbackDays: filters.lookbackDays,
+      dayTrackerOrderIds: _dayTrackerOrderIds,
+      hiddenDayTrackerIds: _hiddenDayTrackerIds.toList(growable: false)..sort(),
+      hiddenSummaryTrackerIds: _hiddenSummaryTrackerIds.toList(growable: false)
+        ..sort(),
     );
   }
 
   Future<void> _persistFiltersPreferences(JournalHistoryFilters filters) async {
+    if (!_persistFilters) return;
     final next = _toPreferences(filters);
     if (next == _savedFilterPreferences) return;
     await _settingsRepository.save<JournalHistoryFilterPreferences?>(
@@ -915,21 +1415,25 @@ final class JournalHistoryDaySummary {
     required this.day,
     required this.entries,
     required this.eventsByEntryId,
+    required this.latestEventByTrackerId,
     required this.definitionById,
     required this.moodTrackerId,
     required this.moodAverage,
     required this.dayQuantityTotalsByTrackerId,
     required this.factorTrackerIds,
+    required this.choiceLabelsByTrackerId,
   });
 
   final DateTime day;
   final List<JournalEntry> entries;
   final Map<String, List<TrackerEvent>> eventsByEntryId;
+  final Map<String, TrackerEvent> latestEventByTrackerId;
   final Map<String, TrackerDefinition> definitionById;
   final String? moodTrackerId;
   final double? moodAverage;
   final Map<String, double> dayQuantityTotalsByTrackerId;
   final Set<String> factorTrackerIds;
+  final Map<String, Map<String, String>> choiceLabelsByTrackerId;
 }
 
 enum JournalInsightConfidence { medium, high }

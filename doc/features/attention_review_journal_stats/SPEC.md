@@ -16,51 +16,55 @@ Defines support signals, weekly review cards, journal integration, and stats con
 - Journal home quick capture uses a modal bottom-sheet editor optimized for
   rapid logging; full-screen route edit/create remains available for detailed
   edits.
-- Journal home is summary-first:
-  - "Your Day" card first (selected day summary),
-  - chronological timeline feed second (newest first),
+- Journal home is summary-first for **today**:
+  - "Your Day" card first (today summary with full day factors),
+  - moments list second (today only, newest first),
   - one top insight card third when thresholds are met.
 - Journal supports multiple entries per day; entry identity is `journal_entries.id`
   and edits are ID-targeted (never day-level upsert/merge by `entry_date`).
-- Journal history is not a separate screen; search and filters live on the main
-  Journal feed.
+- Journal history is a **separate screen**:
+  - journal home focuses on today only,
+  - history owns search + filters + date range selection,
+  - history results are a day list (newest first).
 - Journal has a dedicated Insights screen (`/journal/insights`) for expanded
   evidence cards; journal home still shows the top insight card (or nudge) as
   the summary-first entry point.
-- Journal home timeline supports infinite scroll by expanding the date window
+- Journal history supports infinite scroll by expanding the date window
   as the user reaches the end of the list.
-- Journal uses strict hybrid semantics:
-  - day-scoped factors (daily card) are one-per-day state,
-  - moment logs remain multi-entry-per-day.
+- Journal uses moment-first semantics:
+  - all tracker values are recorded on moment entries,
+  - daily summary aggregates are derived from per-entry tracker events.
+- Default daily summary includes mood and energy averages plus sleep duration
+  and sleep quality (recorded once per day).
 - Tracker writes for a selected day must be anchored to that selected day (not
-  the device's current day) for both entry writes and day-scoped factor writes.
+  the device's current day) for entry writes.
 - The editor renders one grouped tracker accordion list.
-- Day-scoped factors are shown in a special first category:
-  "Daily check-ins".
-- Entry-scoped factors are shown in the regular user groups (including
-  "Ungrouped").
+- Tracker inputs are grouped by user-defined groups (including "Ungrouped").
 - Grouped factor input uses a strict single-open accordion policy across the
   full tracker list to keep entry flow focused on one group at a time.
 - Group ordering and tracker ordering are user-controlled and available from
   in-editor manage actions.
 - Timeline factor summaries should be deduplicated per tracker so repeated
   edits do not produce duplicate chips for the same tracker.
-- Daily check-ins and trackers are managed from one tabbed management surface
-  (Factors / Groups).
-- The entry editor renders daily check-ins in a pinned first card with
-  "applies to today" semantics, and renders trackers in separate "for this
-  log" sections.
+- Trackers and groups are managed from one tabbed management surface
+  (Trackers / Groups).
 - Mood is required before a moment log can be saved.
-- Journal home filters support:
+- Journal history filters support:
   - date presets/range,
   - factor filters,
-  - optional factor-group filter.
-- Journal home does not support minimum mood threshold filtering.
-- Timeline density supports compact and rich modes; compact is the default.
-- Timeline boolean chips do not use "Done"; they render only the tracker label
-  when logged/true.
-- Timeline quantity chips render day totals (aggregated across the day) rather
-  than per-entry deltas.
+  - optional factor-group filter,
+  - search text (matches moment text for a day).
+- Journal does not support minimum mood threshold filtering.
+- History day cards:
+  - show date + mood average (numeric) when available.
+  - show a summary of **day factors with values**.
+  - hide empty/unset factors behind inline expand ("View more").
+  - show the latest moment text preview (if any).
+  - tap card opens day detail.
+- Day detail:
+  - shows full day factors list (including unset values),
+  - shows all moments for the day,
+  - tapping a moment opens the existing editor route for that moment.
 - Insight contract:
   - show top insight only when thresholds are met (sample >= 10 and medium
     effect size),

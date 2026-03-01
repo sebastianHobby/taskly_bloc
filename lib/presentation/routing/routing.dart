@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/time.dart';
 
 /// Single source of truth for navigation conventions and screen building.
 ///
@@ -302,6 +303,16 @@ abstract final class Routing {
 
   static void toJournalInsights(BuildContext context) {
     GoRouter.of(context).push('/journal/insights');
+  }
+
+  static void toJournalHistory(BuildContext context) {
+    GoRouter.of(context).push('/journal/history');
+  }
+
+  static void toJournalDayDetail(BuildContext context, DateTime day) {
+    final dayLocal = DateTime(day.year, day.month, day.day);
+    final encoded = encodeDateOnly(dayLocal);
+    GoRouter.of(context).push('/journal/day/$encoded');
   }
 
   /// Get onTap callback for entity navigation.

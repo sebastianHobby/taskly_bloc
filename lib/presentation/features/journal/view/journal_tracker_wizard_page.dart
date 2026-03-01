@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_tracker_wizard_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/utils/journal_unit_catalog.dart';
 import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
@@ -523,15 +524,37 @@ class _QuantityConfigForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final grouped = <String, List<JournalUnitOption>>{};
+    for (final option in journalUnitCatalog) {
+      (grouped[option.category] ??= <JournalUnitOption>[]).add(option);
+    }
     return Column(
       children: [
-        _SyncedTextField(
-          value: unit,
+        DropdownButtonFormField<String>(
+          value: unit.trim().isEmpty ? null : unit.trim().toLowerCase(),
           decoration: InputDecoration(
-            labelText: context.l10n.journalUnitOptionalLabel,
+            labelText: 'Unit',
           ),
-          enabled: enabled,
-          onChanged: (value) => onChanged(value, min, max, step),
+          items: [
+            for (final entry in grouped.entries) ...[
+              DropdownMenuItem<String>(
+                enabled: false,
+                value: '__${entry.key}',
+                child: Text(entry.key),
+              ),
+              for (final option in entry.value)
+                DropdownMenuItem<String>(
+                  value: option.key,
+                  child: Text(option.label),
+                ),
+            ],
+          ],
+          onChanged: enabled
+              ? (value) {
+                  if (value == null || value.startsWith('__')) return;
+                  onChanged(value, min, max, step);
+                }
+              : null,
         ),
         _NumberField(
           label: context.l10n.minOptionalLabel,

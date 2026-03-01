@@ -791,7 +791,6 @@ List<TasklyRowSpec> _buildGroupedRows(
         trailingLabel: _buildValueHeaderTrailingLabel(
           context,
           summary: summary,
-          nowUtc: nowUtc,
           projectCount: visibleCount,
         ),
         trailingIcon: expanded
@@ -1125,7 +1124,6 @@ int _compareValues(
 String _buildValueHeaderTrailingLabel(
   BuildContext context, {
   required _ProjectsValueRatingSummary? summary,
-  required DateTime nowUtc,
   required int projectCount,
 }) {
   final l10n = context.l10n;
@@ -1136,17 +1134,6 @@ String _buildValueHeaderTrailingLabel(
   final displayRating = averageRating ?? lastRatingValue?.toDouble();
   if (displayRating != null) {
     parts.add('★ ${displayRating.toStringAsFixed(1)}');
-  }
-
-  final lastRatingDate = summary?.lastRatingWeekStartUtc;
-  if (lastRatingDate != null) {
-    final daysAgo = dateOnly(
-      nowUtc,
-    ).difference(dateOnly(lastRatingDate)).inDays.clamp(0, 9999);
-    final ageLabel = daysAgo == 0
-        ? l10n.dateToday
-        : l10n.rangeDaysShort(daysAgo);
-    parts.add(ageLabel);
   }
 
   parts.add(l10n.projectsValueProjectCountLabel(projectCount));

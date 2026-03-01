@@ -145,7 +145,7 @@ final class PlanMyDaySnoozeTaskRequested extends PlanMyDayEvent {
 
 enum PlanMyDayValueSort {
   lowestAverage,
-  trendingDown,
+  highestAverage,
 }
 
 sealed class PlanMyDayState {
@@ -2007,15 +2007,15 @@ class PlanMyDayBloc extends Bloc<PlanMyDayEvent, PlanMyDayState> {
           final byTrend = trendA.compareTo(trendB);
           if (byTrend != 0) return byTrend;
           return a.value.name.compareTo(b.value.name);
-        case PlanMyDayValueSort.trendingDown:
+        case PlanMyDayValueSort.highestAverage:
+          final avgA = a.averageRating ?? double.negativeInfinity;
+          final avgB = b.averageRating ?? double.negativeInfinity;
+          final byAvg = avgB.compareTo(avgA);
+          if (byAvg != 0) return byAvg;
           final trendA = a.trendDelta ?? double.infinity;
           final trendB = b.trendDelta ?? double.infinity;
           final byTrend = trendA.compareTo(trendB);
           if (byTrend != 0) return byTrend;
-          final avgA = a.averageRating ?? double.infinity;
-          final avgB = b.averageRating ?? double.infinity;
-          final byAvg = avgA.compareTo(avgB);
-          if (byAvg != 0) return byAvg;
           return a.value.name.compareTo(b.value.name);
       }
     });

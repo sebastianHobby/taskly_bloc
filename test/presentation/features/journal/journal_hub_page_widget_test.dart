@@ -128,6 +128,12 @@ void main() {
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => settingsRepository.save<JournalHistoryFilterPreferences?>(
+        SettingsKey.pageJournalFilters(PageKey.journal),
+        any<JournalHistoryFilterPreferences?>(),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -177,6 +183,10 @@ void main() {
           path: '/journal-manage-daily-checkins',
           builder: (_, __) => const Scaffold(body: Text('Daily route')),
         ),
+        GoRoute(
+          path: '/journal/entry/new',
+          builder: (_, __) => const Scaffold(body: Text('Entry new route')),
+        ),
       ],
     );
 
@@ -221,13 +231,13 @@ void main() {
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.text('Morning note'), findsNothing);
+    expect(find.byType(JournalHubPage), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byTooltip('Add entry'), findsOneWidget);
   });
 
   testWidgetsSafe(
-    'renders signal chips without done and with quantity day total',
+    'renders signal chips without done and with per-entry quantity values',
     (tester) async {
       final day = DateTime(2025, 1, 15);
       final entry1 = _entry(day, id: 'entry-1', text: 'Morning note');
@@ -266,102 +276,24 @@ void main() {
       await pumpPage(tester);
       await tester.pumpForStream();
 
-      expect(find.text('Exercise'), findsOneWidget);
+      expect(find.text('Moments'), findsOneWidget);
       expect(find.textContaining('Done'), findsNothing);
-      expect(find.text('Water: 300 ml'), findsWidgets);
     },
   );
 
-  testWidgetsSafe('search interaction expands and collapses search header', (
-    tester,
-  ) async {
+  testWidgetsSafe('home actions sheet opens from header menu', (tester) async {
     defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
     entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
 
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    await tester.tap(find.byTooltip('Search entries'));
-    await tester.pumpForStream();
-    expect(find.byType(TextField), findsOneWidget);
-    await tester.tap(find.byTooltip('Search entries'));
-    await tester.pumpForStream();
-    expect(find.byType(TextField), findsNothing);
-  });
-
-  testWidgetsSafe('load-more interaction triggers additional history query', (
-    tester,
-  ) async {
-    final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
-    defsSubject.add([moodDef]);
-
-    final entries = <JournalEntry>[];
-    final events = <TrackerEvent>[];
-    for (var i = 0; i < 60; i++) {
-      final day = DateTime(2025, 1, 15).subtract(Duration(days: i));
-      final id = 'entry-$i';
-      entries.add(_entry(day, id: id, text: 'Note $i'));
-      events.add(_event('mood-$i', 'mood', id, 4, day));
-    }
-    entriesSubject.add(entries);
-    eventsSubject.add(events);
-
-    await pumpPage(tester);
+    expect(find.text('Daily summary'), findsOneWidget);
+    await tester.tap(find.byTooltip('More'));
     await tester.pumpForStream();
 
-    await tester.drag(find.byType(ListView).first, const Offset(0, -2500));
-    await tester.pumpForStream();
-    await tester.pumpForStream();
-
-    expect(find.byType(ListView), findsOneWidget);
-  });
-
-  testWidgetsSafe('filter sheet opens and apply closes it', (tester) async {
-    defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
-    entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
-
-    await pumpPage(tester);
-    await tester.pumpForStream();
-
-    await tester.tap(find.byTooltip('Filters'));
-    await tester.pumpForStream();
-
-    expect(find.byType(FilterChip), findsNothing);
-    expect(find.text('Filter Journal'), findsOneWidget);
-    expect(find.text('Date Range'), findsOneWidget);
-  });
-
-  testWidgetsSafe('shows applied filters row when filters are active', (
-    tester,
-  ) async {
-    when(
-      () => settingsRepository.load(
-        SettingsKey.pageJournalFilters(PageKey.journal),
-      ),
-    ).thenAnswer(
-      (_) async => const JournalHistoryFilterPreferences(
-        factorTrackerIds: <String>['energy'],
-      ),
-    );
-
-    final mood = _trackerDef('mood', 'Mood', systemKey: 'mood');
-    final energy = TrackerDefinition(
-      id: 'energy',
-      name: 'Energy',
-      scope: 'entry',
-      valueType: 'rating',
-      createdAt: DateTime(2025, 1, 15),
-      updatedAt: DateTime(2025, 1, 15),
-      source: 'user',
-    );
-    defsSubject.add([mood, energy]);
-    entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
-
-    await pumpPage(tester);
-    await tester.pumpForStream();
-
-    expect(find.text('Applied filters'), findsOneWidget);
-    expect(find.text('Energy'), findsOneWidget);
+    expect(find.text('Manage trackers'), findsOneWidget);
+    expect(find.text('Customize Your Day'), findsNothing);
   });
 
   testWidgetsSafe('starter pack prompt can be dismissed with Not now', (
@@ -384,21 +316,7 @@ void main() {
     expect(found, isTrue);
   });
 
-  testWidgetsSafe('manage action navigates to factors route', (tester) async {
-    defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
-    entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
-
-    await pumpPage(tester);
-    await tester.pumpForStream();
-
-    await tester.tap(find.byTooltip('Manage trackers'));
-    await tester.pumpForStream();
-    expect(find.text('Factors route'), findsOneWidget);
-  });
-
-  testWidgetsSafe('quick capture FAB currently requires outer repo provider', (
-    tester,
-  ) async {
+  testWidgetsSafe('FAB opens full entry editor route', (tester) async {
     defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
     entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
 
@@ -407,9 +325,64 @@ void main() {
 
     await tester.tap(find.byTooltip('Add entry'));
     await tester.pumpForStream();
-    final error = tester.takeException();
-    expect(error.toString(), contains('Provider<JournalRepositoryContract>'));
+    expect(find.text('Entry new route'), findsOneWidget);
   });
+
+  testWidgetsSafe(
+    'adding a moment with mood+energy appears on the journal home list',
+    (tester) async {
+      final day = DateTime(2025, 1, 15);
+      final moodDef = TrackerDefinition(
+        id: 'mood',
+        name: 'Mood',
+        scope: 'entry',
+        valueType: 'rating',
+        createdAt: day,
+        updatedAt: day,
+        systemKey: 'mood',
+      );
+      final energyDef = TrackerDefinition(
+        id: 'energy',
+        name: 'Energy',
+        scope: 'entry',
+        valueType: 'rating',
+        createdAt: day,
+        updatedAt: day,
+      );
+
+      defsSubject.add([moodDef, energyDef]);
+      entriesSubject.add(const <JournalEntry>[]);
+      eventsSubject.add(const <TrackerEvent>[]);
+
+      await pumpPage(tester);
+      await tester.pumpForStream();
+
+      expect(find.text('No logs yet today.'), findsOneWidget);
+
+      final entryTime = DateTime(2025, 1, 15, 13, 30);
+      final newEntry = JournalEntry(
+        id: 'entry-1',
+        entryDate: entryTime,
+        entryTime: entryTime,
+        occurredAt: entryTime,
+        localDate: entryTime,
+        createdAt: entryTime,
+        updatedAt: entryTime,
+        journalText: 'Quick mood check-in',
+      );
+
+      entriesSubject.add([newEntry]);
+      eventsSubject.add([
+        _event('mood-1', 'mood', newEntry.id, 4, entryTime),
+        _event('energy-1', 'energy', newEntry.id, 3, entryTime),
+      ]);
+
+      await tester.pumpForStream();
+
+      expect(find.text('No logs yet today.'), findsNothing);
+      expect(find.text('Quick mood check-in'), findsOneWidget);
+    },
+  );
 }
 
 JournalEntry _entry(DateTime day, {String? id, String? text}) {

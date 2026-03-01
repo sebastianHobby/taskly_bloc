@@ -3,9 +3,9 @@
 Use this sequence before non-trivial changes.
 
 1. Read `doc/architecture/README.md`.
-2. Read `doc/architecture/INVARIANTS.md`.
-3. Open `doc/agents/PATH_TO_SPEC_MAP.md` and find the impacted feature spec.
-4. Read only the relevant feature spec(s) under `doc/features/`.
+2. Open `doc/agents/PATH_TO_SPEC_MAP.md` and find the impacted feature spec.
+3. Read only the relevant feature spec(s) under `doc/features/`.
+4. Read `doc/architecture/INVARIANT_INDEX.md`, then read only the relevant sections in `doc/architecture/INVARIANTS.md`.
 5. If changing architecture boundaries, update architecture docs in the same PR.
 6. Run checks:
    - `dart run tool/guardrails.dart`

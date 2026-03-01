@@ -28,6 +28,13 @@ import 'package:taskly_bloc/presentation/shared/ui/value_chip_data.dart';
 
 const Key kPlanMyDayBottomFadeKey = Key('plan_my_day_bottom_fade');
 const Key kPlanMyDayLastChildKey = Key('plan_my_day_last_child');
+const Key kPlanMyDayValueSortMenuButtonKey = Key('plan_my_day_value_sort_menu');
+const Key kPlanMyDayValueSortLowestAverageKey = Key(
+  'plan_my_day_value_sort_lowest_average',
+);
+const Key kPlanMyDayValueSortHighestAverageKey = Key(
+  'plan_my_day_value_sort_highest_average',
+);
 const double _planMyDayTrendDisplayThreshold = 0.3;
 
 class PlanMyDayPage extends StatelessWidget {
@@ -937,23 +944,32 @@ class _ValueSortMenu extends StatelessWidget {
     final currentLabel = _sortLabel(context, data.valueSort);
 
     return PopupMenuButton<PlanMyDayValueSort>(
+      key: kPlanMyDayValueSortMenuButtonKey,
       tooltip: l10n.sortMenuTitle,
       onSelected: (value) =>
           context.read<PlanMyDayBloc>().add(PlanMyDayValueSortChanged(value)),
       itemBuilder: (context) => [
         PopupMenuItem(
+          key: kPlanMyDayValueSortLowestAverageKey,
           value: PlanMyDayValueSort.lowestAverage,
           child: Text(l10n.planMyDaySortLowestAverage),
         ),
         PopupMenuItem(
-          value: PlanMyDayValueSort.trendingDown,
-          child: Text(l10n.planMyDaySortTrendingDown),
+          key: kPlanMyDayValueSortHighestAverageKey,
+          value: PlanMyDayValueSort.highestAverage,
+          child: Text(l10n.planMyDaySortHighestAverage),
         ),
       ],
-      child: TextButton.icon(
-        onPressed: null,
-        icon: const Icon(Icons.sort),
-        label: Text(l10n.planMyDaySortByLabel(currentLabel)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.sort),
+            const SizedBox(width: 8),
+            Text(l10n.planMyDaySortByLabel(currentLabel)),
+          ],
+        ),
       ),
     );
   }
@@ -962,7 +978,7 @@ class _ValueSortMenu extends StatelessWidget {
     final l10n = context.l10n;
     return switch (sort) {
       PlanMyDayValueSort.lowestAverage => l10n.planMyDaySortLowestAverage,
-      PlanMyDayValueSort.trendingDown => l10n.planMyDaySortTrendingDown,
+      PlanMyDayValueSort.highestAverage => l10n.planMyDaySortHighestAverage,
     };
   }
 }

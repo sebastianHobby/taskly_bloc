@@ -578,6 +578,126 @@ void main() {
   );
 
   blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
+    'sorts value groups by highest average rating first',
+    build: () {
+      final lowValue = TestData.value(id: 'value-low', name: 'Family');
+      final highValue = TestData.value(id: 'value-high', name: 'Health');
+      final lowTask = TestData.task(
+        id: 'task-low',
+        name: 'Call parents',
+        projectId: 'project-low',
+        project: TestData.project(
+          id: 'project-low',
+          name: 'Family Project',
+          values: [lowValue],
+        ).copyWith(primaryValueId: lowValue.id),
+      );
+      final highTask = TestData.task(
+        id: 'task-high',
+        name: 'Morning walk',
+        projectId: 'project-high',
+        project: TestData.project(
+          id: 'project-high',
+          name: 'Health Project',
+          values: [highValue],
+        ).copyWith(primaryValueId: highValue.id),
+      );
+
+      when(() => taskRepository.getAll(any())).thenAnswer(
+        (_) async => [lowTask, highTask],
+      );
+      when(() => taskRepository.watchAll(any())).thenAnswer(
+        (_) => Stream.value([lowTask, highTask]).asBroadcastStream(),
+      );
+
+      final weekStart = DateTime.utc(2025, 1, 13);
+      final ratings = <ValueWeeklyRating>[
+        ValueWeeklyRating(
+          id: 'rating-low',
+          valueId: lowValue.id,
+          weekStartUtc: weekStart,
+          rating: 3,
+          createdAtUtc: weekStart,
+          updatedAtUtc: weekStart,
+        ),
+        ValueWeeklyRating(
+          id: 'rating-high',
+          valueId: highValue.id,
+          weekStartUtc: weekStart,
+          rating: 8,
+          createdAtUtc: weekStart,
+          updatedAtUtc: weekStart,
+        ),
+      ];
+      when(
+        () => valueRatingsRepository.getAll(weeks: any(named: 'weeks')),
+      ).thenAnswer((_) async => ratings);
+      when(
+        () => valueRatingsRepository.watchAll(weeks: any(named: 'weeks')),
+      ).thenAnswer((_) => Stream.value(ratings));
+
+      final allocation = AllocationResult(
+        allocatedTasks: [
+          AllocatedTask(
+            task: lowTask,
+            qualifyingValueId: lowValue.id,
+            allocationScore: 0.9,
+            reasonCodes: const [],
+          ),
+          AllocatedTask(
+            task: highTask,
+            qualifyingValueId: highValue.id,
+            allocationScore: 0.8,
+            reasonCodes: const [],
+          ),
+        ],
+        reasoning: const AllocationReasoning(
+          strategyUsed: 'test',
+          categoryAllocations: {},
+          categoryWeights: {},
+          explanation: 'test',
+        ),
+        excludedTasks: const <ExcludedTask>[],
+      );
+
+      when(
+        () => allocationOrchestrator.getSuggestedSnapshot(
+          batchCount: any(named: 'batchCount'),
+          nowUtc: any(named: 'nowUtc'),
+          routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async => allocation);
+      when(
+        () => allocationOrchestrator.getSuggestedSnapshotForTargetCount(
+          suggestedTaskTarget: any(named: 'suggestedTaskTarget'),
+          nowUtc: any(named: 'nowUtc'),
+          routineSelectionsByValue: any(named: 'routineSelectionsByValue'),
+          context: any(named: 'context'),
+        ),
+      ).thenAnswer((_) async => allocation);
+
+      return buildBloc();
+    },
+    act: (bloc) async {
+      if (bloc.state is! PlanMyDayReady) {
+        await bloc.stream.firstWhere((state) => state is PlanMyDayReady);
+      }
+      bloc.add(
+        const PlanMyDayValueSortChanged(PlanMyDayValueSort.highestAverage),
+      );
+      await bloc.stream.firstWhere((state) {
+        return state is PlanMyDayReady &&
+            state.valueSort == PlanMyDayValueSort.highestAverage;
+      });
+    },
+    verify: (bloc) {
+      final ready = bloc.state as PlanMyDayReady;
+      expect(ready.valueSuggestionGroups.first.valueId, 'value-high');
+    },
+  );
+
+  blocTestSafe<PlanMyDayBloc, PlanMyDayState>(
     'switches from demo data to live data when demo mode disables',
     build: () {
       demoModeService.enable();

@@ -88,9 +88,8 @@ sections.
 
 - Package API boundaries (no `src/` deep imports): [1.3](#13-package-public-api-boundary-strict)
 - PowerSync/SQLite view write constraints show up in feature contracts (see
-  recurrence contract and sync deep-dive):
+  recurrence contract):
   - [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
-  - [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
 
 ### 0.2.4 Testing (repo-wide)
 
@@ -422,8 +421,6 @@ Rationale:
 
 Changes to `packages/taskly_ui` are governed by shared-surface rules.
 
-See also: [guides/TASKLY_UI_GOVERNANCE.md](guides/TASKLY_UI_GOVERNANCE.md)
-
 Definitions:
 
 - **Shared surface change**: any change that modifies what a consuming screen
@@ -431,16 +428,6 @@ Definitions:
   interaction behavior, accessibility semantics, or user-visible strings.
 - **Internal-only change**: refactors/bugfixes/performance work that do not
   change the public API, default visuals, or interaction contracts.
-
-#### Shared UI change notification (strict)
-
-If a change to `taskly_ui` impacts other screens, the user must be informed of
-the impacts before implementation.
-
-Minimum expectation:
-
-- Impact analysis: list affected call sites and any required wiring or
-  migration steps.
 
 #### Fast path allowed (no approval required)
 
@@ -804,8 +791,6 @@ PowerSync applies schema using SQLite views. SQLite cannot UPSERT views.
 - Do not use Drift UPSERT helpers against tables that are part of the PowerSync
   schema.
 - Prefer update-then-insert or insert-or-ignore patterns.
-
-See: [deep_dives/POWERSYNC_SUPABASE.md](deep_dives/POWERSYNC_SUPABASE.md)
 
 Guardrail: the repo includes a lightweight check to prevent accidental usage.
 

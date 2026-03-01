@@ -7,7 +7,10 @@ import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/ui/journal_motion_tokens.dart';
+import 'package:taskly_bloc/presentation/features/journal/ui/tracker_value_formatter.dart';
 import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/journal_factor_token.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_input_widgets.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -38,6 +41,10 @@ class JournalEntryEditorRoutePage extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      sheetAnimationStyle: const AnimationStyle(
+        duration: kJournalMotionDuration,
+        reverseDuration: kJournalMotionDuration,
+      ),
       builder: (context) {
         return FractionallySizedBox(
           heightFactor: 0.9,
@@ -58,13 +65,19 @@ class JournalEntryEditorRoutePage extends StatefulWidget {
 }
 
 class _JournalEntryEditorRoutePageState
-    extends State<JournalEntryEditorRoutePage> {
+    extends State<JournalEntryEditorRoutePage>
+    with TickerProviderStateMixin {
   late final TextEditingController _noteController;
   String? _expandedTrackerId;
-  bool _showPostMoodDaily = false;
   bool _showPostMoodGroups = false;
   bool _lastHasMood = false;
   Timer? _groupsRevealTimer;
+  final Map<String, bool> _quickGroupExpanded = <String, bool>{};
+  final Map<String, Map<String, String>> _quickChoiceLabelsByTrackerId =
+      <String, Map<String, String>>{};
+  final Map<String, List<TrackerDefinitionChoice>>
+  _quickChoiceOptionsByTrackerId = <String, List<TrackerDefinitionChoice>>{};
+  final Set<String> _quickChoicePreloadInFlight = <String>{};
 
   @override
   void initState() {
@@ -88,7 +101,6 @@ class _JournalEntryEditorRoutePageState
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         setState(() {
-          _showPostMoodDaily = false;
           _showPostMoodGroups = false;
           _expandedTrackerId = null;
         });
@@ -99,7 +111,6 @@ class _JournalEntryEditorRoutePageState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       setState(() {
-        _showPostMoodDaily = true;
         _showPostMoodGroups = false;
       });
       _groupsRevealTimer = Timer(const Duration(milliseconds: 80), () {
@@ -111,6 +122,24 @@ class _JournalEntryEditorRoutePageState
     });
   }
 
+  bool _isOncePerDaySleepTracker(TrackerDefinition definition) {
+    final normalized = definition.name.trim().toLowerCase();
+    if (definition.scope.trim().toLowerCase() == 'sleep_night') return true;
+    if (normalized.contains('sleep quality')) return true;
+    if (normalized.contains('sleep duration')) return true;
+    return normalized.contains('sleep');
+  }
+
+  bool _shouldShowEntryTracker(
+    TrackerDefinition definition,
+    JournalEntryEditorState state,
+  ) {
+    if (!_isOncePerDaySleepTracker(definition)) return true;
+    final currentValue = state.entryValues[definition.id];
+    if (_hasMeaningfulValue(currentValue)) return true;
+    return !state.dayEntryTrackerIds.contains(definition.id);
+  }
+
   bool _hasMeaningfulValue(Object? value) {
     return switch (value) {
       null => false,
@@ -118,6 +147,246 @@ class _JournalEntryEditorRoutePageState
       final String v => v.trim().isNotEmpty,
       _ => true,
     };
+  }
+
+  bool _isBooleanTracker(TrackerDefinition definition) {
+    final valueType = definition.valueType.trim().toLowerCase();
+    final valueKind = (definition.valueKind ?? '').trim().toLowerCase();
+    return valueType == 'yes_no' || valueKind == 'boolean';
+  }
+
+  bool _isChoiceTracker(TrackerDefinition definition) {
+    final valueType = definition.valueType.trim().toLowerCase();
+    return valueType == 'choice' || valueType == 'single_choice';
+  }
+
+  bool _isNumericTracker(TrackerDefinition definition) {
+    final valueType = definition.valueType.trim().toLowerCase();
+    final valueKind = (definition.valueKind ?? '').trim().toLowerCase();
+    return valueType == 'quantity' ||
+        valueType == 'rating' ||
+        valueKind == 'number';
+  }
+
+  void _syncQuickGroupExpansionDefaults(
+    List<({String title, List<TrackerDefinition> trackers})> groups,
+  ) {
+    for (final group in groups) {
+      _quickGroupExpanded.putIfAbsent(
+        group.title,
+        () => group.trackers.length <= 5,
+      );
+    }
+  }
+
+  Future<void> _primeQuickChoiceLabels(
+    BuildContext context,
+    List<({String title, List<TrackerDefinition> trackers})> groups,
+  ) async {
+    final trackerIds = <String>{};
+    for (final group in groups) {
+      for (final tracker in group.trackers) {
+        if (_isChoiceTracker(tracker)) trackerIds.add(tracker.id);
+      }
+    }
+    if (trackerIds.isEmpty) return;
+
+    final bloc = context.read<JournalEntryEditorBloc>();
+    final toLoad = trackerIds
+        .where(
+          (id) =>
+              !_quickChoiceLabelsByTrackerId.containsKey(id) &&
+              !_quickChoicePreloadInFlight.contains(id),
+        )
+        .toList(growable: false);
+    if (toLoad.isEmpty) return;
+
+    _quickChoicePreloadInFlight.addAll(toLoad);
+    final results = await Future.wait(toLoad.map(bloc.getChoices));
+    if (!mounted) return;
+    setState(() {
+      for (var i = 0; i < toLoad.length; i++) {
+        final labels = <String, String>{};
+        for (final choice in results[i]) {
+          labels[choice.choiceKey] = choice.label;
+        }
+        _quickChoiceOptionsByTrackerId[toLoad[i]] = results[i];
+        _quickChoiceLabelsByTrackerId[toLoad[i]] = labels;
+      }
+      _quickChoicePreloadInFlight.removeAll(toLoad);
+    });
+  }
+
+  bool _isFiveLevelChoiceTracker(TrackerDefinition tracker) {
+    if (!_isChoiceTracker(tracker)) return false;
+    final options = _quickChoiceOptionsByTrackerId[tracker.id] ?? const [];
+    if (options.length != 5) return false;
+    final labels = options.map((choice) => choice.label.trim()).toSet();
+    final keys = options.map((choice) => choice.choiceKey.trim()).toSet();
+    const expected = <String>{'1', '2', '3', '4', '5'};
+    return labels.containsAll(expected) || keys.containsAll(expected);
+  }
+
+  bool _isFiveLevelRatingTracker(TrackerDefinition tracker) {
+    final valueType = tracker.valueType.trim().toLowerCase();
+    if (valueType != 'rating') return false;
+    final min = tracker.minInt ?? 1;
+    final max = tracker.maxInt ?? 5;
+    final step = tracker.stepInt ?? 1;
+    return min == 1 && max == 5 && step == 1;
+  }
+
+  Future<T?> _showJournalSheet<T>({
+    required BuildContext context,
+    required WidgetBuilder builder,
+    bool useSafeArea = true,
+    bool showDragHandle = true,
+    bool isScrollControlled = false,
+  }) async {
+    final controller = BottomSheet.createAnimationController(this)
+      ..duration = kJournalMotionDuration
+      ..reverseDuration = kJournalMotionDuration;
+    try {
+      return await showModalBottomSheet<T>(
+        context: context,
+        useSafeArea: useSafeArea,
+        showDragHandle: showDragHandle,
+        isScrollControlled: isScrollControlled,
+        transitionAnimationController: controller,
+        builder: builder,
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  Future<void> _showQuickChoicePicker({
+    required BuildContext context,
+    required TrackerDefinition definition,
+    required String? selectedChoiceKey,
+  }) async {
+    final choices = await context.read<JournalEntryEditorBloc>().getChoices(
+      definition.id,
+    );
+    if (!context.mounted || choices.isEmpty) return;
+    final picked = await _showJournalSheet<String>(
+      context: context,
+      builder: (context) {
+        return ListView(
+          shrinkWrap: true,
+          children: [
+            for (final choice in choices)
+              ListTile(
+                title: Text(choice.label),
+                trailing: selectedChoiceKey == choice.choiceKey
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.of(context).pop(choice.choiceKey),
+              ),
+          ],
+        );
+      },
+    );
+    if (!context.mounted || picked == null) return;
+    context.read<JournalEntryEditorBloc>().add(
+      JournalEntryEditorEntryValueChanged(
+        trackerId: definition.id,
+        value: picked,
+      ),
+    );
+  }
+
+  Future<void> _showQuickNumericAdjustSheet({
+    required BuildContext context,
+    required TrackerDefinition definition,
+    required Object? currentValue,
+  }) async {
+    final current = switch (currentValue) {
+      final int v => v.toDouble(),
+      final double v => v,
+      _ => (definition.minInt ?? 0).toDouble(),
+    };
+    final min = (definition.minInt ?? 0).toDouble();
+    final max = (definition.maxInt ?? (current + 10)).toDouble();
+    final step =
+        ((definition.stepInt ?? 1) <= 0 ? 1 : (definition.stepInt ?? 1))
+            .toDouble();
+    var draft = current;
+
+    final next = await _showJournalSheet<double>(
+      context: context,
+      builder: (context) {
+        final tokens = TasklyTokens.of(context);
+        return StatefulBuilder(
+          builder: (context, setState) {
+            void apply(int direction) {
+              setState(() {
+                draft = (draft + (step * direction)).clamp(min, max);
+              });
+            }
+
+            return Padding(
+              padding: EdgeInsets.all(tokens.spaceMd),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    definition.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: tokens.spaceSm),
+                  Text(
+                    JournalTrackerValueFormatter.format(
+                      l10n: context.l10n,
+                      label: definition.name,
+                      definition: definition,
+                      rawValue: draft,
+                      choiceLabelsByTrackerId: _quickChoiceLabelsByTrackerId,
+                    ).valueText,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: tokens.spaceSm),
+                  Row(
+                    children: [
+                      FilledButton.tonalIcon(
+                        onPressed: () => apply(-1),
+                        icon: const Icon(Icons.remove),
+                        label: const Text('Less'),
+                      ),
+                      SizedBox(width: tokens.spaceSm),
+                      FilledButton.icon(
+                        onPressed: () => apply(1),
+                        icon: const Icon(Icons.add),
+                        label: const Text('More'),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(draft),
+                        child: const Text('Done'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (!context.mounted || next == null) return;
+    final output = next == next.roundToDouble() ? next.round() : next;
+    context.read<JournalEntryEditorBloc>().add(
+      JournalEntryEditorEntryValueChanged(
+        trackerId: definition.id,
+        value: output,
+      ),
+    );
   }
 
   @override
@@ -342,10 +611,6 @@ class _JournalEntryEditorRoutePageState
             );
           }
 
-          final dailyTrackers = [...state.dailyTrackers]
-            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-          final entryTrackers = [...state.trackers]
-            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
           final dailyValues = effectiveDailyValues();
           final hasMood = state.mood != null;
           _syncPostMoodReveal(hasMood);
@@ -595,6 +860,8 @@ class _JournalEntryEditorRoutePageState
             );
           }
 
+          final entryTrackers = [...state.trackers]
+            ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
           final groupsById = {for (final g in state.groups) g.id: g};
           final ungrouped =
               entryTrackers
@@ -630,7 +897,20 @@ class _JournalEntryEditorRoutePageState
           }
 
           final entryGroups = groupedTrackersByName.entries
-              .map((entry) => (title: entry.key, trackers: entry.value))
+              .map(
+                (entry) => (
+                  title: entry.key,
+                  trackers: entry.value
+                      .where(
+                        (tracker) => _shouldShowEntryTracker(tracker, state),
+                      )
+                      .toList(growable: false),
+                ),
+              )
+              .toList(growable: false);
+
+          final quickFactorGroups = entryGroups
+              .where((g) => g.trackers.isNotEmpty)
               .toList(growable: false);
 
           final body = isLoading
@@ -679,23 +959,6 @@ class _JournalEntryEditorRoutePageState
                     ),
                     SizedBox(height: tokens.spaceLg),
                     if (!hasMood) moodGateHint(),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      child: _showPostMoodDaily
-                          ? Padding(
-                              padding: EdgeInsets.only(top: tokens.spaceLg),
-                              child: trackerGroupCard(
-                                title: l10n.journalDailyCheckInsTitle,
-                                icon: Icons.calendar_today_outlined,
-                                trackers: dailyTrackers,
-                                isDaily: true,
-                                emptyLabel: l10n.journalNoDailyCheckIns,
-                                manageRouteKey: 'journal_manage_factors',
-                                subtitle: l10n.journalDailyAppliesTodaySubtitle,
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 220),
                       child: _showPostMoodGroups
@@ -767,6 +1030,28 @@ class _JournalEntryEditorRoutePageState
           );
 
           if (widget.quickCapture) {
+            final quickSaveButton = FilledButton(
+              onPressed: canSave
+                  ? () => context.read<JournalEntryEditorBloc>().add(
+                      const JournalEntryEditorSaveRequested(),
+                    )
+                  : null,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(56),
+              ),
+              child: isSaving
+                  ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.onPrimary,
+                      ),
+                    )
+                  : Text(
+                      state.isEditingExisting ? 'Update Entry' : 'Save Entry',
+                    ),
+            );
             return SafeArea(
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -816,7 +1101,366 @@ class _JournalEntryEditorRoutePageState
                         ],
                       ),
                     ),
-                    Expanded(child: body),
+                    Expanded(
+                      child: ListView(
+                        padding: EdgeInsets.fromLTRB(
+                          tokens.spaceMd,
+                          tokens.spaceXs,
+                          tokens.spaceMd,
+                          tokens.spaceXxl * 2,
+                        ),
+                        children: [
+                          Text(
+                            DateFormat.yMMMEd().format(
+                              DateTime(
+                                state.selectedDayLocal.year,
+                                state.selectedDayLocal.month,
+                                state.selectedDayLocal.day,
+                              ),
+                            ),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          SizedBox(height: tokens.spaceMd),
+                          Text(
+                            l10n.journalMoodLabel,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          SizedBox(height: tokens.spaceXxs),
+                          Text(
+                            l10n.journalMoodPromptSubtitle,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          SizedBox(height: tokens.spaceSm),
+                          _MoodScalePicker(
+                            value: state.mood,
+                            enabled: !isSaving,
+                            onChanged: (m) => context
+                                .read<JournalEntryEditorBloc>()
+                                .add(JournalEntryEditorMoodChanged(m)),
+                          ),
+                          if (quickFactorGroups.isNotEmpty) ...[
+                            SizedBox(height: tokens.spaceLg),
+                            Text(
+                              'What were you doing?',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(height: tokens.spaceSm),
+                            Builder(
+                              builder: (_) {
+                                _syncQuickGroupExpansionDefaults(
+                                  quickFactorGroups,
+                                );
+                                unawaited(
+                                  _primeQuickChoiceLabels(
+                                    context,
+                                    quickFactorGroups,
+                                  ),
+                                );
+                                return const SizedBox.shrink();
+                              },
+                            ),
+                            for (final group in quickFactorGroups) ...[
+                              Container(
+                                margin: EdgeInsets.only(bottom: tokens.spaceSm),
+                                padding: EdgeInsets.all(tokens.spaceSm),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerLow,
+                                  borderRadius: BorderRadius.circular(
+                                    tokens.radiusMd,
+                                  ),
+                                  border: Border.all(
+                                    color: theme.colorScheme.outlineVariant,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      group.title,
+                                      style: theme.textTheme.labelLarge
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    SizedBox(height: tokens.spaceXxs),
+                                    InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          final current =
+                                              _quickGroupExpanded[group
+                                                  .title] ??
+                                              true;
+                                          _quickGroupExpanded[group.title] =
+                                              !current;
+                                        });
+                                      },
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            '${group.trackers.length} trackers',
+                                            style: theme.textTheme.labelSmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                          const Spacer(),
+                                          Icon(
+                                            (_quickGroupExpanded[group.title] ??
+                                                    true)
+                                                ? Icons.expand_less
+                                                : Icons.expand_more,
+                                            size: 18,
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(height: tokens.spaceXs),
+                                    AnimatedCrossFade(
+                                      duration: kJournalMotionDuration,
+                                      firstCurve: kJournalMotionCurve,
+                                      secondCurve: kJournalMotionCurve,
+                                      sizeCurve: kJournalMotionCurve,
+                                      crossFadeState:
+                                          (_quickGroupExpanded[group.title] ??
+                                              true)
+                                          ? CrossFadeState.showSecond
+                                          : CrossFadeState.showFirst,
+                                      firstChild: const SizedBox.shrink(),
+                                      secondChild: Builder(
+                                        builder: (context) {
+                                          final fiveLevelTrackers = group
+                                              .trackers
+                                              .where(_isFiveLevelChoiceTracker)
+                                              .toList(growable: false);
+                                          final fiveLevelRatingTrackers = group
+                                              .trackers
+                                              .where(_isFiveLevelRatingTracker)
+                                              .toList(growable: false);
+                                          final tokenTrackers = group.trackers
+                                              .where(
+                                                (tracker) =>
+                                                    !_isFiveLevelChoiceTracker(
+                                                      tracker,
+                                                    ) &&
+                                                    !_isFiveLevelRatingTracker(
+                                                      tracker,
+                                                    ),
+                                              )
+                                              .toList(growable: false);
+
+                                          return Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              for (final tracker
+                                                  in fiveLevelTrackers) ...[
+                                                _QuickFiveLevelChoicePicker(
+                                                  title: tracker.name,
+                                                  icon: trackerIconData(
+                                                    tracker,
+                                                  ),
+                                                  selectedKey:
+                                                      state.entryValues[tracker
+                                                              .id]
+                                                          as String?,
+                                                  options:
+                                                      _quickChoiceOptionsByTrackerId[tracker
+                                                          .id] ??
+                                                      const <
+                                                        TrackerDefinitionChoice
+                                                      >[],
+                                                  enabled: !isSaving,
+                                                  onSelected: (choiceKey) {
+                                                    context
+                                                        .read<
+                                                          JournalEntryEditorBloc
+                                                        >()
+                                                        .add(
+                                                          JournalEntryEditorEntryValueChanged(
+                                                            trackerId:
+                                                                tracker.id,
+                                                            value: choiceKey,
+                                                          ),
+                                                        );
+                                                  },
+                                                ),
+                                                SizedBox(
+                                                  height: tokens.spaceSm,
+                                                ),
+                                              ],
+                                              for (final tracker
+                                                  in fiveLevelRatingTrackers) ...[
+                                                _QuickFiveLevelRatingPicker(
+                                                  title: tracker.name,
+                                                  icon: trackerIconData(
+                                                    tracker,
+                                                  ),
+                                                  selectedValue: switch (state
+                                                      .entryValues[tracker
+                                                      .id]) {
+                                                    final int v => v,
+                                                    final double v => v.round(),
+                                                    _ => null,
+                                                  },
+                                                  enabled: !isSaving,
+                                                  onSelected: (value) {
+                                                    context
+                                                        .read<
+                                                          JournalEntryEditorBloc
+                                                        >()
+                                                        .add(
+                                                          JournalEntryEditorEntryValueChanged(
+                                                            trackerId:
+                                                                tracker.id,
+                                                            value: value,
+                                                          ),
+                                                        );
+                                                  },
+                                                ),
+                                                SizedBox(
+                                                  height: tokens.spaceSm,
+                                                ),
+                                              ],
+                                              if (tokenTrackers.isNotEmpty)
+                                                Wrap(
+                                                  spacing: tokens.spaceXs,
+                                                  runSpacing: tokens.spaceXs,
+                                                  children: [
+                                                    for (final tracker
+                                                        in tokenTrackers)
+                                                      Builder(
+                                                        builder: (context) {
+                                                          final selected =
+                                                              _hasMeaningfulValue(
+                                                                state
+                                                                    .entryValues[tracker
+                                                                    .id],
+                                                              );
+                                                          final formatted =
+                                                              JournalTrackerValueFormatter.format(
+                                                                l10n: l10n,
+                                                                label: tracker
+                                                                    .name,
+                                                                definition:
+                                                                    tracker,
+                                                                rawValue:
+                                                                    state
+                                                                        .entryValues[tracker
+                                                                        .id],
+                                                                choiceLabelsByTrackerId:
+                                                                    _quickChoiceLabelsByTrackerId,
+                                                              );
+                                                          return JournalFactorToken(
+                                                            icon:
+                                                                trackerIconData(
+                                                                  tracker,
+                                                                ),
+                                                            text:
+                                                                formatted.text,
+                                                            state:
+                                                                formatted.state,
+                                                            selected: selected,
+                                                            enabled: !isSaving,
+                                                            onTap: () async {
+                                                              if (_isBooleanTracker(
+                                                                tracker,
+                                                              )) {
+                                                                final current =
+                                                                    state
+                                                                        .entryValues[tracker
+                                                                        .id] ==
+                                                                    true;
+                                                                context
+                                                                    .read<
+                                                                      JournalEntryEditorBloc
+                                                                    >()
+                                                                    .add(
+                                                                      JournalEntryEditorEntryValueChanged(
+                                                                        trackerId:
+                                                                            tracker.id,
+                                                                        value:
+                                                                            !current,
+                                                                      ),
+                                                                    );
+                                                                return;
+                                                              }
+                                                              if (_isChoiceTracker(
+                                                                tracker,
+                                                              )) {
+                                                                await _showQuickChoicePicker(
+                                                                  context:
+                                                                      context,
+                                                                  definition:
+                                                                      tracker,
+                                                                  selectedChoiceKey:
+                                                                      state.entryValues[tracker
+                                                                              .id]
+                                                                          as String?,
+                                                                );
+                                                                return;
+                                                              }
+                                                              if (_isNumericTracker(
+                                                                tracker,
+                                                              )) {
+                                                                await _showQuickNumericAdjustSheet(
+                                                                  context:
+                                                                      context,
+                                                                  definition:
+                                                                      tracker,
+                                                                  currentValue:
+                                                                      state
+                                                                          .entryValues[tracker
+                                                                          .id],
+                                                                );
+                                                              }
+                                                            },
+                                                          );
+                                                        },
+                                                      ),
+                                                  ],
+                                                ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                          SizedBox(height: tokens.spaceSm),
+                          TextField(
+                            controller: _noteController,
+                            onChanged: (v) => context
+                                .read<JournalEntryEditorBloc>()
+                                .add(JournalEntryEditorNoteChanged(v)),
+                            maxLines: 5,
+                            enabled: !isSaving,
+                            decoration: InputDecoration(
+                              hintText: l10n.journalWarmNotePlaceholder,
+                              border: const OutlineInputBorder(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     Padding(
                       padding: EdgeInsets.fromLTRB(
                         tokens.spaceMd,
@@ -826,7 +1470,7 @@ class _JournalEntryEditorRoutePageState
                       ),
                       child: SizedBox(
                         width: double.infinity,
-                        child: saveButton,
+                        child: quickSaveButton,
                       ),
                     ),
                   ],
@@ -894,6 +1538,217 @@ class _MoodScalePicker extends StatelessWidget {
   }
 }
 
+class _QuickFiveLevelChoicePicker extends StatelessWidget {
+  const _QuickFiveLevelChoicePicker({
+    required this.title,
+    required this.icon,
+    required this.selectedKey,
+    required this.options,
+    required this.enabled,
+    required this.onSelected,
+  });
+
+  final String title;
+  final IconData icon;
+  final String? selectedKey;
+  final List<TrackerDefinitionChoice> options;
+  final bool enabled;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final sorted = [...options]
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    if (sorted.length != 5) return const SizedBox.shrink();
+
+    String labelFor(TrackerDefinitionChoice choice) {
+      final label = choice.label.trim();
+      return label.isEmpty ? choice.choiceKey.trim() : label;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: tokens.spaceXs),
+        Row(
+          children: [
+            for (var i = 0; i < sorted.length; i++) ...[
+              Expanded(
+                child: _QuickFiveLevelChoiceTile(
+                  icon: icon,
+                  label: labelFor(sorted[i]),
+                  selected: selectedKey == sorted[i].choiceKey,
+                  enabled: enabled,
+                  onTap: () => onSelected(sorted[i].choiceKey),
+                ),
+              ),
+              if (i != sorted.length - 1) SizedBox(width: tokens.spaceXs),
+            ],
+          ],
+        ),
+        SizedBox(height: tokens.spaceXxs),
+        Row(
+          children: [
+            Text(
+              context.l10n.lowLabel,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              context.l10n.highLabel,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickFiveLevelChoiceTile extends StatelessWidget {
+  const _QuickFiveLevelChoiceTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final fg = selected ? scheme.primary : scheme.onSurfaceVariant;
+    final bg = selected
+        ? scheme.primaryContainer.withValues(alpha: 0.45)
+        : scheme.surface;
+    final border = selected ? scheme.primary : scheme.outlineVariant;
+
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(tokens.radiusMd),
+      child: AnimatedContainer(
+        duration: kJournalMotionDuration,
+        curve: kJournalMotionCurve,
+        padding: EdgeInsets.symmetric(
+          vertical: tokens.spaceSm,
+          horizontal: tokens.spaceXxs,
+        ),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(tokens.radiusMd),
+          border: Border.all(color: border),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: fg),
+            SizedBox(height: tokens.spaceXxs),
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: fg,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickFiveLevelRatingPicker extends StatelessWidget {
+  const _QuickFiveLevelRatingPicker({
+    required this.title,
+    required this.icon,
+    required this.selectedValue,
+    required this.enabled,
+    required this.onSelected,
+  });
+
+  final String title;
+  final IconData icon;
+  final int? selectedValue;
+  final bool enabled;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title.toUpperCase(),
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: tokens.spaceXs),
+        Row(
+          children: [
+            for (var i = 1; i <= 5; i++) ...[
+              Expanded(
+                child: _QuickFiveLevelChoiceTile(
+                  icon: icon,
+                  label: '$i',
+                  selected: selectedValue == i,
+                  enabled: enabled,
+                  onTap: () => onSelected(i),
+                ),
+              ),
+              if (i != 5) SizedBox(width: tokens.spaceXs),
+            ],
+          ],
+        ),
+        SizedBox(height: tokens.spaceXxs),
+        Row(
+          children: [
+            Text(
+              context.l10n.lowLabel,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              context.l10n.highLabel,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _MoodOptionButton extends StatelessWidget {
   const _MoodOptionButton({
     required this.mood,
@@ -929,7 +1784,8 @@ class _MoodOptionButton extends StatelessWidget {
         onTap: enabled ? onTap : null,
         borderRadius: BorderRadius.circular(TasklyTokens.of(context).radiusMd),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: kJournalMotionDuration,
+          curve: kJournalMotionCurve,
           width: 68,
           padding: EdgeInsets.symmetric(
             horizontal: TasklyTokens.of(context).spaceSm,
