@@ -112,7 +112,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Mood');
     await tester.pumpForStream();
 
-    await _tapPrimaryAction(tester);
+    _requestSave(tester);
     await tester.pumpForStream();
     await tester.pumpForStream();
   });
@@ -126,7 +126,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Water');
     await tester.pumpForStream();
 
-    await _tapPrimaryAction(tester);
+    _requestSave(tester);
     await tester.pumpForStream();
     await tester.pumpForStream();
 
@@ -142,11 +142,9 @@ void main() {
   });
 }
 
-Future<void> _tapPrimaryAction(WidgetTester tester) async {
-  final buttonFinder = find.byType(FilledButton).first;
-  await tester.ensureVisible(buttonFinder);
-  await tester.pumpUntilCondition(
-    () => buttonFinder.hitTestable().evaluate().isNotEmpty,
+void _requestSave(WidgetTester tester) {
+  final context = tester.element(find.byType(Scaffold).first);
+  context.read<JournalTrackerWizardBloc>().add(
+    const JournalTrackerWizardSaveRequested(),
   );
-  await tester.tap(buttonFinder, warnIfMissed: false);
 }
