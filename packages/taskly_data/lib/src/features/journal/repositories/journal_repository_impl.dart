@@ -315,6 +315,7 @@ class JournalRepositoryImpl
                 source: Value(definition.source),
                 systemKey: Value(definition.systemKey),
                 opKind: Value(definition.opKind),
+                aggregationKind: Value(definition.aggregationKind),
                 valueKind: Value(definition.valueKind),
                 unitKind: Value(definition.unitKind),
                 minInt: Value(definition.minInt),
@@ -351,6 +352,7 @@ class JournalRepositoryImpl
                     source: Value(definition.source),
                     systemKey: Value(definition.systemKey),
                     opKind: Value(definition.opKind),
+                    aggregationKind: Value(definition.aggregationKind),
                     valueKind: Value(definition.valueKind),
                     unitKind: Value(definition.unitKind),
                     minInt: Value(definition.minInt),
@@ -637,6 +639,19 @@ class JournalRepositoryImpl
       () async {
         final trimmed = trackerId.trim();
         if (trimmed.isEmpty) return;
+
+        final trackerRow = await (_database.select(
+          _database.trackerDefinitions,
+        )..where((t) => t.id.equals(trimmed))).getSingleOrNull();
+        if (trackerRow == null) return;
+        final isSystem =
+            trackerRow.source.trim().toLowerCase() == 'system' ||
+            (trackerRow.systemKey?.trim().isNotEmpty ?? false);
+        if (isSystem) {
+          throw RepositoryException(
+            'System tracker deletion is blocked: id=$trimmed',
+          );
+        }
 
         final nowUtc = clock.nowUtc();
 
@@ -944,6 +959,7 @@ class JournalRepositoryImpl
       source: row.source,
       systemKey: row.systemKey,
       opKind: row.opKind,
+      aggregationKind: row.aggregationKind,
       valueKind: row.valueKind,
       unitKind: row.unitKind,
       minInt: row.minInt,

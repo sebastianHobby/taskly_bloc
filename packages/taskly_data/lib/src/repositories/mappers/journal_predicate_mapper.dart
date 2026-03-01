@@ -47,8 +47,11 @@ class JournalPredicateMapper with QueryBuilderMixin {
     JournalDatePredicate predicate,
     $JournalEntriesTable j,
   ) {
-    // entryDate is a native DateTime column
-    final column = j.entryDate;
+    // entryDate/occurredAt/localDate are native DateTime columns.
+    // We match on either to guard against inconsistent date-only storage.
+    final entryColumn = j.entryDate;
+    final occurredColumn = j.occurredAt;
+    final localColumn = j.localDate;
 
     // Handle relative dates
     if (predicate.operator == DateOperator.relative) {
@@ -56,21 +59,48 @@ class JournalPredicateMapper with QueryBuilderMixin {
       final days = predicate.relativeDays;
       if (comp == null || days == null) return const Constant(false);
 
-      return SqlComparisonBuilder.relativeDateTimeComparison(
-        column,
+      final pivot = relativeToAbsolute(days);
+      final entryExpr = SqlComparisonBuilder.relativeDateTimeComparison(
+        entryColumn,
         comp,
-        relativeToAbsolute(days),
+        pivot,
       );
+      final occurredExpr = SqlComparisonBuilder.relativeDateTimeComparison(
+        occurredColumn,
+        comp,
+        pivot,
+      );
+      final localExpr = SqlComparisonBuilder.relativeDateTimeComparison(
+        localColumn,
+        comp,
+        pivot,
+      );
+      return entryExpr | occurredExpr | localExpr;
     }
 
     // Handle absolute dates
-    return SqlComparisonBuilder.dateTimeComparison(
-      column,
+    final entryExpr = SqlComparisonBuilder.dateTimeComparison(
+      entryColumn,
       predicate.operator,
       date: predicate.date,
       startDate: predicate.startDate,
       endDate: predicate.endDate,
     );
+    final occurredExpr = SqlComparisonBuilder.dateTimeComparison(
+      occurredColumn,
+      predicate.operator,
+      date: predicate.date,
+      startDate: predicate.startDate,
+      endDate: predicate.endDate,
+    );
+    final localExpr = SqlComparisonBuilder.dateTimeComparison(
+      localColumn,
+      predicate.operator,
+      date: predicate.date,
+      startDate: predicate.startDate,
+      endDate: predicate.endDate,
+    );
+    return entryExpr | occurredExpr | localExpr;
   }
 
   Expression<bool> _moodPredicateToExpression(

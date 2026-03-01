@@ -1,11 +1,70 @@
 ﻿# Journal 2.0 Mockup Alignment Spec
 
-> Status: Draft
+> Status: In Implementation
 > Owner: TBD
 > Date: 2026-03-01
 
 ## Summary
 This spec defines the agreed UI/UX changes to align Taskly Journal with the mockups in `doc/mockups/**`, plus required supporting changes in presentation, domain, and data layers. It also defines acceptance criteria (AC) and data migration requirements for Supabase. System default trackers are toggle-only in UI and write surfaces, enforced in app logic (no DB hard constraint).
+
+## Implementation Progress (Phased)
+- Phase 1 - Routing + tracker flow surfaces: Completed
+  - Added route-based tracker creation flow (`type -> templates -> configure`) and wired navigation entry points.
+- Phase 2 - Tracker model + persistence updates: Completed
+  - Added `aggregationKind` end-to-end (domain model, drift schema, PowerSync schema, repository mapping).
+- Phase 3 - Manage/Template UX alignment: Completed
+  - Flat template list, system toggle-only language, grouped manage surface with activity/aggregate segment and user group ordering.
+- Phase 4 - Aggregation semantics and safety: Completed
+  - Added aggregate-value resolution (`sum` vs `avg`) in journal day/history/home summaries.
+  - Blocked system tracker deletion in write surface (`deleteTrackerAndData`).
+- Phase 5 - Supporting architecture + test hardening: Completed
+  - Added presentation query service (`journal_tracker_catalog_query_service`).
+  - Updated BLoC tests and fixed reorder edge case (fixed-length list mutation bug).
+- Phase 6 - Supabase migration drafts: Completed
+  - Added migration SQL files for unit expansion and `aggregation_kind` projection updates.
+- Phase 7 - Runtime stability + parity iteration: In Progress
+  - Fixed quick-capture dependency injection path for bottom-sheet context.
+  - Added one-time local DB upgrade repair (`schemaVersion=24`) to normalize `tracker_definitions.aggregation_kind` nulls and prevent stream mapper crashes.
+- Phase 8 - Golden-driven parity iteration: In Progress
+  - Added/updated journal visual golden coverage for:
+    - Home
+    - Quick Capture
+    - Filter Sheet
+    - Insights
+    - Manage Trackers (new)
+  - Refined home timeline + summary density and manage trackers composition toward mockup structure while keeping tracker rows data-driven.
+
+## Strict Side-by-Side Parity Pass (2026-03-01)
+
+### Pass Result
+- Overall parity: Partial (core flows implemented, visual fidelity still behind mockups on Journal Home and Manage Trackers).
+
+### Fixed in this pass
+- Journal runtime error root cause addressed via DB migration path (no legacy runtime fallback logic).
+- Applied migrations to remote via Supabase CLI:
+  - `20260301193000_expand_tracker_unit_kind.sql`
+  - `20260301194000_tracker_aggregation_kind_and_projection.sql`
+- Added local one-time upgrade repair for pre-migration local snapshots (`aggregation_kind` null backfill on DB upgrade).
+- Journal Home header moved closer to mockup:
+  - single-line date title format (`Today, Mar 1` style),
+  - history action preserved.
+- Journal Home add action now opens quick-capture bottom sheet from FAB (mockup-aligned interaction).
+
+### Remaining Visual Delta (High ROI)
+- Journal Home:
+  - mockup uses denser uppercased section headers (`DAILY SUMMARY`, `MOMENTS`) and tighter vertical rhythm.
+  - timeline rail/left metadata spacing still differs from mockup.
+  - insight card presence/placement differs from mockup composition.
+- Manage Trackers:
+  - current tabs (`Trackers/Groups`) differ from mockup single-surface management with top segmented tracker mode.
+  - plus action placement and row action affordances still not mockup-close.
+- Quick Capture:
+  - current content hierarchy is improved but still not visually identical to mockup chip density and section framing.
+
+### Next Patch Targets for Close Match
+- P1: Journal Home density + timeline rail exact spacing and card framing.
+- P1: Manage Trackers screen composition refactor to mockup structure.
+- P2: Quick Capture section spacing, token sizes, and chip rails to match mockup proportions.
 
 ## Goals
 - Match mockup visual hierarchy, density, and interaction patterns.
@@ -166,72 +225,72 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 # Implementation Checklist (File-Level)
 
 ## Routing and Navigation
-- [ ] Add new route keys and builders:
+- [x] Add new route keys and builders:
   - `lib/presentation/routing/routing.dart`
   - `lib/presentation/routing/app_router.dart` (or equivalent route registration)
-- [ ] Wire new route entry points from Journal screens:
+- [x] Wire new route entry points from Journal screens:
   - `lib/presentation/features/journal/view/journal_hub_page.dart`
   - `lib/presentation/features/journal/view/journal_manage_factors_page.dart`
 
 ## Journal Home
-- [ ] Restyle header, summary section, and timeline moments:
+- [x] Restyle header, summary section, and timeline moments:
   - `lib/presentation/features/journal/view/journal_hub_page.dart`
-- [ ] Add/refine compact timeline and summary tile widgets:
+- [x] Add/refine compact timeline and summary tile widgets:
   - `lib/presentation/features/journal/widgets/journal_today_shared_widgets.dart`
   - `lib/presentation/features/journal/widgets/journal_factor_token.dart`
 
 ## Quick Capture Bottom Sheet
-- [ ] Update bottom-sheet editor layout to mockup-aligned structure:
+- [x] Update bottom-sheet editor layout to mockup-aligned structure:
   - `lib/presentation/features/journal/view/journal_entry_editor_route_page.dart`
-- [ ] Remove reset action from quick-capture UI:
+- [x] Remove reset action from quick-capture UI:
   - `lib/presentation/features/journal/view/journal_entry_editor_route_page.dart`
-- [ ] Ensure compact tracker controls:
+- [x] Ensure compact tracker controls:
   - `lib/presentation/features/journal/widgets/tracker_input_widgets.dart`
 
 ## Journal History
-- [ ] Restyle search/filter/day cards:
+- [x] Restyle search/filter/day cards:
   - `lib/presentation/features/journal/view/journal_history_page.dart`
   - `lib/presentation/features/journal/widgets/journal_filters_sheet.dart`
 
 ## Tracker Creation (Route-based)
-- [ ] Create type-selection screen:
+- [x] Create type-selection screen:
   - `lib/presentation/features/journal/view/journal_tracker_type_selection_page.dart` (new)
-- [ ] Create templates flat-list screen:
+- [x] Create templates flat-list screen:
   - `lib/presentation/features/journal/view/journal_tracker_templates_page.dart` (new)
-- [ ] Refactor configure screen from wizard flow:
+- [x] Refactor configure screen from wizard flow:
   - `lib/presentation/features/journal/view/journal_tracker_wizard_page.dart` (or split new page)
-- [ ] Update creation BLoC state transitions:
+- [x] Update creation BLoC state transitions:
   - `lib/presentation/features/journal/bloc/journal_tracker_wizard_bloc.dart`
 
 ## Tracker Catalog Query Service (presentation)
-- [ ] Add unified query service for tracker/group/preference composition:
+- [x] Add unified query service for tracker/group/preference composition:
   - `lib/presentation/features/journal/services/journal_tracker_catalog_query_service.dart` (new)
-- [ ] Consume service in templates/manage/editor surfaces.
+- [x] Consume service in templates/manage/editor surfaces.
 
 ## Domain Contract and Models
-- [ ] Add `aggregationKind` to tracker definition model:
+- [x] Add `aggregationKind` to tracker definition model:
   - `packages/taskly_domain/lib/src/journal/model/tracker_definition.dart`
-- [ ] Update serialization tests:
+- [x] Update serialization tests:
   - `packages/taskly_domain/test/domain/core/model/serialization_misc_models_test.dart`
 
 ## Data Layer
-- [ ] Persist/map `aggregation_kind`:
+- [x] Persist/map `aggregation_kind`:
   - `packages/taskly_data/lib/src/features/journal/repositories/journal_repository_impl.dart`
   - `packages/taskly_data/lib/src/infrastructure/drift/features/tracker_tables.drift.dart`
   - `packages/taskly_data/lib/src/infrastructure/powersync/schema.dart`
 
 ## Supabase Migrations
-- [ ] Migration A: expand `unit_kind` constraint
+- [x] Migration A: expand `unit_kind` constraint
   - `supabase/migrations/<timestamp>_expand_tracker_unit_kind.sql`
-- [ ] Migration B: add `aggregation_kind` + projection updates
+- [x] Migration B: add `aggregation_kind` + projection updates
   - `supabase/migrations/<timestamp>_tracker_aggregation_kind_and_projection.sql`
 
 ## Tests and Validation
-- [ ] Update/add widget tests:
+- [x] Update/add widget tests:
   - `test/presentation/features/journal/**`
-- [ ] Update/add data-layer tests:
+- [x] Update/add data-layer tests:
   - `packages/taskly_data/test/unit/features/journal/**`
-- [ ] Run:
+- [x] Run:
   - `dart analyze`
   - journal widget tests
   - data-layer journal tests

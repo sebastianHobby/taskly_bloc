@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_edi
 import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_insights_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_manage_factors_page.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -56,6 +57,7 @@ void main() {
   late BehaviorSubject<List<JournalEntry>> entriesSubject;
   late BehaviorSubject<List<TrackerEvent>> eventsSubject;
   late BehaviorSubject<List<TrackerGroup>> groupsSubject;
+  late BehaviorSubject<List<TrackerStateDay>> stateDaySubject;
 
   setUp(() {
     repository = MockJournalRepositoryContract();
@@ -65,6 +67,7 @@ void main() {
     entriesSubject = BehaviorSubject<List<JournalEntry>>.seeded(const []);
     eventsSubject = BehaviorSubject<List<TrackerEvent>>.seeded(const []);
     groupsSubject = BehaviorSubject<List<TrackerGroup>>.seeded(const []);
+    stateDaySubject = BehaviorSubject<List<TrackerStateDay>>.seeded(const []);
 
     when(() => homeDayKeyService.todayDayKeyUtc()).thenReturn(
       DateTime.utc(2025, 10, 24),
@@ -75,6 +78,9 @@ void main() {
     when(
       () => repository.watchTrackerGroups(),
     ).thenAnswer((_) => groupsSubject);
+    when(
+      () => repository.watchTrackerPreferences(),
+    ).thenAnswer((_) => Stream.value(const <TrackerPreference>[]));
     when(() => repository.watchJournalEntriesByQuery(any())).thenAnswer(
       (_) => entriesSubject,
     );
@@ -89,7 +95,7 @@ void main() {
     ).thenAnswer((_) => eventsSubject);
     when(
       () => repository.watchTrackerStateDay(range: any(named: 'range')),
-    ).thenAnswer((_) => Stream.value(const <TrackerStateDay>[]));
+    ).thenAnswer((_) => stateDaySubject);
     when(
       () => repository.getJournalEntryById(any()),
     ).thenAnswer((_) async => null);
@@ -118,7 +124,7 @@ void main() {
     when(
       () => settingsRepository.save(
         SettingsKey.microLearningSeen('journal_starter_pack_start_01b'),
-        any(),
+        any<Object?>(),
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
@@ -143,6 +149,7 @@ void main() {
     await entriesSubject.close();
     await eventsSubject.close();
     await groupsSubject.close();
+    await stateDaySubject.close();
   });
 
   void seedHomeData() {
@@ -156,7 +163,32 @@ void main() {
       unitKind: 'oz',
     );
     final socialDef = _trackerDef('social', 'Social Energy');
-    defsSubject.add([moodDef, waterDef, socialDef]);
+    final energyDayDef =
+        _trackerDef(
+          'energy-day',
+          'Energy Level',
+          valueType: 'rating',
+        ).copyWith(
+          scope: 'day',
+          opKind: 'set',
+          minInt: 1,
+          maxInt: 5,
+          stepInt: 1,
+        );
+    final waterDayDef =
+        _trackerDef(
+          'water-day',
+          'Water Intake',
+          valueType: 'quantity',
+          valueKind: 'number',
+          unitKind: 'ml',
+        ).copyWith(
+          scope: 'day',
+          opKind: 'add',
+          stepInt: 250,
+          goal: const {'target': 2500},
+        );
+    defsSubject.add([moodDef, waterDef, socialDef, energyDayDef, waterDayDef]);
 
     final entryA = _entry(day, id: 'entry-a', text: 'Feeling optimistic.');
     final entryB = _entry(
@@ -183,6 +215,97 @@ void main() {
         DateTime(2025, 10, 24, 13, 15),
       ),
       _event('social-a', socialDef.id, entryA.id, 4, day),
+      TrackerEvent(
+        id: 'energy-day-1',
+        trackerId: energyDayDef.id,
+        anchorType: 'day',
+        op: 'set',
+        value: 3,
+        occurredAt: DateTime(2025, 10, 24, 9),
+        recordedAt: DateTime(2025, 10, 24, 9),
+        anchorDate: DateTime(2025, 10, 24),
+      ),
+      TrackerEvent(
+        id: 'water-day-1',
+        trackerId: waterDayDef.id,
+        anchorType: 'day',
+        op: 'add',
+        value: 1250,
+        occurredAt: DateTime(2025, 10, 24, 9),
+        recordedAt: DateTime(2025, 10, 24, 9),
+        anchorDate: DateTime(2025, 10, 24),
+      ),
+    ]);
+    stateDaySubject.add([
+      TrackerStateDay(
+        id: 'state-energy-day',
+        anchorType: 'day',
+        anchorDate: DateTime(2025, 10, 24),
+        trackerId: energyDayDef.id,
+        value: 3,
+        updatedAt: DateTime(2025, 10, 24, 9),
+      ),
+      TrackerStateDay(
+        id: 'state-water-day',
+        anchorType: 'day',
+        anchorDate: DateTime(2025, 10, 24),
+        trackerId: waterDayDef.id,
+        value: 1250,
+        updatedAt: DateTime(2025, 10, 24, 9),
+      ),
+    ]);
+  }
+
+  void seedManageData() {
+    final now = DateTime(2025, 10, 24, 8, 30);
+    groupsSubject.add([
+      TrackerGroup(
+        id: 'sport',
+        name: 'Sport',
+        sortOrder: 10,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      TrackerGroup(
+        id: 'social',
+        name: 'Social',
+        sortOrder: 20,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ]);
+    defsSubject.add([
+      _trackerDef('run', 'Running', valueType: 'yes_no').copyWith(
+        groupId: 'sport',
+        sortOrder: 10,
+      ),
+      _trackerDef('gym', 'Gym', valueType: 'yes_no').copyWith(
+        groupId: 'sport',
+        sortOrder: 20,
+      ),
+      _trackerDef(
+        'water',
+        'Water intake',
+        valueType: 'quantity',
+        valueKind: 'number',
+        unitKind: 'ml',
+      ).copyWith(
+        scope: 'day',
+        opKind: 'add',
+        groupId: 'social',
+        sortOrder: 10,
+      ),
+      _trackerDef(
+        'mood',
+        'Mood',
+        valueType: 'rating',
+        systemKey: 'mood',
+      ).copyWith(
+        source: 'system',
+        sortOrder: 30,
+      ),
     ]);
   }
 
@@ -297,11 +420,30 @@ void main() {
             child: Scaffold(
               body: JournalEntryEditorRoutePage(
                 entryId: null,
-                preselectedTrackerIds: <String>{},
+                preselectedTrackerIds: const <String>{},
                 selectedDayLocal: DateTime(2025, 10, 24),
                 quickCapture: true,
               ),
             ),
+          ),
+        ),
+        GoRoute(
+          path: '/journal/manage-trackers',
+          builder: (_, __) => MultiRepositoryProvider(
+            providers: [
+              RepositoryProvider<JournalRepositoryContract>.value(
+                value: repository,
+              ),
+              RepositoryProvider<NowService>.value(
+                value: _FakeNowService(DateTime(2025, 10, 24, 9)),
+              ),
+              RepositoryProvider<AppErrorReporter>.value(
+                value: AppErrorReporter(
+                  messengerKey: GlobalKey<ScaffoldMessengerState>(),
+                ),
+              ),
+            ],
+            child: const JournalManageFactorsPage(),
           ),
         ),
       ],
@@ -389,6 +531,21 @@ void main() {
     await expectLater(
       find.byType(MaterialApp).first,
       matchesGoldenFile('goldens/journal_insights_dark_harness.png'),
+    );
+  }, skip: skipInCi);
+
+  testWidgetsSafe('journal manage trackers dark snapshot', (tester) async {
+    seedManageData();
+    final router = buildRouter(initialLocation: '/journal/manage-trackers');
+    await pumpHarness(tester, router: router);
+    final ready = await tester.pumpUntilFound(
+      find.byType(JournalManageFactorsPage),
+    );
+    expect(ready, isTrue);
+
+    await expectLater(
+      find.byType(MaterialApp).first,
+      matchesGoldenFile('goldens/journal_manage_trackers_dark_harness.png'),
     );
   }, skip: skipInCi);
 }

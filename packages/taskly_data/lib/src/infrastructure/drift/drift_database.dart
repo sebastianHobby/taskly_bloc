@@ -843,13 +843,38 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     // PowerSync owns the underlying SQLite schema. Avoid destructive drift
     // migrations (like table rebuilds) that could drop synced columns.
-    onUpgrade: (migrator, from, to) async {},
+    onUpgrade: (migrator, from, to) async {
+      if (from < 24) {
+        await customStatement('''
+          UPDATE tracker_definitions
+          SET aggregation_kind = 'sum'
+          WHERE aggregation_kind IS NULL OR TRIM(aggregation_kind) = '';
+        ''');
+      }
+      if (from < 25) {
+        await customStatement('''
+          UPDATE tracker_definitions
+          SET source = 'user'
+          WHERE source IS NULL OR TRIM(source) = '';
+        ''');
+        await customStatement('''
+          UPDATE tracker_definitions
+          SET op_kind = 'set'
+          WHERE op_kind IS NULL OR TRIM(op_kind) = '';
+        ''');
+        await customStatement('''
+          UPDATE tracker_definitions
+          SET aggregation_kind = 'sum'
+          WHERE aggregation_kind IS NULL OR TRIM(aggregation_kind) = '';
+        ''');
+      }
+    },
     beforeOpen: (details) async {
       // Backfill explicit recurrence anchors for legacy repeating entities.
       // U2 semantics require recurring items to have a start date anchor.

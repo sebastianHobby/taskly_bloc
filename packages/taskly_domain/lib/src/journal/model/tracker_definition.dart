@@ -22,6 +22,7 @@ abstract class TrackerDefinition with _$TrackerDefinition {
     @Default('user') String source,
     String? systemKey,
     @Default('set') String opKind,
+    @Default('sum') String aggregationKind,
     String? valueKind,
     String? unitKind,
     int? minInt,

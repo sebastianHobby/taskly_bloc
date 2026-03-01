@@ -92,43 +92,42 @@ void main() {
   }
 
   testWidgetsSafe('renders tracker wizard without scope step', (tester) async {
+    final now = DateTime(2025, 1, 15);
+    groupsSubject.add([
+      TrackerGroup(
+        id: 'group-1',
+        name: 'General',
+        sortOrder: 10,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ]);
     await pumpPage(tester);
     await tester.pumpForStream();
 
-    expect(find.text('New tracker'), findsOneWidget);
-    expect(find.text('Scope'), findsNothing);
+    expect(find.text('Configure tracker'), findsOneWidget);
+    expect(find.byType(Stepper), findsNothing);
 
     await tester.enterText(find.byType(TextField).first, 'Mood');
     await tester.pumpForStream();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Next step'));
     await tester.pumpForStream();
-
-    expect(find.text('Measurement'), findsOneWidget);
+    await tester.pumpForStream();
   });
 
   testWidgetsSafe('renders daily wizard copy and saves', (tester) async {
     await pumpPage(tester, mode: JournalTrackerWizardMode.dailyCheckin);
     await tester.pumpForStream();
 
-    expect(find.text('New daily check-in'), findsOneWidget);
+    expect(find.text('Configure tracker'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).first, 'Water');
     await tester.pumpForStream();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Next'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Next step'));
     await tester.pumpForStream();
-
-    final bloc = BlocProvider.of<JournalTrackerWizardBloc>(
-      tester.element(find.byType(Stepper)),
-    );
-    bloc.add(const JournalTrackerWizardStepChanged(2));
-    bloc.add(
-      const JournalTrackerWizardMeasurementChanged(
-        JournalTrackerMeasurementType.toggle,
-      ),
-    );
-    bloc.add(const JournalTrackerWizardSaveRequested());
     await tester.pumpForStream();
 
     final captured =

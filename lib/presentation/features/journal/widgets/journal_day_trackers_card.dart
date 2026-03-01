@@ -161,11 +161,13 @@ class JournalDayTrackersCard extends StatelessWidget {
   ) {
     final id = definition.id;
     final raw =
+        summary.dayAggregateValuesByTrackerId[id] ??
         summary.dayQuantityTotalsByTrackerId[id] ??
         summary.latestEventByTrackerId[id]?.value;
     final previousRaw = previousSummary == null
         ? null
-        : (previousSummary!.dayQuantityTotalsByTrackerId[id] ??
+        : (previousSummary!.dayAggregateValuesByTrackerId[id] ??
+              previousSummary!.dayQuantityTotalsByTrackerId[id] ??
               previousSummary!.latestEventByTrackerId[id]?.value);
     final numValue = _toDouble(raw);
     final prevNumValue = _toDouble(previousRaw);

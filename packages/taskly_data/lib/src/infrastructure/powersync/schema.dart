@@ -402,6 +402,7 @@ const schema = Schema([
     Column.text('source'),
     Column.text('system_key'),
     Column.text('op_kind'),
+    Column.text('aggregation_kind'),
     Column.text('value_kind'),
     Column.text('unit_kind'),
     Column.integer('min_int'),

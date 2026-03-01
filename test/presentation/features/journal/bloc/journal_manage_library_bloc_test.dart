@@ -48,6 +48,7 @@ void main() {
   late AppErrorReporter errorReporter;
   late TestStreamController<List<TrackerGroup>> groupsController;
   late TestStreamController<List<TrackerDefinition>> defsController;
+  late TestStreamController<List<TrackerPreference>> prefsController;
 
   final nowUtc = DateTime.utc(2025, 1, 15, 12);
 
@@ -66,12 +67,16 @@ void main() {
     );
     groupsController = TestStreamController.seeded(const []);
     defsController = TestStreamController.seeded(const []);
+    prefsController = TestStreamController.seeded(const []);
 
     when(() => repository.watchTrackerGroups()).thenAnswer(
       (_) => groupsController.stream,
     );
     when(() => repository.watchTrackerDefinitions()).thenAnswer(
       (_) => defsController.stream,
+    );
+    when(() => repository.watchTrackerPreferences()).thenAnswer(
+      (_) => prefsController.stream,
     );
     when(
       () => repository.saveTrackerGroup(
@@ -100,15 +105,18 @@ void main() {
 
     addTearDown(groupsController.close);
     addTearDown(defsController.close);
+    addTearDown(prefsController.close);
   });
 
   Future<JournalManageLibraryBloc> pumpLoaded({
     List<TrackerGroup> groups = const <TrackerGroup>[],
     List<TrackerDefinition> defs = const <TrackerDefinition>[],
+    List<TrackerPreference> prefs = const <TrackerPreference>[],
   }) async {
     final bloc = buildBloc();
     groupsController.emit(groups);
     defsController.emit(defs);
+    prefsController.emit(prefs);
     await Future<void>.delayed(const Duration(milliseconds: 20));
     return bloc;
   }
@@ -231,7 +239,7 @@ void main() {
     ).called(greaterThanOrEqualTo(1));
   });
 
-  testSafe('reorderTrackersWithinGroup failure maps to action error', () async {
+  testSafe('reorderTrackersWithinGroup persists updated ordering', () async {
     final defs = [
       _tracker('t-1', 'A', groupId: 'g-1', sort: 0),
       _tracker('t-2', 'B', groupId: 'g-1', sort: 10),
@@ -246,8 +254,12 @@ void main() {
       direction: 1,
     );
 
-    final state = bloc.state as JournalManageLibraryLoaded;
-    expect(state.status, isA<JournalManageLibraryActionError>());
+    verify(
+      () => repository.saveTrackerDefinition(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).called(greaterThanOrEqualTo(1));
   });
 
   testSafe('createGroup failure emits action error status', () async {

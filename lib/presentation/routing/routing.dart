@@ -18,7 +18,7 @@ import 'package:taskly_domain/time.dart';
 ///   - URL segments use hyphens (`my_day` ? `/my-day`).
 /// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
 ///   - Tasks are editor-only: `/task/:id` redirects to `/task/:id/edit`.
-/// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
+/// - **Journal entry editor**: `/journal/entry/:id/edit`
 ///
 /// Screen paths use convention: `screenKey` ? `/${screenKey}` with
 /// underscores converted to hyphens (e.g., `my_day` ? `/my-day`).
@@ -259,42 +259,39 @@ abstract final class Routing {
 
   // === JOURNAL ENTRY EDITOR ROUTES (Journal Today-first) ===
 
-  static void toJournalEntryNew(
-    BuildContext context, {
-    Set<String> preselectedTrackerIds = const <String>{},
-    DateTime? selectedDayLocal,
-  }) {
-    final trackerIds = preselectedTrackerIds
-        .where((id) => id.trim().isNotEmpty)
-        .toList();
-    final queryParameters = <String, String>{};
-    if (trackerIds.isNotEmpty) {
-      queryParameters['trackerIds'] = trackerIds.join(',');
-    }
-    if (selectedDayLocal != null) {
-      final day = DateTime(
-        selectedDayLocal.year,
-        selectedDayLocal.month,
-        selectedDayLocal.day,
-      );
-      queryParameters['day'] = day.toIso8601String();
-    }
-
-    final uri = Uri(
-      path: '/journal/entry/new',
-      queryParameters: queryParameters.isEmpty ? null : queryParameters,
-    );
-
-    GoRouter.of(context).push(uri.toString());
-  }
-
   static void toJournalEntryEdit(BuildContext context, String entryId) {
     if (entryId.trim().isEmpty) return;
     GoRouter.of(context).push('/journal/entry/$entryId/edit');
   }
 
   static void toJournalTrackerWizard(BuildContext context) {
-    GoRouter.of(context).push('/journal/trackers/new');
+    GoRouter.of(context).push('/journal/trackers/type');
+  }
+
+  static void toJournalTrackerTypeSelection(BuildContext context) {
+    GoRouter.of(context).push('/journal/trackers/type');
+  }
+
+  static void toJournalTrackerTemplates(
+    BuildContext context, {
+    required String kind,
+  }) {
+    final uri = Uri(
+      path: '/journal/trackers/templates',
+      queryParameters: <String, String>{'kind': kind},
+    );
+    GoRouter.of(context).push(uri.toString());
+  }
+
+  static void toJournalTrackerConfigure(
+    BuildContext context, {
+    String? kind,
+  }) {
+    final uri = Uri(
+      path: '/journal/trackers/configure',
+      queryParameters: kind == null ? null : <String, String>{'kind': kind},
+    );
+    GoRouter.of(context).push(uri.toString());
   }
 
   static void toJournalDailyCheckinWizard(BuildContext context) {

@@ -17,6 +17,8 @@ enum JournalTrackerScopeOption { day, entry, sleepNight }
 
 enum JournalTrackerMeasurementType { toggle, rating, quantity, choice }
 
+enum JournalTrackerKind { activity, aggregate }
+
 sealed class JournalTrackerWizardEvent {
   const JournalTrackerWizardEvent();
 }
@@ -88,6 +90,20 @@ final class JournalTrackerWizardQuantityConfigChanged
   final int? min;
   final int? max;
   final int step;
+}
+
+final class JournalTrackerWizardAggregationKindChanged
+    extends JournalTrackerWizardEvent {
+  const JournalTrackerWizardAggregationKindChanged(this.aggregationKind);
+
+  final String aggregationKind;
+}
+
+final class JournalTrackerWizardQuantityGoalChanged
+    extends JournalTrackerWizardEvent {
+  const JournalTrackerWizardQuantityGoalChanged(this.goal);
+
+  final int? goal;
 }
 
 final class JournalTrackerWizardChoiceAdded extends JournalTrackerWizardEvent {
@@ -162,6 +178,8 @@ final class JournalTrackerWizardState {
     required this.quantityMin,
     required this.quantityMax,
     required this.quantityStep,
+    required this.quantityGoal,
+    required this.aggregationKind,
     required this.choiceLabels,
   });
 
@@ -182,6 +200,8 @@ final class JournalTrackerWizardState {
       quantityMin: null,
       quantityMax: null,
       quantityStep: 1,
+      quantityGoal: null,
+      aggregationKind: 'sum',
       choiceLabels: <String>[],
     );
   }
@@ -201,6 +221,8 @@ final class JournalTrackerWizardState {
   final int? quantityMin;
   final int? quantityMax;
   final int quantityStep;
+  final int? quantityGoal;
+  final String aggregationKind;
   final List<String> choiceLabels;
 
   JournalTrackerWizardState copyWith({
@@ -219,6 +241,8 @@ final class JournalTrackerWizardState {
     int? quantityMin,
     int? quantityMax,
     int? quantityStep,
+    int? quantityGoal,
+    String? aggregationKind,
     List<String>? choiceLabels,
   }) {
     return JournalTrackerWizardState(
@@ -237,6 +261,8 @@ final class JournalTrackerWizardState {
       quantityMin: quantityMin ?? this.quantityMin,
       quantityMax: quantityMax ?? this.quantityMax,
       quantityStep: quantityStep ?? this.quantityStep,
+      quantityGoal: quantityGoal ?? this.quantityGoal,
+      aggregationKind: aggregationKind ?? this.aggregationKind,
       choiceLabels: choiceLabels ?? this.choiceLabels,
     );
   }
@@ -249,6 +275,7 @@ class JournalTrackerWizardBloc
     required AppErrorReporter errorReporter,
     required DateTime Function() nowUtc,
     this.forcedScope,
+    this.trackerKind,
   }) : _repository = repository,
        _errorReporter = errorReporter,
        _nowUtc = nowUtc,
@@ -262,6 +289,10 @@ class JournalTrackerWizardBloc
     on<JournalTrackerWizardMeasurementChanged>(_onMeasurementChanged);
     on<JournalTrackerWizardRatingConfigChanged>(_onRatingConfigChanged);
     on<JournalTrackerWizardQuantityConfigChanged>(_onQuantityConfigChanged);
+    on<JournalTrackerWizardAggregationKindChanged>(
+      _onAggregationKindChanged,
+    );
+    on<JournalTrackerWizardQuantityGoalChanged>(_onQuantityGoalChanged);
     on<JournalTrackerWizardChoiceAdded>(_onChoiceAdded);
     on<JournalTrackerWizardChoiceRemoved>(_onChoiceRemoved);
     on<JournalTrackerWizardChoiceUpdated>(_onChoiceUpdated);
@@ -275,6 +306,7 @@ class JournalTrackerWizardBloc
   final AppErrorReporter _errorReporter;
   final DateTime Function() _nowUtc;
   final JournalTrackerScopeOption? forcedScope;
+  final JournalTrackerKind? trackerKind;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -343,11 +375,20 @@ class JournalTrackerWizardBloc
                 active.isNotEmpty
             ? active.first.id
             : state.groupId;
+        final defaultScope = switch (trackerKind) {
+          JournalTrackerKind.activity => JournalTrackerScopeOption.entry,
+          JournalTrackerKind.aggregate => JournalTrackerScopeOption.day,
+          null => forcedScope,
+        };
+        final defaultMeasurement = trackerKind == JournalTrackerKind.aggregate
+            ? JournalTrackerMeasurementType.quantity
+            : state.measurement;
         return state.copyWith(
           status: const JournalTrackerWizardIdle(),
           groups: active,
           groupId: defaultGroupId,
-          scope: forcedScope,
+          scope: defaultScope,
+          measurement: defaultMeasurement,
         );
       },
       onError: (e, st) {
@@ -473,6 +514,30 @@ class JournalTrackerWizardBloc
         quantityMin: event.min,
         quantityMax: event.max,
         quantityStep: event.step,
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
+  }
+
+  void _onAggregationKindChanged(
+    JournalTrackerWizardAggregationKindChanged event,
+    Emitter<JournalTrackerWizardState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        aggregationKind: event.aggregationKind.trim().toLowerCase(),
+        status: const JournalTrackerWizardIdle(),
+      ),
+    );
+  }
+
+  void _onQuantityGoalChanged(
+    JournalTrackerWizardQuantityGoalChanged event,
+    Emitter<JournalTrackerWizardState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        quantityGoal: event.goal,
         status: const JournalTrackerWizardIdle(),
       ),
     );
@@ -653,7 +718,9 @@ class JournalTrackerWizardBloc
 
       final opKind = switch (measurement) {
         JournalTrackerMeasurementType.quantity =>
-          (scope == JournalTrackerScopeOption.entry ? 'set' : 'add'),
+          trackerKind == JournalTrackerKind.activity
+              ? 'set'
+              : (scope == JournalTrackerScopeOption.entry ? 'set' : 'add'),
         _ => 'set',
       };
 
@@ -666,6 +733,11 @@ class JournalTrackerWizardBloc
           valueType: valueType,
           valueKind: valueKind,
           opKind: opKind,
+          aggregationKind: measurement == JournalTrackerMeasurementType.quantity
+              ? (trackerKind == JournalTrackerKind.aggregate
+                    ? state.aggregationKind
+                    : 'sum')
+              : 'sum',
           createdAt: now,
           updatedAt: now,
           roles: const <String>[],
@@ -673,7 +745,9 @@ class JournalTrackerWizardBloc
             if (state.iconName != null && state.iconName!.trim().isNotEmpty)
               'iconName': state.iconName!.trim(),
           },
-          goal: const <String, dynamic>{},
+          goal: state.quantityGoal == null
+              ? const <String, dynamic>{}
+              : <String, dynamic>{'target': state.quantityGoal},
           isActive: true,
           sortOrder: groupDefs.length * 10 + 100,
           groupId: state.groupId,

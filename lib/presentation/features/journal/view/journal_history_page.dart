@@ -28,6 +28,7 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
+  JournalHistoryBloc? _historyBloc;
   bool _isLoadMoreInFlight = false;
 
   @override
@@ -51,7 +52,8 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
     if (maxScroll <= 0 || current < maxScroll - 320) return;
     if (_isLoadMoreInFlight) return;
 
-    final bloc = context.read<JournalHistoryBloc>();
+    final bloc = _historyBloc;
+    if (bloc == null || bloc.isClosed) return;
     final filters = switch (bloc.state) {
       JournalHistoryLoading(:final filters) => filters,
       JournalHistoryLoaded(:final filters) => filters,
@@ -66,8 +68,9 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
   void _onSearchChanged(String value, JournalHistoryFilters filters) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 400), () {
-      if (!mounted) return;
-      context.read<JournalHistoryBloc>().add(
+      final bloc = _historyBloc;
+      if (!mounted || bloc == null || bloc.isClosed) return;
+      bloc.add(
         JournalHistoryFiltersChanged(
           filters.copyWith(searchText: value.trim()),
         ),
@@ -92,6 +95,7 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
         },
         child: BlocBuilder<JournalHistoryBloc, JournalHistoryState>(
           builder: (context, state) {
+            _historyBloc = context.read<JournalHistoryBloc>();
             final filters = switch (state) {
               JournalHistoryLoaded(:final filters) => filters,
               JournalHistoryLoading(:final filters) => filters,
@@ -418,7 +422,12 @@ class _HistoryDayCardState extends State<_HistoryDayCard> {
     final tokens = TasklyTokens.of(context);
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final dateLabel = DateFormat.yMMMEd().format(widget.summary.day.toLocal());
+    final dayLocal = DateTime(
+      widget.summary.day.year,
+      widget.summary.day.month,
+      widget.summary.day.day,
+    );
+    final dateLabel = DateFormat.yMMMEd().format(dayLocal);
     final mood = widget.summary.moodAverage;
     final entries = widget.summary.entries;
     final latestNote = entries.isEmpty
@@ -540,6 +549,7 @@ class _HistoryDayCardState extends State<_HistoryDayCard> {
     final rows = <_FactorRow>[];
     for (final definition in definitions) {
       final raw =
+          summary.dayAggregateValuesByTrackerId[definition.id] ??
           summary.dayQuantityTotalsByTrackerId[definition.id] ??
           summary.latestEventByTrackerId[definition.id]?.value;
       final formatted = JournalTrackerValueFormatter.format(

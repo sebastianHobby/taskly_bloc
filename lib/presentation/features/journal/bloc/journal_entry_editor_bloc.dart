@@ -295,16 +295,18 @@ class JournalEntryEditorBloc
     required DateTime selectedDayLocal,
     required DateTime nowUtc,
   }) {
-    return DateTime.utc(
+    final nowLocal = nowUtc.toLocal();
+    final local = DateTime(
       selectedDayLocal.year,
       selectedDayLocal.month,
       selectedDayLocal.day,
-      nowUtc.hour,
-      nowUtc.minute,
-      nowUtc.second,
-      nowUtc.millisecond,
-      nowUtc.microsecond,
+      nowLocal.hour,
+      nowLocal.minute,
+      nowLocal.second,
+      nowLocal.millisecond,
+      nowLocal.microsecond,
     );
+    return local.toUtc();
   }
 
   Object? _effectiveDailyValue(String trackerId) {
@@ -742,7 +744,11 @@ class JournalEntryEditorBloc
               entryDate: dayUtc,
               entryTime: occurredAt,
               occurredAt: occurredAt,
-              localDate: dayUtc,
+              localDate: DateTime(
+                state.selectedDayLocal.year,
+                state.selectedDayLocal.month,
+                state.selectedDayLocal.day,
+              ),
               createdAt: nowUtc,
               updatedAt: nowUtc,
               journalText: state.note.trim().isEmpty ? null : state.note.trim(),

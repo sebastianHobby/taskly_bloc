@@ -56,6 +56,7 @@ class TrackerDefinitions extends Table {
 
   /// Supabase: op_kind in {set, add}
   TextColumn get opKind => text().clientDefault(() => 'set')();
+  TextColumn get aggregationKind => text().clientDefault(() => 'sum')();
 
   /// Supabase: value_kind in {rating, number, boolean, single_choice}
   TextColumn get valueKind => text().nullable()();

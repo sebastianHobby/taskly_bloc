@@ -29,6 +29,9 @@ import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.
 import 'package:taskly_bloc/presentation/features/journal/view/journal_history_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_insights_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_manage_factors_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_tracker_wizard_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_templates_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_type_selection_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
@@ -67,7 +70,7 @@ Widget buildSettingsStatsRoutePage() {
 /// - **System screens (explicit)**: concrete paths like `/my-day`, `/projects`,
 ///   `/scheduled`, etc.
 /// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
-/// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
+/// - **Journal entry editor**: `/journal/entry/:id/edit`
 ///
 /// Note: entity editor routes remain the canonical edit entrypoints.
 GoRouter createRouter({
@@ -298,28 +301,7 @@ GoRouter createRouter({
           // Create + edit are route-backed editor entry points.
           // They open the modal editor and then return (pop).
 
-          // Journal entry editor (create + edit)
-          GoRoute(
-            path: '/journal/entry/new',
-            builder: (_, state) {
-              final csv = state.uri.queryParameters['trackerIds'] ?? '';
-              final ids = csv
-                  .split(',')
-                  .map((s) => s.trim())
-                  .where((s) => s.isNotEmpty)
-                  .toSet();
-              final dayRaw = state.uri.queryParameters['day'];
-              final selectedDay = dayRaw == null
-                  ? null
-                  : DateTime.tryParse(dayRaw);
-
-              return JournalEntryEditorRoutePage(
-                entryId: null,
-                preselectedTrackerIds: ids,
-                selectedDayLocal: selectedDay,
-              );
-            },
-          ),
+          // Journal entry editor (edit)
           GoRoute(
             path: '/journal/entry/:id/edit',
             redirect: (_, state) => RouteCodec.redirectIfInvalidUuidParam(
@@ -509,9 +491,35 @@ GoRouter createRouter({
           ),
           GoRoute(
             path: '/journal/trackers/new',
+            redirect: (_, __) => '/journal/trackers/type',
             builder: (_, __) => const JournalTrackerWizardPage(
               mode: JournalTrackerWizardMode.tracker,
             ),
+          ),
+          GoRoute(
+            path: '/journal/trackers/type',
+            builder: (_, __) => const JournalTrackerTypeSelectionPage(),
+          ),
+          GoRoute(
+            path: '/journal/trackers/templates',
+            builder: (_, state) => JournalTrackerTemplatesPage(
+              kind: state.uri.queryParameters['kind'] ?? 'activity',
+            ),
+          ),
+          GoRoute(
+            path: '/journal/trackers/configure',
+            builder: (_, state) {
+              final rawKind = state.uri.queryParameters['kind']?.toLowerCase();
+              final trackerKind = rawKind == 'aggregate'
+                  ? JournalTrackerKind.aggregate
+                  : rawKind == 'activity'
+                  ? JournalTrackerKind.activity
+                  : null;
+              return JournalTrackerWizardPage(
+                mode: JournalTrackerWizardMode.tracker,
+                trackerKind: trackerKind,
+              );
+            },
           ),
           GoRoute(
             path: '/journal/daily-checkins/new',

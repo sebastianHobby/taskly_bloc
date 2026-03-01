@@ -6,6 +6,7 @@ import 'package:taskly_data/repositories.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/telemetry.dart';
 import 'package:taskly_domain/time.dart';
 
@@ -284,6 +285,57 @@ void main() {
         .firstWhere((rows) => rows.isNotEmpty);
     expect(choices.first.label, 'Home');
   });
+
+  testSafe(
+    'date-filtered query includes entry when localDate matches selected day',
+    () async {
+      final db = createTestDb();
+      addTearDown(() => closeTestDb(db));
+
+      final clock = _FixedClock(DateTime.utc(2025, 1, 16, 2, 30));
+      final idGenerator = FakeIdGenerator('user-1');
+      final journalRepository = JournalRepositoryImpl(
+        db,
+        idGenerator,
+        clock: clock,
+      );
+
+      final selectedDay = DateTime.utc(2025, 1, 15);
+      final occurredAt = DateTime.utc(2025, 1, 15, 23, 30);
+      final entryDate = DateTime.utc(2025, 1, 14);
+
+      final entry = JournalEntry(
+        id: '',
+        entryDate: entryDate,
+        entryTime: occurredAt,
+        occurredAt: occurredAt,
+        localDate: selectedDay,
+        createdAt: occurredAt,
+        updatedAt: occurredAt,
+        journalText: 'Late check-in',
+        deletedAt: null,
+      );
+
+      final context = const OperationContext(
+        correlationId: 'corr-5',
+        feature: 'journal',
+        intent: 'test',
+        operation: 'journal.create',
+      );
+
+      final entryId = await journalRepository.createJournalEntry(
+        entry,
+        context: context,
+      );
+
+      final query = JournalQuery.forDate(selectedDay);
+      final results = await journalRepository
+          .watchJournalEntriesByQuery(query)
+          .firstWhere((entries) => entries.any((e) => e.id == entryId));
+
+      expect(results.map((e) => e.id), contains(entryId));
+    },
+  );
 }
 
 final class _FixedClock implements Clock {

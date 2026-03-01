@@ -1058,7 +1058,7 @@ class JournalHistoryBloc
 
     final entriesByDay = <DateTime, List<JournalEntry>>{};
     for (final entry in entries) {
-      final day = dateOnly(entry.entryDate.toUtc());
+      final day = dateOnly(entry.localDate);
       (entriesByDay[day] ??= <JournalEntry>[]).add(entry);
     }
     for (final dayEntries in entriesByDay.values) {
@@ -1069,6 +1069,8 @@ class JournalHistoryBloc
     final latestEventByDayTracker = <DateTime, Map<String, TrackerEvent>>{};
     final moodValuesByDay = <DateTime, List<int>>{};
     final quantityTotalsByDayTracker = <DateTime, Map<String, double>>{};
+    final numericStatsByDayTracker =
+        <DateTime, Map<String, ({double sum, int count})>>{};
     final daysWithEvents = <DateTime>{};
     for (final event in events) {
       final entryId = event.entryId;
@@ -1097,6 +1099,26 @@ class JournalHistoryBloc
               <String, double>{};
           totalsByTracker[event.trackerId] =
               (totalsByTracker[event.trackerId] ?? 0) + amount;
+        }
+      }
+      if (def != null && _isNumericDefinition(def)) {
+        final amount = switch (event.value) {
+          final int v => v.toDouble(),
+          final double v => v,
+          _ => null,
+        };
+        if (amount != null) {
+          final statsByTracker = numericStatsByDayTracker[day] ??=
+              <String, ({double sum, int count})>{};
+          final current = statsByTracker[event.trackerId];
+          if (current == null) {
+            statsByTracker[event.trackerId] = (sum: amount, count: 1);
+          } else {
+            statsByTracker[event.trackerId] = (
+              sum: current.sum + amount,
+              count: current.count + 1,
+            );
+          }
         }
       }
 
@@ -1132,11 +1154,42 @@ class JournalHistoryBloc
             moodAverage: _average(moodValuesByDay[day]),
             dayQuantityTotalsByTrackerId:
                 quantityTotalsByDayTracker[day] ?? const <String, double>{},
+            dayAggregateValuesByTrackerId: _resolveDayAggregateValues(
+              definitionById: definitionById,
+              numericStatsByTrackerId:
+                  numericStatsByDayTracker[day] ??
+                  const <String, ({double sum, int count})>{},
+            ),
             factorTrackerIds: factorTrackerIds,
             choiceLabelsByTrackerId: choiceLabelsByTrackerId,
           );
         }(),
     ];
+  }
+
+  Map<String, double> _resolveDayAggregateValues({
+    required Map<String, TrackerDefinition> definitionById,
+    required Map<String, ({double sum, int count})> numericStatsByTrackerId,
+  }) {
+    if (numericStatsByTrackerId.isEmpty) return const <String, double>{};
+    final out = <String, double>{};
+    for (final entry in numericStatsByTrackerId.entries) {
+      final definition = definitionById[entry.key];
+      if (definition == null) continue;
+      final stats = entry.value;
+      if (stats.count <= 0) continue;
+      final valueType = definition.valueType.trim().toLowerCase();
+      final opKind = definition.opKind.trim().toLowerCase();
+      final aggregationKind = definition.aggregationKind.trim().toLowerCase();
+      if (aggregationKind == 'avg' || valueType == 'rating') {
+        out[entry.key] = stats.sum / stats.count;
+        continue;
+      }
+      if (opKind == 'add') {
+        out[entry.key] = stats.sum;
+      }
+    }
+    return out;
   }
 
   Future<Map<String, Map<String, String>>> _buildChoiceLabelsByTrackerId(
@@ -1273,6 +1326,14 @@ class JournalHistoryBloc
     final valueType = d.valueType.trim().toLowerCase();
     final valueKind = (d.valueKind ?? '').trim().toLowerCase();
     return valueType == 'quantity' || valueKind == 'number';
+  }
+
+  bool _isNumericDefinition(TrackerDefinition d) {
+    final valueType = d.valueType.trim().toLowerCase();
+    final valueKind = (d.valueKind ?? '').trim().toLowerCase();
+    return valueType == 'quantity' ||
+        valueType == 'rating' ||
+        valueKind == 'number';
   }
 
   double? _average(List<int>? values) {
@@ -1420,6 +1481,7 @@ final class JournalHistoryDaySummary {
     required this.moodTrackerId,
     required this.moodAverage,
     required this.dayQuantityTotalsByTrackerId,
+    required this.dayAggregateValuesByTrackerId,
     required this.factorTrackerIds,
     required this.choiceLabelsByTrackerId,
   });
@@ -1432,6 +1494,7 @@ final class JournalHistoryDaySummary {
   final String? moodTrackerId;
   final double? moodAverage;
   final Map<String, double> dayQuantityTotalsByTrackerId;
+  final Map<String, double> dayAggregateValuesByTrackerId;
   final Set<String> factorTrackerIds;
   final Map<String, Map<String, String>> choiceLabelsByTrackerId;
 }

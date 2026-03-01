@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_day_trackers_card.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -110,6 +111,7 @@ class _DayDetailBody extends StatelessWidget {
         moodTrackerId: null,
         moodAverage: null,
         dayQuantityTotalsByTrackerId: const <String, double>{},
+        dayAggregateValuesByTrackerId: const <String, double>{},
         factorTrackerIds: const <String>{},
         choiceLabelsByTrackerId: const <String, Map<String, String>>{},
       ),
@@ -180,8 +182,10 @@ class _DayDetailBody extends StatelessWidget {
               ),
             ),
             TextButton(
-              onPressed: () =>
-                  Routing.toJournalEntryNew(context, selectedDayLocal: day),
+              onPressed: () => JournalEntryEditorRoutePage.showQuickCapture(
+                context,
+                selectedDayLocal: day,
+              ),
               child: Text(context.l10n.journalAddEntry),
             ),
           ],

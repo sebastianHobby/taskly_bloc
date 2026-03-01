@@ -89,13 +89,15 @@ void main() {
     String? entryId,
     Set<String>? preselected,
     DateTime? selectedDayLocal,
+    DateTime? nowUtcOverride,
   }) {
+    final resolvedNowUtc = nowUtcOverride ?? nowUtc;
     return JournalEntryEditorBloc(
       repository: repository,
       errorReporter: errorReporter,
       entryId: entryId,
       preselectedTrackerIds: preselected ?? const {},
-      nowUtc: () => nowUtc,
+      nowUtc: () => resolvedNowUtc,
       selectedDayLocal: selectedDayLocal,
     );
   }
@@ -317,6 +319,68 @@ void main() {
       for (final forwarded in captured.whereType<OperationContext>().skip(1)) {
         expect(forwarded.correlationId, ctx.correlationId);
       }
+    },
+  );
+
+  blocTestSafe<JournalEntryEditorBloc, JournalEntryEditorState>(
+    'save uses selected day with local time for occurredAt',
+    build: () {
+      final nowUtcForTest = DateTime.utc(2025, 1, 16, 2, 30);
+      final nowLocal = nowUtcForTest.toLocal();
+      final selectedDayLocal = DateTime(
+        nowLocal.year,
+        nowLocal.month,
+        nowLocal.day,
+      );
+      return buildBloc(
+        nowUtcOverride: nowUtcForTest,
+        selectedDayLocal: selectedDayLocal,
+      );
+    },
+    seed: () {
+      final nowUtcForTest = DateTime.utc(2025, 1, 16, 2, 30);
+      final nowLocal = nowUtcForTest.toLocal();
+      final selectedDayLocal = DateTime(
+        nowLocal.year,
+        nowLocal.month,
+        nowLocal.day,
+      );
+      return JournalEntryEditorState.initial(entryId: null).copyWith(
+        status: const JournalEntryEditorIdle(),
+        selectedDayLocal: selectedDayLocal,
+        moodTrackerId: 'mood',
+        mood: MoodRating.good,
+      );
+    },
+    act: (bloc) => bloc.add(const JournalEntryEditorSaveRequested()),
+    verify: (_) {
+      final nowUtcForTest = DateTime.utc(2025, 1, 16, 2, 30);
+      final nowLocal = nowUtcForTest.toLocal();
+      final selectedDayLocal = DateTime(
+        nowLocal.year,
+        nowLocal.month,
+        nowLocal.day,
+      );
+      final expectedLocal = DateTime(
+        selectedDayLocal.year,
+        selectedDayLocal.month,
+        selectedDayLocal.day,
+        nowLocal.hour,
+        nowLocal.minute,
+        nowLocal.second,
+        nowLocal.millisecond,
+        nowLocal.microsecond,
+      );
+
+      final captured = verify(
+        () => repository.createJournalEntry(
+          captureAny(),
+          context: any(named: 'context'),
+        ),
+      ).captured;
+      final entry =
+          captured.firstWhere((item) => item is JournalEntry) as JournalEntry;
+      expect(entry.occurredAt, expectedLocal.toUtc());
     },
   );
 

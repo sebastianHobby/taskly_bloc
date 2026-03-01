@@ -16,7 +16,7 @@ void main() {
       () async {
         final db = createAutoClosingDb();
 
-        expect(db.schemaVersion, equals(23));
+        expect(db.schemaVersion, equals(25));
         expect(db.migration, isNotNull);
         expect(ExceptionType.skip.name, equals('skip'));
         expect(ExceptionType.reschedule.name, equals('reschedule'));

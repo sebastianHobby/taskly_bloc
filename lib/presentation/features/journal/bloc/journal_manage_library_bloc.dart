@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
+import 'package:taskly_bloc/presentation/features/journal/services/journal_tracker_catalog_query_service.dart';
 import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -197,9 +198,13 @@ class JournalManageLibraryBloc
     required JournalRepositoryContract repository,
     required AppErrorReporter errorReporter,
     required DateTime Function() nowUtc,
+    JournalTrackerCatalogQueryService? queryService,
   }) : _repository = repository,
        _errorReporter = errorReporter,
        _nowUtc = nowUtc,
+       _queryService =
+           queryService ??
+           JournalTrackerCatalogQueryService(repository: repository),
        super(const JournalManageLibraryLoading()) {
     on<JournalManageLibraryStarted>(_onStarted);
     on<JournalManageLibraryCreateGroupRequested>(_onCreateGroupRequested);
@@ -229,6 +234,7 @@ class JournalManageLibraryBloc
   final JournalRepositoryContract _repository;
   final AppErrorReporter _errorReporter;
   final DateTime Function() _nowUtc;
+  final JournalTrackerCatalogQueryService _queryService;
 
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
@@ -320,65 +326,68 @@ class JournalManageLibraryBloc
     JournalManageLibraryStarted event,
     Emitter<JournalManageLibraryState> emit,
   ) async {
-    final groups$ = _repository.watchTrackerGroups().startWith(
-      const <TrackerGroup>[],
+    final combined$ = _queryService.watchCatalog().startWith(
+      const JournalTrackerCatalogSnapshot(
+        groups: <TrackerGroup>[],
+        trackers: <TrackerDefinition>[],
+        preferences: <TrackerPreference>[],
+      ),
     );
-    final defs$ = _repository.watchTrackerDefinitions().startWith(
-      const <TrackerDefinition>[],
-    );
 
-    final combined$ =
-        Rx.combineLatest2<
-          List<TrackerGroup>,
-          List<TrackerDefinition>,
-          ({List<TrackerGroup> groups, List<TrackerDefinition> defs})
-        >(groups$, defs$, (groups, defs) => (groups: groups, defs: defs));
+    await emit.forEach<JournalTrackerCatalogSnapshot>(
+      combined$,
+      onData: (data) {
+        final groups =
+            data.groups.where((g) => g.isActive).toList(growable: false)
+              ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
-    await emit
-        .forEach<({List<TrackerGroup> groups, List<TrackerDefinition> defs})>(
-          combined$,
-          onData: (data) {
-            final groups =
-                data.groups.where((g) => g.isActive).toList(growable: false)
-                  ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+        final prefsByTrackerId = data.preferencesByTrackerId;
+        final defs =
+            data.trackers
+                .where((d) => d.deletedAt == null)
+                .toList(growable: false)
+              ..sort((a, b) {
+                final prefA = prefsByTrackerId[a.id]?.sortOrder;
+                final prefB = prefsByTrackerId[b.id]?.sortOrder;
+                if (prefA != null && prefB != null && prefA != prefB) {
+                  return prefA.compareTo(prefB);
+                }
+                if (prefA != null && prefB == null) return -1;
+                if (prefA == null && prefB != null) return 1;
+                return a.sortOrder.compareTo(b.sortOrder);
+              });
 
-            final defs =
-                data.defs
-                    .where((d) => d.deletedAt == null)
-                    .toList(growable: false)
-                  ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+        final prevStatus = state is JournalManageLibraryLoaded
+            ? (state as JournalManageLibraryLoaded).status
+            : const JournalManageLibraryIdle();
 
-            final prevStatus = state is JournalManageLibraryLoaded
-                ? (state as JournalManageLibraryLoaded).status
-                : const JournalManageLibraryIdle();
-
-            return JournalManageLibraryLoaded(
-              groups: groups,
-              trackers: defs,
-              status: prevStatus,
-            );
-          },
-          onError: (e, st) {
-            final context = _newContext(
-              intent: 'stream_error',
-              operation: 'journal.watchTrackerGroups+definitions',
-            );
-
-            _reportIfUnexpectedOrUnmapped(
-              e,
-              st,
-              context: context,
-              message: '[JournalManageLibraryBloc] stream error',
-            );
-
-            return JournalManageLibraryError(
-              _uiMessageFor(
-                e,
-                fallback: 'Failed to load trackers. Please try again.',
-              ),
-            );
-          },
+        return JournalManageLibraryLoaded(
+          groups: groups,
+          trackers: defs,
+          status: prevStatus,
         );
+      },
+      onError: (e, st) {
+        final context = _newContext(
+          intent: 'stream_error',
+          operation: 'journal.watchTrackerCatalog',
+        );
+
+        _reportIfUnexpectedOrUnmapped(
+          e,
+          st,
+          context: context,
+          message: '[JournalManageLibraryBloc] stream error',
+        );
+
+        return JournalManageLibraryError(
+          _uiMessageFor(
+            e,
+            fallback: 'Failed to load trackers. Please try again.',
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _onCreateGroupRequested(
@@ -871,7 +880,7 @@ class JournalManageLibraryBloc
     final defs =
         _defsOrEmpty()
             .where((d) => (d.groupId ?? '') == (event.groupId ?? ''))
-            .toList(growable: false)
+            .toList()
           ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     final idx = defs.indexWhere((d) => d.id == event.trackerId);
