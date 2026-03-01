@@ -134,9 +134,10 @@ void main() {
     ).thenThrow(StateError('missing'));
 
     await pumpPage(tester, entryId: 'entry-1');
-    await tester.pumpForStream();
-
-    expect(find.textContaining('Failed to load log'), findsOneWidget);
+    final found = await tester.pumpUntilFound(
+      find.textContaining('Failed to load log'),
+    );
+    expect(found, isTrue);
   });
 
   testWidgetsSafe('renders editor content when loaded', (tester) async {
@@ -239,9 +240,10 @@ void main() {
 
     await _tapMood(tester, 'Good');
     await _tapSaveLog(tester);
-    await tester.pumpForStream();
-
-    expect(find.textContaining('Failed to save log'), findsOneWidget);
+    final found = await tester.pumpUntilFound(
+      find.textContaining('Failed to save log'),
+    );
+    expect(found, isTrue);
   });
 
   testWidgetsSafe('save button enabled only after edits on existing entry', (

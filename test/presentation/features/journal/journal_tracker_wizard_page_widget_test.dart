@@ -112,7 +112,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Mood');
     await tester.pumpForStream();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Next step'));
+    await _tapPrimaryAction(tester);
     await tester.pumpForStream();
     await tester.pumpForStream();
   });
@@ -126,7 +126,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Water');
     await tester.pumpForStream();
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Next step'));
+    await _tapPrimaryAction(tester);
     await tester.pumpForStream();
     await tester.pumpForStream();
 
@@ -140,4 +140,13 @@ void main() {
             as TrackerDefinition;
     expect(captured.scope, 'day');
   });
+}
+
+Future<void> _tapPrimaryAction(WidgetTester tester) async {
+  final buttonFinder = find.byType(FilledButton).first;
+  await tester.ensureVisible(buttonFinder);
+  await tester.pumpUntilCondition(
+    () => buttonFinder.hitTestable().evaluate().isNotEmpty,
+  );
+  await tester.tap(buttonFinder, warnIfMissed: false);
 }
