@@ -101,7 +101,7 @@ void main() {
     expect(panelTheme!.subtleSurface, theme.colorScheme.surfaceContainerLow);
     expect(
       cardTheme!.surface(TasklyCardVariant.subtle),
-      theme.colorScheme.surfaceContainerLow,
+      theme.colorScheme.surfaceContainerLowest,
     );
     expect(
       chipTheme!.background(TasklyChipVariant.status),

@@ -13,6 +13,8 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
+import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -64,6 +66,12 @@ class _TodayJournalBody extends StatelessWidget {
         tokens.spaceLg,
       ),
       children: [
+        TasklyPageHeader(
+          icon: Icons.auto_stories_outlined,
+          title: context.l10n.journalTitle,
+          subtitle:
+              '${context.l10n.dateToday}, ${DateFormat.MMMd().format(todayLocal)}',
+        ),
         _SectionHeader(
           title: context.l10n.journalDailySummaryTitle.toUpperCase(),
           trailing: TextButton(
@@ -90,17 +98,9 @@ class _TodayJournalBody extends StatelessWidget {
         _SectionHeader(title: context.l10n.journalMomentsTitle.toUpperCase()),
         SizedBox(height: tokens.spaceSm),
         if (todaySummary.entries.isEmpty)
-          Container(
+          TasklyCardSurface(
+            variant: TasklyCardVariant.subtle,
             padding: EdgeInsets.all(tokens.spaceMd),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLow.withValues(
-                alpha: 0.72,
-              ),
-              borderRadius: BorderRadius.circular(tokens.radiusLg),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.34),
-              ),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -410,29 +410,19 @@ class _JournalHubPageState extends State<JournalHubPage> {
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
                 scrolledUnderElevation: 0,
-                title: Text(
-                  '${context.l10n.dateToday}, ${DateFormat.MMMd().format(todayLocal)}',
-                  style:
-                      Theme.of(
-                        context,
-                      ).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                ),
                 actions: [
-                  IconButton(
+                  TasklyChromeIconButton(
                     tooltip: context.l10n.journalManageTrackersTitle,
                     onPressed: () => Routing.pushScreenKey(
                       context,
                       'journal_manage_factors',
                     ),
-                    icon: const Icon(Icons.monitor_heart_outlined),
+                    icon: Icons.monitor_heart_outlined,
                   ),
-                  IconButton(
+                  TasklyChromeIconButton(
                     tooltip: context.l10n.journalHistoryTitle,
                     onPressed: () => Routing.toJournalHistory(context),
-                    icon: const Icon(Icons.history),
+                    icon: Icons.history,
                   ),
                 ],
               ),
@@ -543,7 +533,6 @@ class _TopInsightCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final theme = Theme.of(context);
-    final panelTheme = TasklyPanelTheme.of(context);
     final deltaValue = insight.deltaMood.abs().toStringAsFixed(1);
     final delta = insight.deltaMood >= 0 ? '+$deltaValue' : '-$deltaValue';
     final confidenceLabel = insight.confidence == JournalInsightConfidence.high
@@ -552,26 +541,8 @@ class _TopInsightCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(tokens.radiusLg),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              panelTheme.emphasizedSurface,
-              panelTheme.subtleSurface,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(tokens.radiusLg),
-          border: Border.all(color: panelTheme.mutedBorder),
-          boxShadow: [
-            BoxShadow(
-              color: panelTheme.softShadow,
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
+      child: TasklyCardSurface(
+        variant: TasklyCardVariant.insight,
         padding: EdgeInsets.all(tokens.spaceMd),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -647,21 +618,8 @@ class _InsightsNudgeCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(tokens.radiusLg),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              theme.colorScheme.surfaceContainer,
-              theme.colorScheme.surfaceContainerLow,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(tokens.radiusLg),
-          border: Border.all(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.42),
-          ),
-        ),
+      child: TasklyCardSurface(
+        variant: TasklyCardVariant.maintenance,
         padding: EdgeInsets.all(tokens.spaceMd),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,

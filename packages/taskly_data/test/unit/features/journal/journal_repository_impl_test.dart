@@ -700,6 +700,42 @@ void main() {
         expect(trackerEvents, hasLength(1));
         expect(trackerEvents.single.trackerId, 'mood');
         expect(trackerEvents.single.value, 5);
+        expect(trackerEvents.single.anchorDate, isNull);
+        expect(trackerEvents.single.entryId, entryId);
+      },
+    );
+
+    testSafe(
+      'appendTrackerEvent clears anchorDate for entry-scoped events',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = JournalRepositoryImpl(
+          db,
+          IdGenerator.withUserId('user-1'),
+        );
+        final now = DateTime.utc(2025, 1, 2, 10);
+
+        await repo.appendTrackerEvent(
+          TrackerEvent(
+            id: '',
+            trackerId: 'mood',
+            anchorType: 'entry',
+            entryId: 'entry-1',
+            anchorDate: DateTime.utc(2025, 1, 2),
+            op: 'set',
+            value: 4,
+            occurredAt: now,
+            recordedAt: now,
+          ),
+        );
+
+        final trackerEvents = await repo
+            .watchTrackerEvents(anchorType: 'entry', entryId: 'entry-1')
+            .first;
+
+        expect(trackerEvents, hasLength(1));
+        expect(trackerEvents.single.anchorDate, isNull);
+        expect(trackerEvents.single.entryId, 'entry-1');
       },
     );
 

@@ -16,6 +16,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_chrome.dart';
+import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -114,9 +115,8 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
               backgroundColor: Colors.transparent,
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
-                title: Text(context.l10n.journalHistoryTitle),
                 actions: [
-                  IconButton(
+                  TasklyChromeIconButton(
                     tooltip: context.l10n.filtersLabel,
                     onPressed: state is JournalHistoryLoaded
                         ? () => showJournalFiltersSheet(
@@ -131,28 +131,44 @@ class _JournalHistoryPageState extends State<JournalHistoryPage> {
                             },
                           )
                         : null,
-                    icon: const Icon(Icons.filter_alt_outlined),
+                    icon: Icons.filter_alt_outlined,
                   ),
                 ],
               ),
-              body: switch (state) {
-                JournalHistoryLoading() => const Center(
-                  child: CircularProgressIndicator(),
+              body: TasklyPageGradientSurface(
+                child: Column(
+                  children: [
+                    TasklyPageHeader(
+                      icon: Icons.history_rounded,
+                      title: context.l10n.journalHistoryTitle,
+                      subtitle: context.l10n.journalDateRangeTitle,
+                    ),
+                    Expanded(
+                      child: switch (state) {
+                        JournalHistoryLoading() => const Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                        JournalHistoryError(:final message) => Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(
+                              TasklyTokens.of(context).spaceLg,
+                            ),
+                            child: Text(message),
+                          ),
+                        ),
+                        JournalHistoryLoaded() => _HistoryBody(
+                          state: state,
+                          filters: filters,
+                          scrollController: _scrollController,
+                          searchController: _searchController,
+                          onSearchChanged: (value) =>
+                              _onSearchChanged(value, filters),
+                        ),
+                      },
+                    ),
+                  ],
                 ),
-                JournalHistoryError(:final message) => Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(TasklyTokens.of(context).spaceLg),
-                    child: Text(message),
-                  ),
-                ),
-                JournalHistoryLoaded() => _HistoryBody(
-                  state: state,
-                  filters: filters,
-                  scrollController: _scrollController,
-                  searchController: _searchController,
-                  onSearchChanged: (value) => _onSearchChanged(value, filters),
-                ),
-              },
+              ),
             );
           },
         ),
@@ -198,96 +214,94 @@ class _HistoryBody extends StatelessWidget {
     final hasDateRange = filters.rangeStart != null && filters.rangeEnd != null;
     final days = state.days;
 
-    return TasklyPageGradientSurface(
-      child: ListView(
-        controller: scrollController,
-        padding: EdgeInsets.fromLTRB(
-          tokens.spaceLg,
-          tokens.spaceSm,
-          tokens.spaceLg,
-          tokens.spaceLg,
-        ),
-        children: [
-          TextField(
-            controller: searchController,
-            decoration: InputDecoration(
-              labelText: context.l10n.journalSearchEntriesLabel,
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: searchController.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: context.l10n.clearLabel,
-                      onPressed: () {
-                        searchController.clear();
-                        onSearchChanged('');
-                      },
-                      icon: const Icon(Icons.close),
-                    ),
-            ),
-            onChanged: onSearchChanged,
-          ),
-          SizedBox(height: tokens.spaceSm),
-          _HistoryAppliedFiltersRow(
-            filters: filters,
-            factorDefinitions: state.factorDefinitions,
-            factorGroups: state.factorGroups,
-            onClear: () {
-              context.read<JournalHistoryBloc>().add(
-                JournalHistoryFiltersChanged(_clearedFilters(filters)),
-              );
-            },
-          ),
-          if (days.isEmpty)
-            Padding(
-              padding: EdgeInsets.only(top: tokens.spaceLg),
-              child: Column(
-                children: [
-                  Text(
-                    hasFilters
-                        ? context.l10n.journalNoMatchingMomentsForFilters
-                        : context.l10n.journalNoRecentLogs,
-                    textAlign: TextAlign.center,
-                  ),
-                  if (hasFilters) ...[
-                    SizedBox(height: tokens.spaceSm),
-                    FilledButton(
-                      onPressed: () {
-                        context.read<JournalHistoryBloc>().add(
-                          JournalHistoryFiltersChanged(
-                            _clearedFilters(filters),
-                          ),
-                        );
-                      },
-                      child: Text(context.l10n.resetLabel),
-                    ),
-                  ],
-                  if (!hasDateRange) ...[
-                    SizedBox(height: tokens.spaceSm),
-                    OutlinedButton(
-                      onPressed: () {
-                        context.read<JournalHistoryBloc>().add(
-                          const JournalHistoryLoadMoreRequested(),
-                        );
-                      },
-                      child: Text(context.l10n.journalLoadOlderEntriesLabel),
-                    ),
-                  ],
-                ],
-              ),
-            )
-          else ...[
-            SizedBox(height: tokens.spaceSm),
-            for (final summary in days)
-              Padding(
-                padding: EdgeInsets.only(bottom: tokens.spaceSm),
-                child: _HistoryDayCard(
-                  summary: summary,
-                  dayTrackerDefinitions: state.dayTrackerDefinitions,
-                ),
-              ),
-          ],
-        ],
+    return ListView(
+      controller: scrollController,
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceLg,
+        tokens.spaceSm,
+        tokens.spaceLg,
+        tokens.spaceLg,
       ),
+      children: [
+        TextField(
+          controller: searchController,
+          decoration: InputDecoration(
+            labelText: context.l10n.journalSearchEntriesLabel,
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: searchController.text.isEmpty
+                ? null
+                : IconButton(
+                    tooltip: context.l10n.clearLabel,
+                    onPressed: () {
+                      searchController.clear();
+                      onSearchChanged('');
+                    },
+                    icon: const Icon(Icons.close),
+                  ),
+          ),
+          onChanged: onSearchChanged,
+        ),
+        SizedBox(height: tokens.spaceSm),
+        _HistoryAppliedFiltersRow(
+          filters: filters,
+          factorDefinitions: state.factorDefinitions,
+          factorGroups: state.factorGroups,
+          onClear: () {
+            context.read<JournalHistoryBloc>().add(
+              JournalHistoryFiltersChanged(_clearedFilters(filters)),
+            );
+          },
+        ),
+        if (days.isEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.spaceLg),
+            child: Column(
+              children: [
+                Text(
+                  hasFilters
+                      ? context.l10n.journalNoMatchingMomentsForFilters
+                      : context.l10n.journalNoRecentLogs,
+                  textAlign: TextAlign.center,
+                ),
+                if (hasFilters) ...[
+                  SizedBox(height: tokens.spaceSm),
+                  FilledButton(
+                    onPressed: () {
+                      context.read<JournalHistoryBloc>().add(
+                        JournalHistoryFiltersChanged(
+                          _clearedFilters(filters),
+                        ),
+                      );
+                    },
+                    child: Text(context.l10n.resetLabel),
+                  ),
+                ],
+                if (!hasDateRange) ...[
+                  SizedBox(height: tokens.spaceSm),
+                  OutlinedButton(
+                    onPressed: () {
+                      context.read<JournalHistoryBloc>().add(
+                        const JournalHistoryLoadMoreRequested(),
+                      );
+                    },
+                    child: Text(context.l10n.journalLoadOlderEntriesLabel),
+                  ),
+                ],
+              ],
+            ),
+          )
+        else ...[
+          SizedBox(height: tokens.spaceSm),
+          for (final summary in days)
+            Padding(
+              padding: EdgeInsets.only(bottom: tokens.spaceSm),
+              child: _HistoryDayCard(
+                summary: summary,
+                dayTrackerDefinitions: state.dayTrackerDefinitions,
+              ),
+            ),
+        ],
+      ],
     );
   }
 }
@@ -413,7 +427,6 @@ class _HistoryDayCardState extends State<_HistoryDayCard> {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final theme = Theme.of(context);
-    final panelTheme = TasklyPanelTheme.of(context);
     final l10n = context.l10n;
     final dayLocal = DateTime(
       widget.summary.day.year,
@@ -448,13 +461,9 @@ class _HistoryDayCardState extends State<_HistoryDayCard> {
         duration: kJournalMotionDuration,
         curve: kJournalMotionCurve,
         scale: _pressed ? 0.988 : 1,
-        child: Container(
+        child: TasklyCardSurface(
+          variant: TasklyCardVariant.summary,
           padding: EdgeInsets.all(tokens.spaceMd),
-          decoration: BoxDecoration(
-            color: panelTheme.subtleSurface,
-            borderRadius: BorderRadius.circular(tokens.radiusLg),
-            border: Border.all(color: panelTheme.border),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -625,7 +625,14 @@ void main() {
               'Updated note',
             ),
           ),
-          trackerEvents: any(named: 'trackerEvents'),
+          trackerEvents: any(
+            named: 'trackerEvents',
+            that: isA<List<TrackerEvent>>().having(
+              (events) => events.every((event) => event.anchorDate == null),
+              'all entry events omit anchorDate',
+              isTrue,
+            ),
+          ),
           context: any(named: 'context'),
         ),
       ).called(1);

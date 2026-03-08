@@ -7,6 +7,7 @@ class TasklyPageHeader extends StatelessWidget {
   const TasklyPageHeader({
     required this.icon,
     required this.title,
+    this.variant = TasklyHeaderVariant.screen,
     this.trailing,
     this.subtitle,
     this.footer,
@@ -15,6 +16,7 @@ class TasklyPageHeader extends StatelessWidget {
 
   final IconData icon;
   final String title;
+  final TasklyHeaderVariant variant;
   final Widget? trailing;
   final String? subtitle;
   final Widget? footer;
@@ -24,19 +26,28 @@ class TasklyPageHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
     final headerTheme = TasklyPageHeaderTheme.of(context);
-
-    return Padding(
-      padding: headerTheme.padding,
+    final shouldDecorate = variant != TasklyHeaderVariant.compact;
+    final content = Padding(
+      padding: headerTheme.contentPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(
-                icon,
-                color: headerTheme.iconColor,
-                size: headerTheme.iconSize,
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: headerTheme.iconSurface,
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(headerTheme.iconContainerPadding),
+                  child: Icon(
+                    icon,
+                    color: headerTheme.iconColor,
+                    size: headerTheme.iconSize,
+                  ),
+                ),
               ),
               SizedBox(width: tokens.spaceSm),
               Expanded(
@@ -52,7 +63,7 @@ class TasklyPageHeader extends StatelessWidget {
             ],
           ),
           if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
-            SizedBox(height: tokens.spaceXxs),
+            SizedBox(height: tokens.spaceXs2),
             Text(
               subtitle!,
               style: theme.textTheme.bodySmall?.copyWith(
@@ -65,6 +76,29 @@ class TasklyPageHeader extends StatelessWidget {
             footer!,
           ],
         ],
+      ),
+    );
+
+    return Padding(
+      padding: headerTheme.padding,
+      child: DecoratedBox(
+        decoration: shouldDecorate
+            ? BoxDecoration(
+                color: headerTheme.surface(variant),
+                borderRadius: BorderRadius.circular(tokens.radiusLg),
+                border: Border.all(color: headerTheme.border(variant)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Theme.of(
+                      context,
+                    ).shadowColor.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              )
+            : const BoxDecoration(),
+        child: content,
       ),
     );
   }

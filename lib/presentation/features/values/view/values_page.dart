@@ -117,15 +117,16 @@ class _ValuesPageState extends State<ValuesPage> {
                       )
                     : AppBar(
                         actions: [
-                          IconButton(
+                          TasklyChromeIconButton(
                             tooltip: context.l10n.filterSortTooltip,
-                            icon: const Icon(Icons.tune_rounded),
+                            icon: Icons.tune_rounded,
                             onPressed: () => _showFilterSheet(context),
                           ),
                           TasklyOverflowMenuButton<_ValuesMenuAction>(
                             tooltip: MaterialLocalizations.of(
                               context,
                             ).moreButtonTooltip,
+                            style: tasklyChromeIconButtonStyle(context),
                             itemsBuilder: (context) => [
                               PopupMenuItem(
                                 value: _ValuesMenuAction.range,
@@ -164,48 +165,51 @@ class _ValuesPageState extends State<ValuesPage> {
                   onPressed: () => _createValue(context),
                   heroTag: 'create_value_fab_values',
                 ),
-                body: BlocBuilder<ValuesHeroBloc, ValuesHeroState>(
-                  builder: (context, state) {
-                    final body = switch (state) {
-                      ValuesHeroLoading() => const TasklyFeedRenderer(
-                        spec: TasklyFeedSpec.loading(),
-                      ),
-                      ValuesHeroError(:final error) => TasklyFeedRenderer(
-                        spec: TasklyFeedSpec.error(
-                          message: friendlyErrorMessageForUi(
-                            error,
-                            context.l10n,
-                          ),
-                          retryLabel: context.l10n.retryButton,
-                          onRetry: () => context.read<ValuesHeroBloc>().add(
-                            const ValuesHeroSubscriptionRequested(),
-                          ),
+                body: TasklyPageGradientSurface(
+                  child: BlocBuilder<ValuesHeroBloc, ValuesHeroState>(
+                    builder: (context, state) {
+                      final body = switch (state) {
+                        ValuesHeroLoading() => const TasklyFeedRenderer(
+                          spec: TasklyFeedSpec.loading(),
                         ),
-                      ),
-                      ValuesHeroLoaded(:final items) when items.isEmpty =>
-                        TasklyFeedRenderer(
-                          spec: TasklyFeedSpec.empty(
-                            empty: TasklyEmptyStateSpec(
-                              icon: Icons.favorite_border,
-                              title: context.l10n.valuesEmptyTitle,
-                              description: context.l10n.valuesEmptyDescription,
-                              actionLabel: context.l10n.createValueOption,
-                              onAction: () => _createValue(context),
+                        ValuesHeroError(:final error) => TasklyFeedRenderer(
+                          spec: TasklyFeedSpec.error(
+                            message: friendlyErrorMessageForUi(
+                              error,
+                              context.l10n,
+                            ),
+                            retryLabel: context.l10n.retryButton,
+                            onRetry: () => context.read<ValuesHeroBloc>().add(
+                              const ValuesHeroSubscriptionRequested(),
                             ),
                           ),
                         ),
-                      ValuesHeroLoaded(:final items) => ValuesListView(
-                        items: _sortItems(items, _sortOrder),
-                      ),
-                    };
+                        ValuesHeroLoaded(:final items) when items.isEmpty =>
+                          TasklyFeedRenderer(
+                            spec: TasklyFeedSpec.empty(
+                              empty: TasklyEmptyStateSpec(
+                                icon: Icons.favorite_border,
+                                title: context.l10n.valuesEmptyTitle,
+                                description:
+                                    context.l10n.valuesEmptyDescription,
+                                actionLabel: context.l10n.createValueOption,
+                                onAction: () => _createValue(context),
+                              ),
+                            ),
+                          ),
+                        ValuesHeroLoaded(:final items) => ValuesListView(
+                          items: _sortItems(items, _sortOrder),
+                        ),
+                      };
 
-                    return Column(
-                      children: [
-                        const _ValuesTitleHeader(),
-                        Expanded(child: body),
-                      ],
-                    );
-                  },
+                      return Column(
+                        children: [
+                          const _ValuesTitleHeader(),
+                          Expanded(child: body),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               );
             },

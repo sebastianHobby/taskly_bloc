@@ -229,9 +229,9 @@ class _MyDayPageState extends State<MyDayPage> {
                     : AppBar(
                         toolbarHeight: 56,
                         actions: [
-                          IconButton(
+                          TasklyChromeIconButton(
                             tooltip: context.l10n.filterSortTooltip,
-                            icon: const Icon(Icons.tune_rounded),
+                            icon: Icons.tune_rounded,
                             onPressed: () => _showFilterSheet(context),
                           ),
                           TasklyOverflowMenuButton<_MyDayMenuAction>(
@@ -273,7 +273,9 @@ class _MyDayPageState extends State<MyDayPage> {
                           defaultDay: today,
                         ),
                       ),
-                body: gateBody,
+                body: TasklyPageGradientSurface(
+                  child: gateBody,
+                ),
               );
             },
           );

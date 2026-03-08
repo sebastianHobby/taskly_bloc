@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_chrome.dart';
+import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -31,74 +32,90 @@ class JournalInsightsPage extends StatelessWidget {
             backgroundColor: Colors.transparent,
             appBar: AppBar(
               backgroundColor: Colors.transparent,
-              title: Text(context.l10n.journalInsightsTitle),
             ),
-            body: switch (state) {
-              JournalHistoryLoading() => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              JournalHistoryError(:final message) => Center(
-                child: Padding(
-                  padding: EdgeInsets.all(tokens.spaceLg),
-                  child: Text(message),
-                ),
-              ),
-              JournalHistoryLoaded() =>
-                insights.isEmpty
-                    ? Center(
+            body: TasklyPageGradientSurface(
+              child: Column(
+                children: [
+                  TasklyPageHeader(
+                    icon: Icons.insights_outlined,
+                    title: context.l10n.journalInsightsTitle,
+                    subtitle: context.l10n.journalTopInsightMeta(
+                      context.l10n.journalInsightMediumConfidence,
+                      insights.length,
+                      30,
+                    ),
+                  ),
+                  Expanded(
+                    child: switch (state) {
+                      JournalHistoryLoading() => const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                      JournalHistoryError(:final message) => Center(
                         child: Padding(
                           padding: EdgeInsets.all(tokens.spaceLg),
-                          child: Text(
-                            context.l10n.journalInsightsNudge,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      )
-                    : TasklyPageGradientSurface(
-                        child: ListView.separated(
-                          padding: EdgeInsets.fromLTRB(
-                            tokens.spaceLg,
-                            tokens.spaceMd,
-                            tokens.spaceLg,
-                            tokens.spaceLg,
-                          ),
-                          itemCount: insights.length + 1,
-                          separatorBuilder: (_, __) =>
-                              SizedBox(height: tokens.spaceMd),
-                          itemBuilder: (context, index) {
-                            final insight =
-                                insights[index == 0 ? 0 : index - 1];
-                            final deltaValue = insight.deltaMood
-                                .abs()
-                                .toStringAsFixed(
-                                  1,
-                                );
-                            final delta = insight.deltaMood >= 0
-                                ? '+$deltaValue'
-                                : '-$deltaValue';
-                            final confidenceLabel =
-                                insight.confidence ==
-                                    JournalInsightConfidence.high
-                                ? context.l10n.journalInsightHighConfidence
-                                : context.l10n.journalInsightMediumConfidence;
-
-                            if (index == 0) {
-                              return _TopInsightHeroCard(
-                                insight: insight,
-                                delta: delta,
-                                confidenceLabel: confidenceLabel,
-                              );
-                            }
-
-                            return _InsightEvidenceCard(
-                              insight: insight,
-                              delta: delta,
-                              confidenceLabel: confidenceLabel,
-                            );
-                          },
+                          child: Text(message),
                         ),
                       ),
-            },
+                      JournalHistoryLoaded() =>
+                        insights.isEmpty
+                            ? Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(tokens.spaceLg),
+                                  child: Text(
+                                    context.l10n.journalInsightsNudge,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              )
+                            : ListView.separated(
+                                padding: EdgeInsets.fromLTRB(
+                                  tokens.spaceLg,
+                                  tokens.spaceMd,
+                                  tokens.spaceLg,
+                                  tokens.spaceLg,
+                                ),
+                                itemCount: insights.length + 1,
+                                separatorBuilder: (_, __) =>
+                                    SizedBox(height: tokens.spaceMd),
+                                itemBuilder: (context, index) {
+                                  final insight =
+                                      insights[index == 0 ? 0 : index - 1];
+                                  final deltaValue = insight.deltaMood
+                                      .abs()
+                                      .toStringAsFixed(1);
+                                  final delta = insight.deltaMood >= 0
+                                      ? '+$deltaValue'
+                                      : '-$deltaValue';
+                                  final confidenceLabel =
+                                      insight.confidence ==
+                                          JournalInsightConfidence.high
+                                      ? context
+                                            .l10n
+                                            .journalInsightHighConfidence
+                                      : context
+                                            .l10n
+                                            .journalInsightMediumConfidence;
+
+                                  if (index == 0) {
+                                    return _TopInsightHeroCard(
+                                      insight: insight,
+                                      delta: delta,
+                                      confidenceLabel: confidenceLabel,
+                                    );
+                                  }
+
+                                  return _InsightEvidenceCard(
+                                    insight: insight,
+                                    delta: delta,
+                                    confidenceLabel: confidenceLabel,
+                                  );
+                                },
+                              ),
+                    },
+                  ),
+                ],
+              ),
+            ),
           );
         },
       ),
@@ -121,21 +138,9 @@ class _TopInsightHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
-    final panelTheme = TasklyPanelTheme.of(context);
-    return Container(
+    return TasklyCardSurface(
+      variant: TasklyCardVariant.insight,
       padding: EdgeInsets.all(tokens.spaceMd),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            panelTheme.emphasizedSurface,
-            panelTheme.subtleSurface,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(tokens.radiusLg),
-        border: Border.all(color: panelTheme.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -168,18 +173,17 @@ class _TopInsightHeroCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spaceSm),
-          Container(
-            height: 96,
-            width: double.infinity,
+          TasklyCardSurface(
+            variant: TasklyCardVariant.subtle,
             padding: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
-            decoration: BoxDecoration(
-              color: panelTheme.gradientStart.withValues(alpha: 0.35),
-              borderRadius: BorderRadius.circular(tokens.radiusMd),
-            ),
-            child: CustomPaint(
-              painter: _InsightSparklinePainter(
-                color: theme.colorScheme.primary,
-                baseline: theme.colorScheme.primary.withValues(alpha: 0.25),
+            child: SizedBox(
+              height: 96,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _InsightSparklinePainter(
+                  color: theme.colorScheme.primary,
+                  baseline: theme.colorScheme.primary.withValues(alpha: 0.25),
+                ),
               ),
             ),
           ),
@@ -215,14 +219,9 @@ class _InsightEvidenceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
-    final panelTheme = TasklyPanelTheme.of(context);
-    return Container(
+    return TasklyCardSurface(
+      variant: TasklyCardVariant.subtle,
       padding: EdgeInsets.all(tokens.spaceMd),
-      decoration: BoxDecoration(
-        color: panelTheme.subtleSurface,
-        borderRadius: BorderRadius.circular(tokens.radiusLg),
-        border: Border.all(color: panelTheme.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

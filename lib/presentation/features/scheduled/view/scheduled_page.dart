@@ -610,167 +610,176 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
           floatingActionButton: selectionState.isSelectionMode
               ? null
               : _buildAddFab(today),
-          body: Column(
-            children: [
-              const _ScheduledTitleHeader(),
-              if (showScopeHeader)
-                ScheduledScopeHeader(
-                  scope: widget.scope,
-                ),
-              Expanded(
-                child: ScrollablePositionedList.builder(
-                  itemScrollController: _itemScrollController,
-                  itemPositionsListener: _itemPositionsListener,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: feedTokens.sectionPaddingH,
+          body: TasklyPageGradientSurface(
+            child: Column(
+              children: [
+                const _ScheduledTitleHeader(),
+                if (showScopeHeader)
+                  ScheduledScopeHeader(
+                    scope: widget.scope,
                   ),
-                  itemCount: itemCount,
-                  itemBuilder: (context, index) {
-                    if (overdueOffset == 1 && index == 0) {
-                      final actionEnabled = overdueRows.isNotEmpty;
+                Expanded(
+                  child: ScrollablePositionedList.builder(
+                    itemScrollController: _itemScrollController,
+                    itemPositionsListener: _itemPositionsListener,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: feedTokens.sectionPaddingH,
+                    ),
+                    itemCount: itemCount,
+                    itemBuilder: (context, index) {
+                      if (overdueOffset == 1 && index == 0) {
+                        final actionEnabled = overdueRows.isNotEmpty;
 
-                      return TasklyFeedRenderer.buildSection(
-                        TasklySectionSpec.scheduledOverdue(
-                          id: 'scheduled-overdue',
-                          title: context.l10n.deadlineOverdue,
-                          countLabel: overdueCountLabel,
-                          rows: overdueRows,
-                          showMoreLabelBuilder: (remaining, total) {
-                            return context.l10n.showMoreCountLabel(
-                              remaining,
-                              context.l10n.deadlineOverdue,
-                              total,
-                            );
-                          },
-                          emptyLabel: context.l10n.scheduledOverdueEmptyLabel,
-                          actionLabel: actionEnabled
-                              ? context.l10n.rescheduleAllLabel
-                              : null,
-                          actionTooltip: context.l10n.rescheduleOverdueTooltip,
-                          onActionPressed:
-                              selectionState.isSelectionMode || !actionEnabled
-                              ? null
-                              : () async {
-                                  final choice =
-                                      await showRescheduleChoiceSheet(
-                                        context,
-                                        title: context.l10n.rescheduleAllLabel,
-                                        subtitle:
-                                            context.l10n.rescheduleAllSubtitle,
-                                        dayKeyUtc: today,
-                                      );
-                                  if (choice == null || !context.mounted) {
-                                    return;
-                                  }
+                        return TasklyFeedRenderer.buildSection(
+                          TasklySectionSpec.scheduledOverdue(
+                            id: 'scheduled-overdue',
+                            title: context.l10n.deadlineOverdue,
+                            countLabel: overdueCountLabel,
+                            rows: overdueRows,
+                            showMoreLabelBuilder: (remaining, total) {
+                              return context.l10n.showMoreCountLabel(
+                                remaining,
+                                context.l10n.deadlineOverdue,
+                                total,
+                              );
+                            },
+                            emptyLabel: context.l10n.scheduledOverdueEmptyLabel,
+                            actionLabel: actionEnabled
+                                ? context.l10n.rescheduleAllLabel
+                                : null,
+                            actionTooltip:
+                                context.l10n.rescheduleOverdueTooltip,
+                            onActionPressed:
+                                selectionState.isSelectionMode || !actionEnabled
+                                ? null
+                                : () async {
+                                    final choice =
+                                        await showRescheduleChoiceSheet(
+                                          context,
+                                          title:
+                                              context.l10n.rescheduleAllLabel,
+                                          subtitle: context
+                                              .l10n
+                                              .rescheduleAllSubtitle,
+                                          dayKeyUtc: today,
+                                        );
+                                    if (choice == null || !context.mounted) {
+                                      return;
+                                    }
 
-                                  final helpText = context.l10n
-                                      .rescheduleItemsHelpText(
-                                        overdueRows.length,
-                                      );
-                                  final todayDate = dateOnly(today);
+                                    final helpText = context.l10n
+                                        .rescheduleItemsHelpText(
+                                          overdueRows.length,
+                                        );
+                                    final todayDate = dateOnly(today);
 
-                                  final newDeadlineDay = switch (choice) {
-                                    RescheduleQuickChoice(:final date) => date,
-                                    ReschedulePickDateChoice() =>
-                                      await showRescheduleDatePicker(
-                                        context,
-                                        initialDate: todayDate,
-                                        firstDate: todayDate,
-                                        lastDate: todayDate.add(
-                                          const Duration(days: 365),
+                                    final newDeadlineDay = switch (choice) {
+                                      RescheduleQuickChoice(:final date) =>
+                                        date,
+                                      ReschedulePickDateChoice() =>
+                                        await showRescheduleDatePicker(
+                                          context,
+                                          initialDate: todayDate,
+                                          firstDate: todayDate,
+                                          lastDate: todayDate.add(
+                                            const Duration(days: 365),
+                                          ),
+                                          helpText: helpText,
                                         ),
-                                        helpText: helpText,
+                                    };
+                                    if (newDeadlineDay == null ||
+                                        !context.mounted) {
+                                      return;
+                                    }
+
+                                    final taskIds = state.overdue
+                                        .where(
+                                          (o) =>
+                                              o.entityType == EntityType.task,
+                                        )
+                                        .map((o) => o.entityId)
+                                        .toList(growable: false);
+                                    final projectIds = state.overdue
+                                        .where(
+                                          (o) =>
+                                              o.entityType ==
+                                              EntityType.project,
+                                        )
+                                        .map((o) => o.entityId)
+                                        .toList(growable: false);
+
+                                    context.read<ScheduledScreenBloc>().add(
+                                      ScheduledRescheduleEntitiesDeadlineRequested(
+                                        taskIds: taskIds,
+                                        projectIds: projectIds,
+                                        newDeadlineDay: newDeadlineDay,
                                       ),
-                                  };
-                                  if (newDeadlineDay == null ||
-                                      !context.mounted) {
-                                    return;
-                                  }
+                                    );
+                                  },
+                          ),
+                        );
+                      }
 
-                                  final taskIds = state.overdue
-                                      .where(
-                                        (o) => o.entityType == EntityType.task,
-                                      )
-                                      .map((o) => o.entityId)
-                                      .toList(growable: false);
-                                  final projectIds = state.overdue
-                                      .where(
-                                        (o) =>
-                                            o.entityType == EntityType.project,
-                                      )
-                                      .map((o) => o.entityId)
-                                      .toList(growable: false);
+                      final dayIndex = index - overdueOffset;
+                      final day = today.add(Duration(days: dayIndex));
 
-                                  context.read<ScheduledScreenBloc>().add(
-                                    ScheduledRescheduleEntitiesDeadlineRequested(
-                                      taskIds: taskIds,
-                                      projectIds: projectIds,
-                                      newDeadlineDay: newDeadlineDay,
-                                    ),
-                                  );
-                                },
+                      final list =
+                          occurrencesByDay[day] ??
+                          const <ScheduledOccurrence>[];
+                      final sorted = list.toList(growable: false)
+                        ..sort(_compareOccurrences);
+                      final filtered = _applyCompletionPolicy(sorted);
+
+                      final rows = filtered
+                          .map(
+                            (o) => _buildOccurrenceRow(
+                              context,
+                              o,
+                              selectionState: selectionState,
+                              density: density,
+                              todayDate: today,
+                            ),
+                          )
+                          .whereType<TasklyRowSpec>()
+                          .toList(growable: false);
+
+                      final locale = Localizations.localeOf(
+                        context,
+                      ).toLanguageTag();
+                      final header = dayIndex == 0
+                          ? context.l10n.scheduledTodayHeader(
+                              DateFormat('MMM d', locale).format(day),
+                            )
+                          : DateFormat('EEEE, MMM d', locale).format(day);
+                      final count = rows.length;
+                      final countLabel = count == 0
+                          ? null
+                          : context.l10n.tasksCountLabel(count);
+
+                      return Padding(
+                        padding: EdgeInsets.only(
+                          bottom: TasklyTokens.of(
+                            context,
+                          ).scheduledDaySectionSpacing,
+                        ),
+                        child: TasklyFeedRenderer.buildSection(
+                          TasklySectionSpec.scheduledDay(
+                            id: 'scheduled-${day.toIso8601String()}',
+                            day: day,
+                            title: header,
+                            isToday: dayIndex == 0,
+                            countLabel: countLabel,
+                            rows: rows,
+                            emptyLabel: null,
+                            onAddRequested: null,
+                          ),
                         ),
                       );
-                    }
-
-                    final dayIndex = index - overdueOffset;
-                    final day = today.add(Duration(days: dayIndex));
-
-                    final list =
-                        occurrencesByDay[day] ?? const <ScheduledOccurrence>[];
-                    final sorted = list.toList(growable: false)
-                      ..sort(_compareOccurrences);
-                    final filtered = _applyCompletionPolicy(sorted);
-
-                    final rows = filtered
-                        .map(
-                          (o) => _buildOccurrenceRow(
-                            context,
-                            o,
-                            selectionState: selectionState,
-                            density: density,
-                            todayDate: today,
-                          ),
-                        )
-                        .whereType<TasklyRowSpec>()
-                        .toList(growable: false);
-
-                    final locale = Localizations.localeOf(
-                      context,
-                    ).toLanguageTag();
-                    final header = dayIndex == 0
-                        ? context.l10n.scheduledTodayHeader(
-                            DateFormat('MMM d', locale).format(day),
-                          )
-                        : DateFormat('EEEE, MMM d', locale).format(day);
-                    final count = rows.length;
-                    final countLabel = count == 0
-                        ? null
-                        : context.l10n.tasksCountLabel(count);
-
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: TasklyTokens.of(
-                          context,
-                        ).scheduledDaySectionSpacing,
-                      ),
-                      child: TasklyFeedRenderer.buildSection(
-                        TasklySectionSpec.scheduledDay(
-                          id: 'scheduled-${day.toIso8601String()}',
-                          day: day,
-                          title: header,
-                          isToday: dayIndex == 0,
-                          countLabel: countLabel,
-                          rows: rows,
-                          emptyLabel: null,
-                          onAddRequested: null,
-                        ),
-                      ),
-                    );
-                  },
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

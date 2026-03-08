@@ -251,11 +251,15 @@ class JournalRepositoryImpl
             final eventId = event.id.isEmpty
                 ? _idGenerator.trackerEventId()
                 : event.id;
+            final normalizedEvent = _normalizeTrackerEventForWrite(
+              event,
+              entryIdOverride: entryId,
+            );
             String? value;
-            if (event.value != null) {
-              value = event.value is String
-                  ? event.value! as String
-                  : jsonEncode(event.value);
+            if (normalizedEvent.value != null) {
+              value = normalizedEvent.value is String
+                  ? normalizedEvent.value! as String
+                  : jsonEncode(normalizedEvent.value);
             }
 
             await _database
@@ -263,14 +267,14 @@ class JournalRepositoryImpl
                 .insert(
                   TrackerEventsCompanion(
                     id: Value(eventId),
-                    trackerId: Value(event.trackerId),
-                    anchorType: Value(event.anchorType),
+                    trackerId: Value(normalizedEvent.trackerId),
+                    anchorType: Value(normalizedEvent.anchorType),
                     entryId: Value(entryId),
-                    anchorDate: Value(event.anchorDate),
-                    op: Value(event.op),
+                    anchorDate: Value(normalizedEvent.anchorDate),
+                    op: Value(normalizedEvent.op),
                     value: Value(value),
-                    occurredAt: Value(event.occurredAt),
-                    recordedAt: Value(event.recordedAt),
+                    occurredAt: Value(normalizedEvent.occurredAt),
+                    recordedAt: Value(normalizedEvent.recordedAt),
                   ),
                   mode: InsertMode.insertOrAbort,
                 );
@@ -696,13 +700,16 @@ class JournalRepositoryImpl
   }) async {
     return FailureGuard.run(
       () async {
-        final id = event.id.isEmpty ? _idGenerator.trackerEventId() : event.id;
+        final normalizedEvent = _normalizeTrackerEventForWrite(event);
+        final id = normalizedEvent.id.isEmpty
+            ? _idGenerator.trackerEventId()
+            : normalizedEvent.id;
 
         String? value;
-        if (event.value != null) {
-          value = event.value is String
-              ? event.value! as String
-              : jsonEncode(event.value);
+        if (normalizedEvent.value != null) {
+          value = normalizedEvent.value is String
+              ? normalizedEvent.value! as String
+              : jsonEncode(normalizedEvent.value);
         }
 
         // Events are append-only; duplicate inserts are safe to ignore.
@@ -711,14 +718,14 @@ class JournalRepositoryImpl
             .insert(
               TrackerEventsCompanion(
                 id: Value(id),
-                trackerId: Value(event.trackerId),
-                anchorType: Value(event.anchorType),
-                entryId: Value(event.entryId),
-                anchorDate: Value(event.anchorDate),
-                op: Value(event.op),
+                trackerId: Value(normalizedEvent.trackerId),
+                anchorType: Value(normalizedEvent.anchorType),
+                entryId: Value(normalizedEvent.entryId),
+                anchorDate: Value(normalizedEvent.anchorDate),
+                op: Value(normalizedEvent.op),
                 value: Value(value),
-                occurredAt: Value(event.occurredAt),
-                recordedAt: Value(event.recordedAt),
+                occurredAt: Value(normalizedEvent.occurredAt),
+                recordedAt: Value(normalizedEvent.recordedAt),
               ),
               mode: InsertMode.insertOrIgnore,
             );
@@ -977,6 +984,32 @@ class JournalRepositoryImpl
       if (trimmed.toLowerCase() == 'false') return false;
       return trimmed;
     }
+  }
+
+  TrackerEvent _normalizeTrackerEventForWrite(
+    TrackerEvent event, {
+    String? entryIdOverride,
+  }) {
+    final anchorType = event.anchorType.trim().toLowerCase();
+    if (anchorType == 'entry') {
+      final normalizedEntryId = (entryIdOverride ?? event.entryId)?.trim();
+      return event.copyWith(
+        anchorType: 'entry',
+        entryId: normalizedEntryId == null || normalizedEntryId.isEmpty
+            ? null
+            : normalizedEntryId,
+        anchorDate: null,
+      );
+    }
+
+    if (anchorType == 'day' || anchorType == 'sleep_night') {
+      return event.copyWith(
+        anchorType: anchorType,
+        entryId: null,
+      );
+    }
+
+    return event;
   }
 
   Future<bool> _journalEntryExists(String entryId) async {

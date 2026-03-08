@@ -474,103 +474,109 @@ class _ProjectsViewState extends State<_ProjectsView> {
                       const ProjectsCreateProjectRequested(),
                     ),
                   ),
-            body: Column(
-              children: [
-                const _ProjectsTitleHeader(),
-                Expanded(
-                  child: BlocBuilder<ProjectsScreenBloc, ProjectsScreenState>(
-                    buildWhen: (p, n) => p.searchQuery != n.searchQuery,
-                    builder: (context, screenState) {
-                      return BlocBuilder<ProjectsFeedBloc, ProjectsFeedState>(
-                        builder: (context, state) {
-                          final shouldShowInboxTile =
-                              scope == null &&
-                              screenState.searchQuery.trim().isEmpty;
-                          final spec = switch (state) {
-                            ProjectsFeedLoading() =>
-                              const TasklyFeedSpec.loading(),
-                            ProjectsFeedError(:final message) =>
-                              TasklyFeedSpec.error(
-                                message: message,
-                                retryLabel: context.l10n.retryButton,
-                                onRetry: () =>
-                                    context.read<ProjectsFeedBloc>().add(
-                                      const ProjectsFeedRetryRequested(),
-                                    ),
-                              ),
-                            ProjectsFeedLoaded(
-                              :final rows,
-                            )
-                                when rows.isEmpty && !shouldShowInboxTile =>
-                              TasklyFeedSpec.empty(
-                                empty: _buildEmptySpec(
-                                  context,
-                                  scope,
-                                  screenState,
-                                  showCompleted: _showCompleted,
-                                  completionCounts: _countProjectsByCompletion(
-                                    rows,
-                                  ),
+            body: TasklyPageGradientSurface(
+              child: Column(
+                children: [
+                  const _ProjectsTitleHeader(),
+                  Expanded(
+                    child: BlocBuilder<ProjectsScreenBloc, ProjectsScreenState>(
+                      buildWhen: (p, n) => p.searchQuery != n.searchQuery,
+                      builder: (context, screenState) {
+                        return BlocBuilder<ProjectsFeedBloc, ProjectsFeedState>(
+                          builder: (context, state) {
+                            final shouldShowInboxTile =
+                                scope == null &&
+                                screenState.searchQuery.trim().isEmpty;
+                            final spec = switch (state) {
+                              ProjectsFeedLoading() =>
+                                const TasklyFeedSpec.loading(),
+                              ProjectsFeedError(:final message) =>
+                                TasklyFeedSpec.error(
+                                  message: message,
+                                  retryLabel: context.l10n.retryButton,
+                                  onRetry: () =>
+                                      context.read<ProjectsFeedBloc>().add(
+                                        const ProjectsFeedRetryRequested(),
+                                      ),
                                 ),
-                              ),
-                            ProjectsFeedLoaded(:final rows) => () {
-                              final visibleRows = _filterProjectsRows(
-                                rows: rows,
-                                selectedValueIds: _selectedValueIds,
-                                showCompleted: _showCompleted,
-                                scope: scope,
-                              );
-                              _lastVisibleValueIds = _extractVisibleValueIds(
-                                visibleRows,
-                              );
-                              if (visibleRows.isEmpty && !shouldShowInboxTile) {
-                                return TasklyFeedSpec.empty(
+                              ProjectsFeedLoaded(
+                                :final rows,
+                              )
+                                  when rows.isEmpty && !shouldShowInboxTile =>
+                                TasklyFeedSpec.empty(
                                   empty: _buildEmptySpec(
                                     context,
                                     scope,
                                     screenState,
                                     showCompleted: _showCompleted,
                                     completionCounts:
-                                        _countProjectsByCompletion(rows),
-                                  ),
-                                );
-                              }
-                              final sections = <TasklySectionSpec>[];
-                              sections.add(
-                                TasklySectionSpec.standardList(
-                                  id: 'projects',
-                                  rows: _buildGroupedRows(
-                                    context,
-                                    visibleRows,
-                                    values: state.values,
-                                    ratings: state.ratings,
-                                    density: density,
-                                    selectionState: selectionState,
-                                    includeInboxTile: shouldShowInboxTile,
-                                    inboxTaskCount: state.inboxTaskCount,
-                                    valueSortOrder: _valueSortOrder,
-                                    showCompleted: _showCompleted,
-                                    collapsedValueIds: _collapsedValueIds,
-                                    onToggleCollapsed: _toggleValueCollapsed,
+                                        _countProjectsByCompletion(
+                                          rows,
+                                        ),
                                   ),
                                 ),
-                              );
-                              return TasklyFeedSpec.content(sections: sections);
-                            }(),
-                          };
+                              ProjectsFeedLoaded(:final rows) => () {
+                                final visibleRows = _filterProjectsRows(
+                                  rows: rows,
+                                  selectedValueIds: _selectedValueIds,
+                                  showCompleted: _showCompleted,
+                                  scope: scope,
+                                );
+                                _lastVisibleValueIds = _extractVisibleValueIds(
+                                  visibleRows,
+                                );
+                                if (visibleRows.isEmpty &&
+                                    !shouldShowInboxTile) {
+                                  return TasklyFeedSpec.empty(
+                                    empty: _buildEmptySpec(
+                                      context,
+                                      scope,
+                                      screenState,
+                                      showCompleted: _showCompleted,
+                                      completionCounts:
+                                          _countProjectsByCompletion(rows),
+                                    ),
+                                  );
+                                }
+                                final sections = <TasklySectionSpec>[];
+                                sections.add(
+                                  TasklySectionSpec.standardList(
+                                    id: 'projects',
+                                    rows: _buildGroupedRows(
+                                      context,
+                                      visibleRows,
+                                      values: state.values,
+                                      ratings: state.ratings,
+                                      density: density,
+                                      selectionState: selectionState,
+                                      includeInboxTile: shouldShowInboxTile,
+                                      inboxTaskCount: state.inboxTaskCount,
+                                      valueSortOrder: _valueSortOrder,
+                                      showCompleted: _showCompleted,
+                                      collapsedValueIds: _collapsedValueIds,
+                                      onToggleCollapsed: _toggleValueCollapsed,
+                                    ),
+                                  ),
+                                );
+                                return TasklyFeedSpec.content(
+                                  sections: sections,
+                                );
+                              }(),
+                            };
 
-                          return TasklyFeedRenderer(
-                            spec: spec,
-                            padding: EdgeInsets.symmetric(
-                              horizontal: chrome.spaceLg,
-                            ),
-                          );
-                        },
-                      );
-                    },
+                            return TasklyFeedRenderer(
+                              spec: spec,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: chrome.spaceLg,
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },

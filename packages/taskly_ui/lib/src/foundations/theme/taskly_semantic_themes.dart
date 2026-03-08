@@ -137,8 +137,13 @@ class TasklyAppChromeTheme extends ThemeExtension<TasklyAppChromeTheme> {
 class TasklyPageHeaderTheme extends ThemeExtension<TasklyPageHeaderTheme> {
   const TasklyPageHeaderTheme({
     required this.padding,
+    required this.contentPadding,
+    required this.surfaceByVariant,
+    required this.borderByVariant,
     required this.iconSize,
+    required this.iconContainerPadding,
     required this.iconColor,
+    required this.iconSurface,
     required this.titleColor,
     required this.subtitleColor,
     required this.titleFontWeight,
@@ -152,12 +157,44 @@ class TasklyPageHeaderTheme extends ThemeExtension<TasklyPageHeaderTheme> {
     return TasklyPageHeaderTheme(
       padding: EdgeInsets.fromLTRB(
         tokens.sectionPaddingH,
-        tokens.spaceMd,
+        tokens.spaceSm2,
         tokens.sectionPaddingH,
-        tokens.spaceSm,
+        tokens.spaceXs2,
       ),
-      iconSize: tokens.spaceLg3,
+      contentPadding: EdgeInsets.fromLTRB(
+        tokens.spaceMd,
+        tokens.spaceSm2,
+        tokens.spaceMd,
+        tokens.spaceSm2,
+      ),
+      surfaceByVariant: <TasklyHeaderVariant, Color>{
+        TasklyHeaderVariant.screen: scheme.surfaceContainerLowest.withValues(
+          alpha: 0.96,
+        ),
+        TasklyHeaderVariant.section: scheme.surfaceContainerLow,
+        TasklyHeaderVariant.hero: Color.alphaBlend(
+          scheme.primaryContainer.withValues(alpha: 0.14),
+          scheme.surface,
+        ),
+        TasklyHeaderVariant.compact: Colors.transparent,
+      },
+      borderByVariant: <TasklyHeaderVariant, Color>{
+        TasklyHeaderVariant.screen: scheme.outlineVariant.withValues(
+          alpha: 0.4,
+        ),
+        TasklyHeaderVariant.section: scheme.outlineVariant.withValues(
+          alpha: 0.35,
+        ),
+        TasklyHeaderVariant.hero: scheme.primary.withValues(alpha: 0.18),
+        TasklyHeaderVariant.compact: Colors.transparent,
+      },
+      iconSize: tokens.spaceLg2,
+      iconContainerPadding: tokens.spaceXs2,
       iconColor: scheme.primary,
+      iconSurface: Color.alphaBlend(
+        scheme.primaryContainer.withValues(alpha: 0.65),
+        scheme.surface,
+      ),
       titleColor: scheme.onSurface,
       subtitleColor: scheme.onSurfaceVariant,
       titleFontWeight: FontWeight.w800,
@@ -173,19 +210,32 @@ class TasklyPageHeaderTheme extends ThemeExtension<TasklyPageHeaderTheme> {
   }
 
   final EdgeInsets padding;
+  final EdgeInsets contentPadding;
+  final Map<TasklyHeaderVariant, Color> surfaceByVariant;
+  final Map<TasklyHeaderVariant, Color> borderByVariant;
   final double iconSize;
+  final double iconContainerPadding;
   final Color iconColor;
+  final Color iconSurface;
   final Color titleColor;
   final Color subtitleColor;
   final FontWeight titleFontWeight;
   final Color chipBackground;
   final Color chipForeground;
 
+  Color surface(TasklyHeaderVariant variant) => surfaceByVariant[variant]!;
+  Color border(TasklyHeaderVariant variant) => borderByVariant[variant]!;
+
   @override
   TasklyPageHeaderTheme copyWith({
     EdgeInsets? padding,
+    EdgeInsets? contentPadding,
+    Map<TasklyHeaderVariant, Color>? surfaceByVariant,
+    Map<TasklyHeaderVariant, Color>? borderByVariant,
     double? iconSize,
+    double? iconContainerPadding,
     Color? iconColor,
+    Color? iconSurface,
     Color? titleColor,
     Color? subtitleColor,
     FontWeight? titleFontWeight,
@@ -194,8 +244,13 @@ class TasklyPageHeaderTheme extends ThemeExtension<TasklyPageHeaderTheme> {
   }) {
     return TasklyPageHeaderTheme(
       padding: padding ?? this.padding,
+      contentPadding: contentPadding ?? this.contentPadding,
+      surfaceByVariant: surfaceByVariant ?? this.surfaceByVariant,
+      borderByVariant: borderByVariant ?? this.borderByVariant,
       iconSize: iconSize ?? this.iconSize,
+      iconContainerPadding: iconContainerPadding ?? this.iconContainerPadding,
       iconColor: iconColor ?? this.iconColor,
+      iconSurface: iconSurface ?? this.iconSurface,
       titleColor: titleColor ?? this.titleColor,
       subtitleColor: subtitleColor ?? this.subtitleColor,
       titleFontWeight: titleFontWeight ?? this.titleFontWeight,
@@ -212,8 +267,31 @@ class TasklyPageHeaderTheme extends ThemeExtension<TasklyPageHeaderTheme> {
     if (other is! TasklyPageHeaderTheme) return this;
     return TasklyPageHeaderTheme(
       padding: EdgeInsets.lerp(padding, other.padding, t) ?? padding,
+      contentPadding:
+          EdgeInsets.lerp(contentPadding, other.contentPadding, t) ??
+          contentPadding,
+      surfaceByVariant: {
+        for (final variant in TasklyHeaderVariant.values)
+          variant: Color.lerp(
+            surfaceByVariant[variant],
+            other.surfaceByVariant[variant],
+            t,
+          )!,
+      },
+      borderByVariant: {
+        for (final variant in TasklyHeaderVariant.values)
+          variant: Color.lerp(
+            borderByVariant[variant],
+            other.borderByVariant[variant],
+            t,
+          )!,
+      },
       iconSize: lerpDouble(iconSize, other.iconSize, t) ?? iconSize,
+      iconContainerPadding:
+          lerpDouble(iconContainerPadding, other.iconContainerPadding, t) ??
+          iconContainerPadding,
       iconColor: Color.lerp(iconColor, other.iconColor, t)!,
+      iconSurface: Color.lerp(iconSurface, other.iconSurface, t)!,
       titleColor: Color.lerp(titleColor, other.titleColor, t)!,
       subtitleColor: Color.lerp(subtitleColor, other.subtitleColor, t)!,
       titleFontWeight: t < 0.5 ? titleFontWeight : other.titleFontWeight,
@@ -319,14 +397,25 @@ class TasklyCardTheme extends ThemeExtension<TasklyCardTheme> {
     return TasklyCardTheme(
       surfaceByVariant: <TasklyCardVariant, Color>{
         TasklyCardVariant.summary: scheme.surface,
-        TasklyCardVariant.insight: scheme.surfaceContainerLow,
-        TasklyCardVariant.maintenance: scheme.surface,
+        TasklyCardVariant.insight: Color.alphaBlend(
+          scheme.primaryContainer.withValues(alpha: 0.24),
+          scheme.surface,
+        ),
+        TasklyCardVariant.maintenance: Color.alphaBlend(
+          scheme.secondaryContainer.withValues(alpha: 0.18),
+          scheme.surface,
+        ),
         TasklyCardVariant.editor: scheme.surfaceContainerLowest,
-        TasklyCardVariant.subtle: scheme.surfaceContainerLow,
+        TasklyCardVariant.subtle: scheme.surfaceContainerLowest,
       },
       borderByVariant: <TasklyCardVariant, Color>{
-        for (final variant in TasklyCardVariant.values)
-          variant: scheme.outlineVariant.withValues(alpha: 0.5),
+        TasklyCardVariant.summary: scheme.outlineVariant.withValues(
+          alpha: 0.42,
+        ),
+        TasklyCardVariant.insight: scheme.primary.withValues(alpha: 0.18),
+        TasklyCardVariant.maintenance: scheme.secondary.withValues(alpha: 0.16),
+        TasklyCardVariant.editor: scheme.outlineVariant.withValues(alpha: 0.4),
+        TasklyCardVariant.subtle: scheme.outlineVariant.withValues(alpha: 0.28),
       },
       shadowColor: scheme.shadow.withValues(alpha: 0.06),
     );

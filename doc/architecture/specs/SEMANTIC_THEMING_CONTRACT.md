@@ -25,20 +25,34 @@ chrome, panels, and shared component appearance easy to restyle later.
 - `TasklyPageHeaderTheme`
   - page header padding
   - header icon/title treatment
+  - header surface variants
   - header chip colors
 - `TasklyPanelTheme`
   - panel surfaces
   - panel borders
   - page gradient colors
   - soft shadow color
+- `TasklyCardTheme`
+  - summary/insight/subtle card surfaces
+  - shared card borders and shadows
+- `TasklyChipTheme`
+  - filter/metric/status/selection chip variants
+- `TasklyEmptyStateTheme`
+  - empty and error state icon/title/body roles
+- `TasklySheetTheme`
+  - sheet/modal surface variants
+- `TasklyInsightTheme`
+  - shared insight highlights and badges
+- `TasklyEntityRowChromeTheme`
+  - feed/header/divider/empty-row hierarchy
 
 ## Ownership
 
 - Foundation tokens live in `packages/taskly_ui`.
-- App semantic theme extensions live in `lib/presentation/theme/`.
-- Shared app chrome widgets live in `lib/presentation/shared/`.
-- `packages/taskly_ui` remains pure UI and must not depend on app-specific
-  semantic theme extensions.
+- Semantic theme extensions live in `packages/taskly_ui`.
+- Shared chrome/primitives live in `packages/taskly_ui`.
+- App presentation consumes package-owned themed components.
+- `packages/taskly_ui` remains render-only and Taskly-only.
 
 ## Migration rule
 
@@ -55,7 +69,9 @@ When touching existing UI:
 - `TasklyHeaderChip`
 - `TasklyChromeIconButton`
 - `TasklyPageGradientSurface`
+- `TasklyCardSurface`
+- `TasklyChip`
+- `TasklySheetChrome`
 
 These components are the preferred entry points for top-level page chrome and
 repeated page surface treatments.
-
