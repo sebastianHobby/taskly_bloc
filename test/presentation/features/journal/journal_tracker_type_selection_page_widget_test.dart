@@ -37,10 +37,6 @@ void main() {
           builder: (_, state) =>
               Text('configure:${state.uri.queryParameters['scope']}'),
         ),
-        GoRoute(
-          path: '/journal/trackers/templates',
-          builder: (_, __) => const Text('templates'),
-        ),
       ],
     );
 
@@ -50,6 +46,5 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('configure:entry'), findsOneWidget);
-    expect(find.text('templates'), findsNothing);
   });
 }

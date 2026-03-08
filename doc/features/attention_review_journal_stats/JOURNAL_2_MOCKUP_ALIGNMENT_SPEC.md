@@ -9,7 +9,7 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 
 ## Implementation Progress (Phased)
 - Phase 1 - Routing + tracker flow surfaces: Completed
-  - Added route-based tracker creation flow and wired navigation entry points.
+  - Added route-based tracker creation flow (`type -> configure`) and wired navigation entry points.
 - Phase 2 - Tracker model + persistence updates: Completed
   - Added `aggregationKind` end-to-end (domain model, drift schema, PowerSync schema, repository mapping).
 - Phase 3 - Manage/Template UX alignment: Completed

@@ -272,17 +272,6 @@ abstract final class Routing {
     GoRouter.of(context).push('/journal/trackers/type');
   }
 
-  static void toJournalTrackerTemplates(
-    BuildContext context, {
-    required String kind,
-  }) {
-    final uri = Uri(
-      path: '/journal/trackers/templates',
-      queryParameters: <String, String>{'kind': kind},
-    );
-    GoRouter.of(context).push(uri.toString());
-  }
-
   static void toJournalTrackerConfigure(
     BuildContext context, {
     String? scope,

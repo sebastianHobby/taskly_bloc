@@ -30,7 +30,6 @@ import 'package:taskly_bloc/presentation/features/journal/view/journal_history_p
 import 'package:taskly_bloc/presentation/features/journal/view/journal_insights_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_manage_factors_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_tracker_wizard_bloc.dart';
-import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_templates_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_type_selection_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_tracker_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/routines/view/routine_editor_route_page.dart';
@@ -499,12 +498,6 @@ GoRouter createRouter({
           GoRoute(
             path: '/journal/trackers/type',
             builder: (_, __) => const JournalTrackerTypeSelectionPage(),
-          ),
-          GoRoute(
-            path: '/journal/trackers/templates',
-            builder: (_, state) => JournalTrackerTemplatesPage(
-              kind: state.uri.queryParameters['kind'] ?? 'activity',
-            ),
           ),
           GoRoute(
             path: '/journal/trackers/configure',
