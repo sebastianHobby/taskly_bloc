@@ -14,7 +14,6 @@ import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.d
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
@@ -46,6 +45,7 @@ import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/time.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -429,9 +429,12 @@ class _MyDaySummaryHeader extends StatelessWidget {
     final planned = plannedCount;
     final completed = completedCount;
     final l10n = context.l10n;
+    final icon = const NavigationIconResolver()
+        .resolve(screenId: 'my_day', iconName: null)
+        .selectedIcon;
 
     return TasklyPageHeader(
-      screenId: 'my_day',
+      icon: icon,
       title: title,
       trailing: hasPlan && onEditPlan != null
           ? TextButton(

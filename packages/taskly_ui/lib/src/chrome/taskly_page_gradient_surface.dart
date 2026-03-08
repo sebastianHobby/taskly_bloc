@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
+import 'package:taskly_ui/src/foundations/theme/taskly_semantic_themes.dart';
 
 class TasklyPageGradientSurface extends StatelessWidget {
   const TasklyPageGradientSurface({

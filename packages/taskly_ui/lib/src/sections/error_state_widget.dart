@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/src/foundations/theme/taskly_semantic_themes.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// A reusable error state widget that displays an error icon, message,
@@ -74,8 +75,9 @@ class ErrorStateWidget extends StatelessWidget {
     );
 
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final scheme = theme.colorScheme;
+    final emptyTheme = TasklyEmptyStateTheme.of(context);
 
     return Center(
       child: Padding(
@@ -87,20 +89,20 @@ class ErrorStateWidget extends StatelessWidget {
               width: iconSize + tokens.spaceXxl,
               height: iconSize + tokens.spaceXxl,
               decoration: BoxDecoration(
-                color: colorScheme.errorContainer.withValues(alpha: 0.3),
+                color: scheme.errorContainer.withValues(alpha: 0.3),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: iconSize,
-                color: colorScheme.error,
+                color: scheme.error,
               ),
             ),
             SizedBox(height: tokens.spaceXl),
             Text(
               message,
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+                color: emptyTheme.descriptionColor,
               ),
               textAlign: TextAlign.center,
             ),

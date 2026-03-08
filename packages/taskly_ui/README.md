@@ -1,6 +1,17 @@
 # taskly_ui
 
-Shared pure-UI components for Taskly.
+Taskly's private design system package.
+
+This package is Taskly-only. It owns:
+
+- design tokens
+- semantic theme extensions
+- shared chrome
+- render-only UI primitives
+- render-only shared sections/entities
+
+It must remain render-only and must not own routing, DI, repositories, BLoCs,
+or analytics.
 
 ## Icon catalog (generated)
 

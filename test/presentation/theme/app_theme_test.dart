@@ -4,7 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
+import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 import '../../helpers/test_environment.dart';
@@ -64,6 +64,12 @@ void main() {
     expect(theme.extension<TasklyAppChromeTheme>(), isNotNull);
     expect(theme.extension<TasklyPageHeaderTheme>(), isNotNull);
     expect(theme.extension<TasklyPanelTheme>(), isNotNull);
+    expect(theme.extension<TasklyCardTheme>(), isNotNull);
+    expect(theme.extension<TasklyChipTheme>(), isNotNull);
+    expect(theme.extension<TasklyEmptyStateTheme>(), isNotNull);
+    expect(theme.extension<TasklySheetTheme>(), isNotNull);
+    expect(theme.extension<TasklyInsightTheme>(), isNotNull);
+    expect(theme.extension<TasklyEntityRowChromeTheme>(), isNotNull);
   });
 
   testSafe('Semantic theme extensions derive expected default roles', () async {
@@ -71,16 +77,46 @@ void main() {
     final chromeTheme = theme.extension<TasklyAppChromeTheme>();
     final headerTheme = theme.extension<TasklyPageHeaderTheme>();
     final panelTheme = theme.extension<TasklyPanelTheme>();
+    final cardTheme = theme.extension<TasklyCardTheme>();
+    final chipTheme = theme.extension<TasklyChipTheme>();
+    final emptyStateTheme = theme.extension<TasklyEmptyStateTheme>();
+    final sheetTheme = theme.extension<TasklySheetTheme>();
+    final insightTheme = theme.extension<TasklyInsightTheme>();
+    final rowChromeTheme = theme.extension<TasklyEntityRowChromeTheme>();
 
     expect(chromeTheme, isNotNull);
     expect(headerTheme, isNotNull);
     expect(panelTheme, isNotNull);
+    expect(cardTheme, isNotNull);
+    expect(chipTheme, isNotNull);
+    expect(emptyStateTheme, isNotNull);
+    expect(sheetTheme, isNotNull);
+    expect(insightTheme, isNotNull);
+    expect(rowChromeTheme, isNotNull);
     expect(
       chromeTheme!.navigationSurface,
       theme.colorScheme.surfaceContainerLow,
     );
     expect(headerTheme!.iconColor, theme.colorScheme.primary);
     expect(panelTheme!.subtleSurface, theme.colorScheme.surfaceContainerLow);
+    expect(
+      cardTheme!.surface(TasklyCardVariant.subtle),
+      theme.colorScheme.surfaceContainerLow,
+    );
+    expect(
+      chipTheme!.background(TasklyChipVariant.status),
+      theme.colorScheme.primaryContainer,
+    );
+    expect(emptyStateTheme!.titleColor, theme.colorScheme.onSurface);
+    expect(
+      sheetTheme!.background(TasklySheetVariant.supporting),
+      theme.colorScheme.surfaceContainerLow,
+    );
+    expect(insightTheme!.highlight, theme.colorScheme.primary);
+    expect(
+      rowChromeTheme!.divider,
+      theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
+    );
   });
 
   testSafe('TasklyTokens copyWith and lerp preserve values', () async {

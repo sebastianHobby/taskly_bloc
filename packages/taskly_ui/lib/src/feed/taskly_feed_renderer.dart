@@ -5,11 +5,13 @@ import 'package:taskly_ui/src/sections/expandable_row_list.dart';
 import 'package:taskly_ui/src/sections/empty_state_widget.dart';
 import 'package:taskly_ui/src/sections/feed_body.dart';
 import 'package:taskly_ui/src/sections/value_distribution_section.dart';
+import 'package:taskly_ui/src/foundations/theme/taskly_semantic_themes.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 import 'package:taskly_ui/src/entities/project_entity_tile.dart';
 import 'package:taskly_ui/src/entities/routine_entity_tile.dart';
 import 'package:taskly_ui/src/entities/task_entity_tile.dart';
 import 'package:taskly_ui/src/entities/value_entity_tile.dart';
+import 'package:taskly_ui/src/primitives/taskly_card_surface.dart';
 
 class TasklyFeedRenderer extends StatelessWidget {
   const TasklyFeedRenderer({
@@ -312,21 +314,21 @@ class _HeaderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final chromeTheme = TasklyEntityRowChromeTheme.of(context);
 
     final titleStyle = theme.textTheme.titleMedium?.copyWith(
-      color: scheme.onSurface,
+      color: chromeTheme.headerText,
       fontWeight: FontWeight.w700,
     );
 
     final trailingStyle = theme.textTheme.labelSmall?.copyWith(
-      color: scheme.onSurfaceVariant,
+      color: chromeTheme.subtleText,
       fontWeight: FontWeight.w600,
     );
 
     final subtitleStyle = theme.textTheme.labelSmall?.copyWith(
-      color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+      color: chromeTheme.subtleText.withValues(alpha: 0.7),
       fontWeight: FontWeight.w600,
     );
 
@@ -345,7 +347,7 @@ class _HeaderRow extends StatelessWidget {
               Icon(
                 row.leadingIcon,
                 size: tokens.spaceLg2,
-                color: row.leadingIconColor ?? scheme.onSurfaceVariant,
+                color: row.leadingIconColor ?? chromeTheme.subtleText,
               ),
               SizedBox(width: tokens.spaceSm),
             ],
@@ -369,7 +371,7 @@ class _HeaderRow extends StatelessWidget {
                 icon: Icon(
                   row.trailingActionIcon,
                   size: tokens.spaceLg2,
-                  color: scheme.onSurfaceVariant,
+                  color: chromeTheme.subtleText,
                 ),
               ),
               SizedBox(width: tokens.spaceXs2),
@@ -378,7 +380,7 @@ class _HeaderRow extends StatelessWidget {
               Icon(
                 row.trailingIcon,
                 size: tokens.spaceLg2,
-                color: scheme.onSurfaceVariant,
+                color: chromeTheme.subtleText,
               ),
           ],
         ),
@@ -394,9 +396,7 @@ class _HeaderRow extends StatelessWidget {
         SizedBox(height: tokens.spaceSm),
         Container(
           height: 1,
-          color: scheme.outlineVariant.withValues(
-            alpha: row.dividerOpacity ?? 0.55,
-          ),
+          color: chromeTheme.divider.withValues(alpha: row.dividerOpacity ?? 1),
         ),
       ],
     );
@@ -429,11 +429,11 @@ class _SubheaderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final chromeTheme = TasklyEntityRowChromeTheme.of(context);
 
     final titleStyle = theme.textTheme.labelSmall?.copyWith(
-      color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
+      color: chromeTheme.subtleText.withValues(alpha: 0.6),
       fontWeight: FontWeight.w600,
     );
 
@@ -456,7 +456,7 @@ class _SubheaderRow extends StatelessWidget {
           SizedBox(height: tokens.spaceXs2),
           Container(
             height: 1,
-            color: scheme.outlineVariant.withValues(alpha: 0.45),
+            color: chromeTheme.divider.withValues(alpha: 0.82),
           ),
         ],
       ),
@@ -467,12 +467,12 @@ class _SubheaderRow extends StatelessWidget {
 class _DividerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final chromeTheme = TasklyEntityRowChromeTheme.of(context);
     final tokens = TasklyTokens.of(context);
     return Container(
       height: 1,
       margin: EdgeInsets.symmetric(horizontal: tokens.sectionPaddingH),
-      color: scheme.outlineVariant.withValues(alpha: 0.55),
+      color: chromeTheme.divider,
     );
   }
 }
@@ -580,9 +580,9 @@ class _ScheduledDaySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final tokens = TasklyTokens.of(context);
+    final chromeTheme = TasklyEntityRowChromeTheme.of(context);
 
     final effectiveCount = countLabel?.trim();
     final hasCount = effectiveCount != null && effectiveCount.isNotEmpty;
@@ -614,7 +614,7 @@ class _ScheduledDaySection extends StatelessWidget {
                         child: Text(
                           title,
                           style: textTheme.titleMedium?.copyWith(
-                            color: scheme.onSurface,
+                            color: chromeTheme.headerText,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -627,7 +627,7 @@ class _ScheduledDaySection extends StatelessWidget {
                   Text(
                     effectiveCount,
                     style: textTheme.labelSmall?.copyWith(
-                      color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+                      color: chromeTheme.subtleText.withValues(alpha: 0.85),
                     ),
                   ),
               ],
@@ -636,7 +636,7 @@ class _ScheduledDaySection extends StatelessWidget {
           Divider(
             height: 1,
             thickness: 1,
-            color: scheme.outlineVariant.withValues(alpha: 0.6),
+            color: chromeTheme.divider,
           ),
           SizedBox(height: tokens.spaceSm2),
           _RowList(
@@ -666,53 +666,50 @@ class _EmptyRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final chromeTheme = TasklyEntityRowChromeTheme.of(context);
 
-    return Material(
-      color: scheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(tokens.radiusMd2),
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(
-          tokens.spaceMd,
-          tokens.spaceSm2,
-          tokens.spaceMd,
-          tokens.spaceSm2,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              size: tokens.spaceLg2,
-              color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+    return TasklyCardSurface(
+      variant: TasklyCardVariant.subtle,
+      padding: EdgeInsets.fromLTRB(
+        tokens.spaceMd,
+        tokens.spaceSm2,
+        tokens.spaceMd,
+        tokens.spaceSm2,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.inbox_outlined,
+            size: tokens.spaceLg2,
+            color: chromeTheme.emptyRowIcon,
+          ),
+          SizedBox(width: tokens.spaceSm),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: chromeTheme.subtleText,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            SizedBox(width: tokens.spaceSm),
-            Expanded(
-              child: Text(
-                label,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
+          ),
+          if (onAddRequested != null)
+            TextButton.icon(
+              onPressed: onAddRequested,
+              icon: Icon(Icons.add_rounded, size: tokens.spaceLg2),
+              label: Text(addLabel ?? ''),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spaceSm2,
+                  vertical: tokens.spaceXs2,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                minimumSize: Size(0, tokens.minTapTargetSize),
               ),
             ),
-            if (onAddRequested != null)
-              TextButton.icon(
-                onPressed: onAddRequested,
-                icon: Icon(Icons.add_rounded, size: tokens.spaceLg2),
-                label: Text(addLabel ?? ''),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.spaceSm2,
-                    vertical: tokens.spaceXs2,
-                  ),
-                  minimumSize: Size(0, tokens.minTapTargetSize),
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -747,6 +744,7 @@ class _ScheduledOverdueSection extends StatelessWidget {
     final scheme = theme.colorScheme;
     final textTheme = theme.textTheme;
     final tokens = TasklyTokens.of(context);
+    final chromeTheme = TasklyEntityRowChromeTheme.of(context);
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -780,7 +778,7 @@ class _ScheduledOverdueSection extends StatelessWidget {
                 Text(
                   countLabel,
                   style: textTheme.labelSmall?.copyWith(
-                    color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+                    color: chromeTheme.subtleText.withValues(alpha: 0.85),
                   ),
                 ),
               ],
@@ -804,7 +802,7 @@ class _ScheduledOverdueSection extends StatelessWidget {
               child: Text(
                 emptyLabel,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
+                  color: chromeTheme.subtleText,
                   fontWeight: FontWeight.w600,
                 ),
               ),

@@ -46,7 +46,7 @@ Ownership table:
 | Writes (user intents -> mutations) | Domain (use-cases / write facades) | Presentation interprets the user intent and passes `OperationContext`. |
 | Reactive composition for a screen | Presentation (BLoC + optional query services) | Domain provides facts/streams; presentation decides combination + screen state machine. |
 | Formatting/localization/accessibility strings | Presentation / UI | Domain must not produce localized strings or UI copy. |
-| Widgets, styling, reusable entities/sections | `packages/taskly_ui` | Pure UI only; no BLoCs, DI, repositories, or routing. |
+| Widgets, styling, reusable entities/sections | `packages/taskly_ui` | Taskly-only render layer; no BLoCs, DI, repositories, analytics, or routing. |
 
 ### 0.1.1 Domain outputs must be view-neutral (strict)
 
@@ -315,11 +315,12 @@ Normative rules:
 - **Entity rows are canonical**: Task/Project/Value/Routine rows must render
   through the feed schema + renderer with styles/presets. Screen-local entity
   widgets are not allowed.
-- **4-tier ownership**: primitives/entities/sections live in `taskly_ui`;
+- **4-tier ownership**: Taskly design-system primitives/entities/sections live in `taskly_ui`;
   screens/templates live in app presentation. App screens may only compose
   shared UI, not define new primitives/entities/sections.
-- **Pure UI boundary**: `taskly_ui` is render-only (no BLoC/DI/services,
-  routing, or analytics). Data in / events out only.
+- **Taskly-only render boundary**: `taskly_ui` is Taskly's private design
+  system package and must remain render-only (no BLoC/DI/services, routing,
+  or analytics). Data in / events out only.
 - **Public API hygiene**: no deep imports from `package:taskly_ui/src/...`.
 - **Catalog visibility**: all entity row styles/presets appear in
   `TasklyTileCatalog`.
@@ -420,6 +421,9 @@ Rationale:
 ### 2.2 `taskly_ui` shared surface governance (strict)
 
 Changes to `packages/taskly_ui` are governed by shared-surface rules.
+
+`taskly_ui` is a Taskly-only package, not a generic reusable package. That does
+not relax the render-only boundary.
 
 Definitions:
 

@@ -15,6 +15,8 @@ Architecture docs are split into normative rules, indexes, contracts, and operat
   [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
 - Shared UI alignment:
   [specs/TASKLY_UI_MATERIAL_ALIGNMENT_OPTION_B.md](specs/TASKLY_UI_MATERIAL_ALIGNMENT_OPTION_B.md)
+- Taskly UI private design system uplift:
+  [specs/TASKLY_UI_PRIVATE_DESIGN_SYSTEM_UPLIFT_SPEC.md](specs/TASKLY_UI_PRIVATE_DESIGN_SYSTEM_UPLIFT_SPEC.md)
 - Semantic theming contract:
   [specs/SEMANTIC_THEMING_CONTRACT.md](specs/SEMANTIC_THEMING_CONTRACT.md)
 - Local E2E stack:

@@ -2,8 +2,8 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 
 import '../../helpers/test_environment.dart';
 import '../../helpers/test_imports.dart';
@@ -20,7 +20,7 @@ void main() {
         theme: AppTheme.lightTheme(),
         home: const Scaffold(
           body: TasklyPageHeader(
-            screenId: 'projects',
+            icon: Icons.folder_open_outlined,
             title: 'Projects',
             subtitle: 'Portfolio overview',
             footer: Wrap(

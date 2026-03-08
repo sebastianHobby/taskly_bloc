@@ -7,11 +7,10 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_chrome_icon_button.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
@@ -27,6 +26,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/time.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -1259,8 +1259,12 @@ class _ProjectsTitleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TasklyPageHeader(
+    final iconSet = const NavigationIconResolver().resolve(
       screenId: 'projects',
+      iconName: null,
+    );
+    return TasklyPageHeader(
+      icon: iconSet.selectedIcon,
       title: context.l10n.projectsTitle,
     );
   }

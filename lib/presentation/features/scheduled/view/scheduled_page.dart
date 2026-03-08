@@ -6,13 +6,12 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/task_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_timeline_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_chrome_icon_button.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
@@ -30,6 +29,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/time.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -982,8 +982,12 @@ class _ScheduledTitleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TasklyPageHeader(
+    final iconSet = const NavigationIconResolver().resolve(
       screenId: 'scheduled',
+      iconName: null,
+    );
+    return TasklyPageHeader(
+      icon: iconSet.selectedIcon,
       title: context.l10n.scheduledTitle,
     );
   }

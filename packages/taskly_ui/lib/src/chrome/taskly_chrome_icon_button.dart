@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
-import 'package:taskly_ui/taskly_ui_tokens.dart';
+import 'package:taskly_ui/src/foundations/theme/taskly_semantic_themes.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 ButtonStyle tasklyChromeIconButtonStyle(BuildContext context) {
   final tokens = TasklyTokens.of(context);

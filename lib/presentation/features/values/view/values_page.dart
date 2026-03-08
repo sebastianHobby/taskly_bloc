@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/values_hero_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/model/value_sort_order.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/values_list.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -16,6 +16,7 @@ import 'package:taskly_bloc/presentation/shared/session/session_shared_data_serv
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
@@ -225,8 +226,12 @@ class _ValuesTitleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TasklyPageHeader(
+    final iconSet = const NavigationIconResolver().resolve(
       screenId: 'values',
+      iconName: null,
+    );
+    return TasklyPageHeader(
+      icon: iconSet.selectedIcon,
       title: context.l10n.valuesTitle,
     );
   }

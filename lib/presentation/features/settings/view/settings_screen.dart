@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
-import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -11,10 +12,14 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final iconSet = const NavigationIconResolver().resolve(
+      screenId: 'settings',
+      iconName: null,
+    );
     return Scaffold(
       appBar: AppBar(
         title: TasklyPageHeader(
-          screenId: 'settings',
+          icon: iconSet.selectedIcon,
           title: l10n.settingsTitle,
         ),
         centerTitle: false,

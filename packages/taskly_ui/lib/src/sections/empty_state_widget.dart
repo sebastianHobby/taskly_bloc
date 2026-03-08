@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_ui/src/foundations/theme/taskly_semantic_themes.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 /// A reusable empty state widget that displays an icon, title, and optional
@@ -116,8 +117,8 @@ class EmptyStateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final emptyTheme = TasklyEmptyStateTheme.of(context);
 
     return Center(
       child: Padding(
@@ -129,22 +130,20 @@ class EmptyStateWidget extends StatelessWidget {
               width: iconSize + tokens.spaceXxl,
               height: iconSize + tokens.spaceXxl,
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.5,
-                ),
+                color: emptyTheme.iconSurface,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
                 size: iconSize,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                color: emptyTheme.iconColor,
               ),
             ),
             SizedBox(height: tokens.spaceXl),
             Text(
               title,
               style: theme.textTheme.titleLarge?.copyWith(
-                color: colorScheme.onSurface,
+                color: emptyTheme.titleColor,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
@@ -154,7 +153,7 @@ class EmptyStateWidget extends StatelessWidget {
               Text(
                 description!,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                  color: emptyTheme.descriptionColor,
                 ),
                 textAlign: TextAlign.center,
               ),

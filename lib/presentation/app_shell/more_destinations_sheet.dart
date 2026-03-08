@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
+import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 Future<String?> showMoreDestinationsSheet({

@@ -4,4 +4,7 @@
 library;
 
 export 'src/primitives/meta_badges.dart';
+export 'src/primitives/taskly_card_surface.dart';
+export 'src/primitives/taskly_chip.dart';
+export 'src/primitives/taskly_sheet_chrome.dart';
 export 'src/primitives/taskly_settings_card.dart';

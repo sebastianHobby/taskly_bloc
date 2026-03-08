@@ -12,11 +12,11 @@ import 'package:taskly_bloc/presentation/features/journal/widgets/journal_factor
 import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_bloc/presentation/shared/widgets/taskly_page_gradient_surface.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
+import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalHistoryPage extends StatefulWidget {

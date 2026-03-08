@@ -6,12 +6,12 @@ import 'package:taskly_bloc/presentation/features/review/widgets/weekly_value_ch
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/settings.dart';
+import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 Future<void> showWeeklyReviewModal(

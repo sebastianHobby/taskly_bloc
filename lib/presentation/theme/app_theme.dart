@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
+import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Centralized application theme.
@@ -64,6 +64,12 @@ class AppTheme {
     final chromeTheme = TasklyAppChromeTheme.fromTheme(base);
     final pageHeaderTheme = TasklyPageHeaderTheme.fromTheme(base);
     final panelTheme = TasklyPanelTheme.fromTheme(base);
+    final cardTheme = TasklyCardTheme.fromTheme(base);
+    final chipTheme = TasklyChipTheme.fromTheme(base);
+    final emptyStateTheme = TasklyEmptyStateTheme.fromTheme(base);
+    final sheetTheme = TasklySheetTheme.fromTheme(base);
+    final insightTheme = TasklyInsightTheme.fromTheme(base);
+    final rowChromeTheme = TasklyEntityRowChromeTheme.fromTheme(base);
 
     return base.copyWith(
       extensions: <ThemeExtension<dynamic>>[
@@ -71,6 +77,12 @@ class AppTheme {
         chromeTheme,
         pageHeaderTheme,
         panelTheme,
+        cardTheme,
+        chipTheme,
+        emptyStateTheme,
+        sheetTheme,
+        insightTheme,
+        rowChromeTheme,
       ],
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -110,6 +122,12 @@ class AppTheme {
     final chromeTheme = TasklyAppChromeTheme.fromTheme(semanticBase);
     final pageHeaderTheme = TasklyPageHeaderTheme.fromTheme(semanticBase);
     final panelTheme = TasklyPanelTheme.fromTheme(semanticBase);
+    final cardTheme = TasklyCardTheme.fromTheme(semanticBase);
+    final chipTheme = TasklyChipTheme.fromTheme(semanticBase);
+    final emptyStateTheme = TasklyEmptyStateTheme.fromTheme(semanticBase);
+    final sheetTheme = TasklySheetTheme.fromTheme(semanticBase);
+    final insightTheme = TasklyInsightTheme.fromTheme(semanticBase);
+    final rowChromeTheme = TasklyEntityRowChromeTheme.fromTheme(semanticBase);
 
     return base.copyWith(
       extensions: <ThemeExtension<dynamic>>[
@@ -117,6 +135,12 @@ class AppTheme {
         chromeTheme,
         pageHeaderTheme,
         panelTheme,
+        cardTheme,
+        chipTheme,
+        emptyStateTheme,
+        sheetTheme,
+        insightTheme,
+        rowChromeTheme,
       ],
 
       // AppBar theme

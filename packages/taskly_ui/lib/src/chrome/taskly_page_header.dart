@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
-import 'package:taskly_ui/taskly_ui_tokens.dart';
+import 'package:taskly_ui/src/foundations/theme/taskly_semantic_themes.dart';
+import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+import 'package:taskly_ui/src/primitives/taskly_chip.dart';
 
 class TasklyPageHeader extends StatelessWidget {
   const TasklyPageHeader({
-    required this.screenId,
+    required this.icon,
     required this.title,
     this.trailing,
     this.subtitle,
@@ -13,7 +13,7 @@ class TasklyPageHeader extends StatelessWidget {
     super.key,
   });
 
-  final String screenId;
+  final IconData icon;
   final String title;
   final Widget? trailing;
   final String? subtitle;
@@ -24,10 +24,6 @@ class TasklyPageHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
     final headerTheme = TasklyPageHeaderTheme.of(context);
-    final iconSet = const NavigationIconResolver().resolve(
-      screenId: screenId,
-      iconName: null,
-    );
 
     return Padding(
       padding: headerTheme.padding,
@@ -38,7 +34,7 @@ class TasklyPageHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(
-                iconSet.selectedIcon,
+                icon,
                 color: headerTheme.iconColor,
                 size: headerTheme.iconSize,
               ),
@@ -77,33 +73,15 @@ class TasklyPageHeader extends StatelessWidget {
 class TasklyHeaderChip extends StatelessWidget {
   const TasklyHeaderChip({
     required this.label,
+    this.variant = TasklyChipVariant.metric,
     super.key,
   });
 
   final String label;
+  final TasklyChipVariant variant;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final headerTheme = TasklyPageHeaderTheme.of(context);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: headerTheme.chipBackground,
-        borderRadius: BorderRadius.circular(tokens.radiusPill),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spaceSm2,
-          vertical: tokens.spaceXs2,
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: headerTheme.chipForeground,
-          ),
-        ),
-      ),
-    );
+    return TasklyChip(label: label, variant: variant);
   }
 }

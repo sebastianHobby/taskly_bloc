@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
-import 'package:taskly_bloc/presentation/shared/widgets/taskly_page_gradient_surface.dart';
-import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
+import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalInsightsPage extends StatelessWidget {
