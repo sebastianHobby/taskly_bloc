@@ -66,7 +66,7 @@ class JournalTrackerTemplatesPage extends StatelessWidget {
                 },
                 onCreateFromScratch: () => Routing.toJournalTrackerConfigure(
                   context,
-                  kind: kind,
+                  scope: _isAggregate ? 'day' : 'entry',
                 ),
               ),
             },

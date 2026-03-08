@@ -3602,6 +3602,14 @@
     "journalLogsTitle": "Registros",
     "journalManageTrackersLabel": "Administrar trackers",
     "journalManageTrackersTitle": "Administrar trackers",
+    "journalSystemTrackersTitle": "Trackers del sistema",
+    "@journalSystemTrackersTitle": {
+        "description": "Title for the system/default trackers section in manage trackers"
+    },
+    "journalCustomTrackersTitle": "Trackers personalizados",
+    "@journalCustomTrackersTitle": {
+        "description": "Title for the custom trackers section in manage trackers"
+    },
     "journalMeasurementTitle": "Medicin",
     "journalMoodAverageEmpty": "Sin datos de estado de nimo",
     "journalMoodAverageValue": "Promedio {value}",

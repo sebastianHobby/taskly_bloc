@@ -38,7 +38,10 @@ import 'package:taskly_bloc/presentation/shared/session/session_shared_data_serv
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/core/notifications/notification_permission_service.dart';
+import 'package:taskly_bloc/core/notifications/plan_my_day_reminder_scheduler_service.dart';
+import 'package:taskly_bloc/core/notifications/scheduled_notification_sync_service.dart';
 import 'package:taskly_bloc/core/notifications/taskly_notification_service.dart';
+import 'package:taskly_bloc/core/notifications/task_reminder_scheduler_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -70,6 +73,7 @@ Future<void> setupDependencies() async {
       ),
     )
     ..registerSingleton<NotificationPermissionService>(notificationService)
+    ..registerSingleton<ScheduledNotificationSyncService>(notificationService)
     // Bind taskly_data implementations to taskly_domain contracts.
     ..registerSingleton<TasklyDataBindings>(
       dataStack.createBindings(
@@ -203,21 +207,21 @@ Future<void> setupDependencies() async {
         temporalTriggerService: getIt<TemporalTriggerService>(),
       ),
     )
-    ..registerLazySingleton<PlanMyDayReminderService>(
-      () => PlanMyDayReminderService(
+    ..registerLazySingleton<PlanMyDayReminderSchedulerService>(
+      () => PlanMyDayReminderSchedulerService(
         settingsRepository: getIt<SettingsRepositoryContract>(),
         myDayRepository: getIt<MyDayRepositoryContract>(),
         homeDayKeyService: getIt<HomeDayKeyService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
-        presenter: getIt<NotificationPresenter>(),
+        notificationSyncService: getIt<ScheduledNotificationSyncService>(),
         clock: getIt<Clock>(),
       ),
     )
-    ..registerLazySingleton<TaskReminderService>(
-      () => TaskReminderService(
+    ..registerLazySingleton<TaskReminderSchedulerService>(
+      () => TaskReminderSchedulerService(
         taskRepository: getIt<TaskRepositoryContract>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
-        presenter: getIt<NotificationPresenter>(),
+        notificationSyncService: getIt<ScheduledNotificationSyncService>(),
         clock: getIt<Clock>(),
       ),
     )
@@ -341,8 +345,9 @@ Future<void> setupDependencies() async {
         homeDayKeyService: getIt<HomeDayKeyService>(),
         appLifecycleService: getIt<AppLifecycleService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),
-        planMyDayReminderService: getIt<PlanMyDayReminderService>(),
-        taskReminderService: getIt<TaskReminderService>(),
+        planMyDayReminderSchedulerService:
+            getIt<PlanMyDayReminderSchedulerService>(),
+        taskReminderSchedulerService: getIt<TaskReminderSchedulerService>(),
         attentionTemporalInvalidationService:
             getIt<AttentionTemporalInvalidationService>(),
         attentionPrewarmService: getIt<AttentionPrewarmService>(),

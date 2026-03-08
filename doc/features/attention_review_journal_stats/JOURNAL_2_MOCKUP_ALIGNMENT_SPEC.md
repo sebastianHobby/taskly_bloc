@@ -9,7 +9,7 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 
 ## Implementation Progress (Phased)
 - Phase 1 - Routing + tracker flow surfaces: Completed
-  - Added route-based tracker creation flow (`type -> templates -> configure`) and wired navigation entry points.
+  - Added route-based tracker creation flow and wired navigation entry points.
 - Phase 2 - Tracker model + persistence updates: Completed
   - Added `aggregationKind` end-to-end (domain model, drift schema, PowerSync schema, repository mapping).
 - Phase 3 - Manage/Template UX alignment: Completed
@@ -79,9 +79,10 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 ## Goals
 - Match mockup visual hierarchy, density, and interaction patterns.
 - Maintain BLoC-only presentation boundary and theming constraints.
-- Support two tracker classes:
-  - Activity trackers (event-based, per moment)
-  - Aggregate trackers (running total over day; sum or average)
+- Support custom tracker creation with scope-first choices:
+  - Per moment
+  - Daily summary
+- Keep `sleep_night` trackers system-only and out of the user creation flow.
 - Respect user-defined groups, ordering, names, icons, and tracker metadata.
 - Ensure all tracker lists are data-backed (no static UI-only templates).
 
@@ -185,25 +186,18 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 
 ### Routes
 - `journal_tracker_type_selection`
-- `journal_tracker_templates`
 - `journal_tracker_configure`
 
 ### Type Selection
-- Two large cards (Activity vs Aggregate).
+- Two large cards (Per moment vs Daily summary).
 - No helper tips.
 - Remains a plain route page; do not embed the tracker flow in the tab shell solely for mockup parity.
-
-### Templates
-- Two-column template grid with tighter card density, lighter add/selected affordances, and mockup-aligned create-from-scratch treatment.
-- System defaults appear preselected with toggle on/off.
-- System defaults use user-friendly language and are toggle-only.
-- User-created trackers appear in list immediately after creation.
 
 ### Configure Tracker
 - Tracker name field.
 - Icon picker.
-- Activity tracker configure uses grouped-card selection + icon rail composition aligned to `taskly_home_high_density_dark_3`.
-- Aggregation type selector for aggregate trackers (Sum/Average).
+- Per-moment custom tracker configure uses grouped-card selection + icon rail composition aligned to `taskly_home_high_density_dark_3`.
+- Daily quantity trackers expose aggregation type selector (Sum/Average).
 - Unit dropdown (data-backed catalog).
 - Daily goal stepper (optional).
 - Compact preview block shows how the tracker will read in quick capture and home surfaces before save.
@@ -211,8 +205,8 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 
 ### AC
 - Flow is route-based; Stepper UI removed from default path.
-- Template surface is a flat list.
-- System defaults are preselected and toggleable.
+- Type selection chooses creation scope, not system-vs-custom catalog.
+- `sleep_night` is not shown in user creation.
 - User-created trackers appear without restart.
 - Group/order/name/icon reflect user-defined data.
 - Screens closely line up with mockup composition and spacing.
@@ -222,12 +216,15 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 ## 5) Manage Trackers
 
 ### UI Changes
-- Segmented control: Activity vs Aggregate.
-- Trackers grouped by user-defined groups.
+- System/default trackers render in a dedicated section and remain visible even when inactive.
+- System/default tracker rows are toggle-only.
+- Custom trackers are grouped by user-defined groups.
 - Tracker rows use custom grouped containers with icon, name, subtitle, and direct trailing actions.
 - System trackers show toggle only; delete is hidden/disabled.
 
 ### AC
+- System/default trackers do not appear in the add-new-tracker flow.
+- System/default trackers always appear in Manage Trackers under their own section.
 - Group order and tracker order follow user-defined sort.
 - System trackers cannot be deleted in UI.
 - User trackers show edit + delete actions.
@@ -268,8 +265,6 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 ## Tracker Creation (Route-based)
 - [x] Create type-selection screen:
   - `lib/presentation/features/journal/view/journal_tracker_type_selection_page.dart` (new)
-- [x] Create templates flat-list screen:
-  - `lib/presentation/features/journal/view/journal_tracker_templates_page.dart` (new)
 - [x] Refactor configure screen from wizard flow:
   - `lib/presentation/features/journal/view/journal_tracker_wizard_page.dart` (or split new page)
 - [x] Update creation BLoC state transitions:

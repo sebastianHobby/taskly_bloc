@@ -509,15 +509,16 @@ GoRouter createRouter({
           GoRoute(
             path: '/journal/trackers/configure',
             builder: (_, state) {
-              final rawKind = state.uri.queryParameters['kind']?.toLowerCase();
-              final trackerKind = rawKind == 'aggregate'
-                  ? JournalTrackerKind.aggregate
-                  : rawKind == 'activity'
-                  ? JournalTrackerKind.activity
-                  : null;
+              final rawScope = state.uri.queryParameters['scope']
+                  ?.toLowerCase();
+              final forcedScope = switch (rawScope) {
+                'day' => JournalTrackerScopeOption.day,
+                'entry' => JournalTrackerScopeOption.entry,
+                _ => null,
+              };
               return JournalTrackerWizardPage(
                 mode: JournalTrackerWizardMode.tracker,
-                trackerKind: trackerKind,
+                forcedScope: forcedScope,
               );
             },
           ),

@@ -18,27 +18,29 @@ enum JournalTrackerWizardMode { tracker, dailyCheckin }
 class JournalTrackerWizardPage extends StatelessWidget {
   const JournalTrackerWizardPage({
     this.mode = JournalTrackerWizardMode.tracker,
-    this.trackerKind,
+    this.forcedScope,
     super.key,
   });
 
   final JournalTrackerWizardMode mode;
-  final JournalTrackerKind? trackerKind;
+  final JournalTrackerScopeOption? forcedScope;
 
   @override
   Widget build(BuildContext context) {
-    final forcedScope = mode == JournalTrackerWizardMode.dailyCheckin
+    final effectiveForcedScope = mode == JournalTrackerWizardMode.dailyCheckin
         ? JournalTrackerScopeOption.day
-        : JournalTrackerScopeOption.entry;
+        : forcedScope;
     return BlocProvider<JournalTrackerWizardBloc>(
       create: (context) => JournalTrackerWizardBloc(
         repository: context.read<JournalRepositoryContract>(),
         errorReporter: context.read<AppErrorReporter>(),
         nowUtc: context.read<NowService>().nowUtc,
-        forcedScope: forcedScope,
-        trackerKind: trackerKind,
+        forcedScope: effectiveForcedScope,
       )..add(const JournalTrackerWizardStarted()),
-      child: _JournalTrackerWizardView(mode: mode, trackerKind: trackerKind),
+      child: _JournalTrackerWizardView(
+        mode: mode,
+        forcedScope: effectiveForcedScope,
+      ),
     );
   }
 }
@@ -46,11 +48,11 @@ class JournalTrackerWizardPage extends StatelessWidget {
 class _JournalTrackerWizardView extends StatefulWidget {
   const _JournalTrackerWizardView({
     required this.mode,
-    required this.trackerKind,
+    required this.forcedScope,
   });
 
   final JournalTrackerWizardMode mode;
-  final JournalTrackerKind? trackerKind;
+  final JournalTrackerScopeOption? forcedScope;
 
   @override
   State<_JournalTrackerWizardView> createState() =>
@@ -90,11 +92,12 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
         final tokens = TasklyTokens.of(context);
         final isSaving = state.status is JournalTrackerWizardSaving;
         final isLoading = state.status is JournalTrackerWizardLoading;
-        final isAggregateKind =
-            widget.trackerKind == JournalTrackerKind.aggregate;
-        final isActivityKind =
-            widget.trackerKind == JournalTrackerKind.activity &&
-            widget.mode == JournalTrackerWizardMode.tracker;
+        final isEntryTrackerFlow =
+            widget.mode == JournalTrackerWizardMode.tracker &&
+            widget.forcedScope == JournalTrackerScopeOption.entry;
+        final isDayTrackerFlow =
+            widget.mode == JournalTrackerWizardMode.tracker &&
+            widget.forcedScope == JournalTrackerScopeOption.day;
 
         if (_nameController.text != state.name) {
           _nameController.text = state.name;
@@ -106,10 +109,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
         bool canSave() {
           if (state.name.trim().isEmpty) return false;
           final effectiveMeasurement =
-              state.measurement ??
-              (isAggregateKind
-                  ? JournalTrackerMeasurementType.quantity
-                  : JournalTrackerMeasurementType.toggle);
+              state.measurement ?? JournalTrackerMeasurementType.toggle;
           if (effectiveMeasurement == JournalTrackerMeasurementType.choice) {
             return state.choiceLabels.any((label) => label.trim().isNotEmpty);
           }
@@ -122,7 +122,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
 
         final body = isLoading
             ? const Center(child: CircularProgressIndicator())
-            : isActivityKind
+            : isEntryTrackerFlow
             ? _buildActivityFormBody(
                 context: context,
                 state: state,
@@ -131,14 +131,14 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
             : _buildFormBody(
                 context: context,
                 state: state,
-                isAggregateKind: isAggregateKind,
+                isDayTrackerFlow: isDayTrackerFlow,
                 isSaving: isSaving,
               );
 
         return Scaffold(
           appBar: AppBar(
             title: Text(
-              isActivityKind
+              isEntryTrackerFlow
                   ? context.l10n.journalNewTrackerTitle
                   : context.l10n.journalConfigureTrackerTitle,
             ),
@@ -167,7 +167,9 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                           color: theme.colorScheme.onPrimary,
                         ),
                       )
-                    : Icon(isActivityKind ? Icons.check : Icons.arrow_forward),
+                    : Icon(
+                        isEntryTrackerFlow ? Icons.check : Icons.arrow_forward,
+                      ),
                 label: Text(context.l10n.createLabel),
               ),
             ),
@@ -490,7 +492,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
   Widget _buildFormBody({
     required BuildContext context,
     required JournalTrackerWizardState state,
-    required bool isAggregateKind,
+    required bool isDayTrackerFlow,
     required bool isSaving,
   }) {
     final theme = Theme.of(context);
@@ -501,15 +503,12 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
     }
 
     final showMeasurementSelector =
-        widget.mode == JournalTrackerWizardMode.tracker && !isAggregateKind;
+        widget.mode == JournalTrackerWizardMode.tracker;
     final measurement =
-        state.measurement ??
-        (isAggregateKind
-            ? JournalTrackerMeasurementType.quantity
-            : JournalTrackerMeasurementType.toggle);
+        state.measurement ?? JournalTrackerMeasurementType.toggle;
     final showAggregationSection =
         measurement == JournalTrackerMeasurementType.quantity &&
-        isAggregateKind;
+        isDayTrackerFlow;
     final showQuantitySection =
         measurement == JournalTrackerMeasurementType.quantity;
 
@@ -624,7 +623,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
               ),
               if (widget.mode == JournalTrackerWizardMode.tracker &&
                   state.groups.isNotEmpty &&
-                  !isAggregateKind) ...[
+                  !isDayTrackerFlow) ...[
                 SizedBox(height: tokens.spaceMd),
                 DropdownButtonFormField<String>(
                   value: state.groupId,
@@ -675,8 +674,9 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                 ),
                 _MeasurementOption(
                   title: context.l10n.journalMeasurementQuantityTitle,
-                  subtitle:
-                      context.l10n.journalMeasurementQuantityEntrySubtitle,
+                  subtitle: isDayTrackerFlow
+                      ? context.l10n.journalDailySummarySubtitle
+                      : context.l10n.journalMeasurementQuantityEntrySubtitle,
                   selected:
                       measurement == JournalTrackerMeasurementType.quantity,
                   onTap: isSaving
@@ -775,7 +775,7 @@ class _JournalTrackerWizardViewState extends State<_JournalTrackerWizardView> {
                   unit: state.quantityUnit,
                   aggregationKind: state.aggregationKind,
                   quantityGoal: state.quantityGoal,
-                  isAggregate: isAggregateKind,
+                  isAggregate: isDayTrackerFlow,
                 ),
               ],
               if (measurement == JournalTrackerMeasurementType.choice) ...[

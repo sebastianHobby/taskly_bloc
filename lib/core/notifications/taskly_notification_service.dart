@@ -5,11 +5,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:taskly_bloc/core/notifications/notification_permission_service.dart';
+import 'package:taskly_bloc/core/notifications/scheduled_notification_sync_service.dart';
 import 'package:taskly_bloc/l10n/gen/app_localizations.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/taskly_domain.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 
-class TasklyNotificationService implements NotificationPermissionService {
+class TasklyNotificationService
+    implements NotificationPermissionService, ScheduledNotificationSyncService {
   TasklyNotificationService({
     FlutterLocalNotificationsPlugin? plugin,
   }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
@@ -25,6 +29,8 @@ class TasklyNotificationService implements NotificationPermissionService {
 
   Future<void> initialize() async {
     if (_initialized || !_supportsNotifications()) return;
+
+    tz_data.initializeTimeZones();
 
     const initializationSettings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
@@ -122,6 +128,56 @@ class TasklyNotificationService implements NotificationPermissionService {
     await AppSettings.openAppSettings(type: AppSettingsType.notification);
   }
 
+  @override
+  Future<void> clearScheduledNotifications({required String namespace}) async {
+    if (!_supportsNotifications()) return;
+
+    await initialize();
+    final existing = await _managedPendingRequests(namespace: namespace);
+    for (final request in existing) {
+      await _plugin.cancel(request.id);
+    }
+  }
+
+  @override
+  Future<void> syncScheduledNotifications({
+    required String namespace,
+    required Iterable<PendingNotification> notifications,
+  }) async {
+    if (!_supportsNotifications()) return;
+
+    await initialize();
+
+    await clearScheduledNotifications(namespace: namespace);
+
+    final status = await getStatus();
+    if (!status.isGranted) return;
+    final nowUtc = DateTime.now().toUtc();
+
+    for (final notification in notifications) {
+      if (!notification.scheduledFor.isAfter(nowUtc)) continue;
+      final content = _buildContent(notification);
+      final details = _notificationDetails();
+      final payload = jsonEncode(<String, Object?>{
+        'taskly_managed': true,
+        'namespace': namespace,
+        'notification_id': notification.id,
+        'screenKey': notification.screenKey,
+        'scheduledFor': notification.scheduledFor.toIso8601String(),
+      });
+
+      await _plugin.zonedSchedule(
+        _notificationId(notification.id),
+        content.title,
+        content.body,
+        tz.TZDateTime.from(notification.scheduledFor, tz.UTC),
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: payload,
+      );
+    }
+  }
+
   Future<void> call(PendingNotification notification) async {
     final status = await getStatus();
     if (!status.isGranted) {
@@ -139,21 +195,7 @@ class TasklyNotificationService implements NotificationPermissionService {
     await initialize();
 
     final content = _buildContent(notification);
-    final details = NotificationDetails(
-      android: const AndroidNotificationDetails(
-        _channelId,
-        _channelName,
-        channelDescription: _channelDescription,
-        importance: Importance.high,
-        priority: Priority.high,
-        category: AndroidNotificationCategory.reminder,
-      ),
-      iOS: const DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      ),
-    );
+    final details = _notificationDetails();
 
     await _plugin.show(
       _notificationId(notification.id),
@@ -165,6 +207,24 @@ class TasklyNotificationService implements NotificationPermissionService {
         'screenKey': notification.screenKey,
         'scheduledFor': notification.scheduledFor.toIso8601String(),
       }),
+    );
+  }
+
+  NotificationDetails _notificationDetails() {
+    return const NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.high,
+        priority: Priority.high,
+        category: AndroidNotificationCategory.reminder,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
     );
   }
 
@@ -207,6 +267,22 @@ class TasklyNotificationService implements NotificationPermissionService {
 
   int _notificationId(String rawId) {
     return rawId.hashCode & 0x7fffffff;
+  }
+
+  Future<List<PendingNotificationRequest>> _managedPendingRequests({
+    required String namespace,
+  }) async {
+    final requests = await _plugin.pendingNotificationRequests();
+    return requests
+        .where((request) {
+          final payload = request.payload;
+          if (payload == null || payload.isEmpty) return false;
+          final decoded = jsonDecode(payload);
+          if (decoded is! Map<String, dynamic>) return false;
+          return decoded['taskly_managed'] == true &&
+              decoded['namespace'] == namespace;
+        })
+        .toList(growable: false);
   }
 
   bool _supportsNotifications() {

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:taskly_bloc/core/notifications/plan_my_day_reminder_scheduler_service.dart';
+import 'package:taskly_bloc/core/notifications/task_reminder_scheduler_service.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/data_stack.dart';
 import 'package:taskly_domain/taskly_domain.dart';
@@ -16,8 +18,9 @@ class AuthenticatedAppServicesCoordinator {
     required HomeDayKeyService homeDayKeyService,
     required AppLifecycleService appLifecycleService,
     required TemporalTriggerService temporalTriggerService,
-    required PlanMyDayReminderService planMyDayReminderService,
-    required TaskReminderService taskReminderService,
+    required PlanMyDayReminderSchedulerService
+    planMyDayReminderSchedulerService,
+    required TaskReminderSchedulerService taskReminderSchedulerService,
     required AttentionTemporalInvalidationService
     attentionTemporalInvalidationService,
     required AttentionPrewarmService attentionPrewarmService,
@@ -25,8 +28,8 @@ class AuthenticatedAppServicesCoordinator {
        _homeDayKeyService = homeDayKeyService,
        _appLifecycleService = appLifecycleService,
        _temporalTriggerService = temporalTriggerService,
-       _planMyDayReminderService = planMyDayReminderService,
-       _taskReminderService = taskReminderService,
+       _planMyDayReminderSchedulerService = planMyDayReminderSchedulerService,
+       _taskReminderSchedulerService = taskReminderSchedulerService,
        _attentionTemporalInvalidationService =
            attentionTemporalInvalidationService,
        _attentionPrewarmService = attentionPrewarmService;
@@ -35,8 +38,8 @@ class AuthenticatedAppServicesCoordinator {
   final HomeDayKeyService _homeDayKeyService;
   final AppLifecycleService _appLifecycleService;
   final TemporalTriggerService _temporalTriggerService;
-  final PlanMyDayReminderService _planMyDayReminderService;
-  final TaskReminderService _taskReminderService;
+  final PlanMyDayReminderSchedulerService _planMyDayReminderSchedulerService;
+  final TaskReminderSchedulerService _taskReminderSchedulerService;
   final AttentionTemporalInvalidationService
   _attentionTemporalInvalidationService;
   final AttentionPrewarmService _attentionPrewarmService;
@@ -63,8 +66,8 @@ class AuthenticatedAppServicesCoordinator {
 
       _appLifecycleService.start();
       _temporalTriggerService.start();
-      _planMyDayReminderService.start();
-      _taskReminderService.start();
+      _planMyDayReminderSchedulerService.start();
+      _taskReminderSchedulerService.start();
 
       _attentionTemporalInvalidationService.start();
       _attentionPrewarmService.start();
@@ -100,8 +103,8 @@ class AuthenticatedAppServicesCoordinator {
       // Stop in reverse-ish order of dependencies.
       await _attentionPrewarmService.stop();
       _attentionTemporalInvalidationService.stop();
-      _taskReminderService.stop();
-      _planMyDayReminderService.stop();
+      await _taskReminderSchedulerService.stop();
+      await _planMyDayReminderSchedulerService.stop();
       _temporalTriggerService.stop();
       _appLifecycleService.stop();
       _homeDayKeyService.stop();

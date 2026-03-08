@@ -285,11 +285,11 @@ abstract final class Routing {
 
   static void toJournalTrackerConfigure(
     BuildContext context, {
-    String? kind,
+    String? scope,
   }) {
     final uri = Uri(
       path: '/journal/trackers/configure',
-      queryParameters: kind == null ? null : <String, String>{'kind': kind},
+      queryParameters: scope == null ? null : <String, String>{'scope': scope},
     );
     GoRouter.of(context).push(uri.toString());
   }

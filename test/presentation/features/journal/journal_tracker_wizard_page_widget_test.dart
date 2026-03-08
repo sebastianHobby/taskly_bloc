@@ -90,7 +90,7 @@ void main() {
   Future<void> pumpPage(
     WidgetTester tester, {
     JournalTrackerWizardMode mode = JournalTrackerWizardMode.tracker,
-    JournalTrackerKind? trackerKind,
+    JournalTrackerScopeOption? forcedScope,
   }) async {
     await tester.pumpApp(
       MultiRepositoryProvider(
@@ -103,7 +103,7 @@ void main() {
             value: FakeNowService(DateTime(2025, 1, 15, 9)),
           ),
         ],
-        child: JournalTrackerWizardPage(mode: mode, trackerKind: trackerKind),
+        child: JournalTrackerWizardPage(mode: mode, forcedScope: forcedScope),
       ),
     );
   }
@@ -158,7 +158,9 @@ void main() {
     expect(captured.scope, 'day');
   });
 
-  testWidgetsSafe('activity configure shows preview and saves', (tester) async {
+  testWidgetsSafe('entry tracker configure shows preview and saves', (
+    tester,
+  ) async {
     final now = DateTime(2025, 1, 15);
     groupsSubject.add([
       TrackerGroup(
@@ -179,7 +181,10 @@ void main() {
       ),
     ]);
 
-    await pumpPage(tester, trackerKind: JournalTrackerKind.activity);
+    await pumpPage(
+      tester,
+      forcedScope: JournalTrackerScopeOption.entry,
+    );
     await tester.pumpForStream();
 
     expect(find.text('New tracker'), findsOneWidget);
@@ -202,6 +207,55 @@ void main() {
             as TrackerDefinition;
     expect(captured.scope, 'entry');
     expect(captured.groupId, 'group-1');
+  });
+
+  testWidgetsSafe('day tracker flow supports quantity averages', (
+    tester,
+  ) async {
+    await pumpPage(
+      tester,
+      forcedScope: JournalTrackerScopeOption.day,
+    );
+    await tester.pumpForStream();
+
+    await tester.enterText(find.byType(TextField).first, 'Water');
+    await tester.pumpForStream();
+
+    final context = tester.element(find.byType(Scaffold).first);
+    context.read<JournalTrackerWizardBloc>().add(
+      const JournalTrackerWizardMeasurementChanged(
+        JournalTrackerMeasurementType.quantity,
+      ),
+    );
+    context.read<JournalTrackerWizardBloc>().add(
+      const JournalTrackerWizardAggregationKindChanged('avg'),
+    );
+    context.read<JournalTrackerWizardBloc>().add(
+      const JournalTrackerWizardQuantityConfigChanged(
+        unit: 'ml',
+        min: null,
+        max: null,
+        step: 1,
+      ),
+    );
+    await tester.pumpForStream();
+
+    _requestSave(tester);
+    await tester.pumpForStream();
+    await tester.pumpForStream();
+
+    final captured =
+        verify(
+              () => repository.saveTrackerDefinition(
+                captureAny(),
+                context: any(named: 'context'),
+              ),
+            ).captured.last
+            as TrackerDefinition;
+    expect(captured.scope, 'day');
+    expect(captured.valueType, 'quantity');
+    expect(captured.opKind, 'add');
+    expect(captured.aggregationKind, 'avg');
   });
 }
 

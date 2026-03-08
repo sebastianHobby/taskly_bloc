@@ -34,21 +34,21 @@ class JournalTrackerTypeSelectionPage extends StatelessWidget {
           SizedBox(height: tokens.spaceLg),
           _TypeCard(
             icon: Icons.event_note_outlined,
-            title: context.l10n.journalTrackerTypeActivityTitle,
-            subtitle: context.l10n.journalTrackerTypeActivitySubtitle,
+            title: context.l10n.journalMomentsTitle,
+            subtitle: context.l10n.journalScopeMomentarySubtitle,
             onTap: () => Routing.toJournalTrackerConfigure(
               context,
-              kind: 'activity',
+              scope: 'entry',
             ),
           ),
           SizedBox(height: tokens.spaceMd),
           _TypeCard(
             icon: Icons.bar_chart_outlined,
-            title: context.l10n.journalTrackerTypeAggregateTitle,
-            subtitle: context.l10n.journalTrackerTypeAggregateSubtitle,
+            title: context.l10n.journalDailySummaryTitle,
+            subtitle: context.l10n.journalDailySummarySubtitle,
             onTap: () => Routing.toJournalTrackerConfigure(
               context,
-              kind: 'aggregate',
+              scope: 'day',
             ),
           ),
         ],

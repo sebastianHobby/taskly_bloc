@@ -54,6 +54,7 @@ dependencies:
     path: packages/taskly_domain
   taskly_ui:
     path: packages/taskly_ui
+  timezone: ^0.10.1
   uuid: ^4.4.2
 dev_dependencies:
   async: ^2.13.0

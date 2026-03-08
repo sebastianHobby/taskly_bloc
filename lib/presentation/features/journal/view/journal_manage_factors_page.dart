@@ -113,7 +113,11 @@ class _TrackersTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
+    final systemTrackers =
+        state.trackers.where(_isSystemTracker).toList(growable: false)
+          ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     final visibleTrackers = state.trackers
+        .where((tracker) => !_isSystemTracker(tracker))
         .where((tracker) => showInactive || tracker.isActive)
         .toList(growable: false);
     final groupedTrackers = <String?, List<TrackerDefinition>>{};
@@ -138,12 +142,35 @@ class _TrackersTab extends StatelessWidget {
           onChanged: onShowInactiveChanged,
         ),
         SizedBox(height: tokens.spaceSm),
+        if (systemTrackers.isNotEmpty) ...[
+          _SectionCard(
+            title: context.l10n.journalSystemTrackersTitle,
+            child: Column(
+              children: [
+                for (var index = 0; index < systemTrackers.length; index++) ...[
+                  if (index > 0) const Divider(height: 1),
+                  _SystemTrackerRow(tracker: systemTrackers[index]),
+                ],
+              ],
+            ),
+          ),
+          SizedBox(height: tokens.spaceMd),
+        ],
         if (visibleTrackers.isEmpty)
           _SectionCard(
-            title: context.l10n.trackersTitle,
+            title: context.l10n.journalCustomTrackersTitle,
             child: Text(context.l10n.journalNoEntryTrackers),
           )
         else ...[
+          Padding(
+            padding: EdgeInsets.only(bottom: tokens.spaceSm),
+            child: Text(
+              context.l10n.journalCustomTrackersTitle,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
           for (final group in state.groups)
             if ((groupedTrackers[group.id] ?? const <TrackerDefinition>[])
                 .isNotEmpty) ...[
@@ -686,6 +713,39 @@ enum _GroupAction {
   moveUp,
   moveDown,
   delete,
+}
+
+bool _isSystemTracker(TrackerDefinition tracker) {
+  final systemKey = tracker.systemKey?.trim() ?? '';
+  final source = tracker.source.trim().toLowerCase();
+  return systemKey.isNotEmpty || source == 'system';
+}
+
+class _SystemTrackerRow extends StatelessWidget {
+  const _SystemTrackerRow({required this.tracker});
+
+  final TrackerDefinition tracker;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SwitchListTile.adaptive(
+      contentPadding: EdgeInsets.zero,
+      secondary: CircleAvatar(
+        backgroundColor: theme.colorScheme.secondaryContainer,
+        foregroundColor: theme.colorScheme.onSecondaryContainer,
+        child: Icon(trackerIconData(tracker)),
+      ),
+      title: Text(tracker.name),
+      subtitle: Text(context.l10n.journalSystemDefaultToggleOnlyLabel),
+      value: tracker.isActive,
+      onChanged: (value) =>
+          context.read<JournalManageLibraryBloc>().setTrackerActive(
+            def: tracker,
+            isActive: value,
+          ),
+    );
+  }
 }
 
 abstract final class _SelectionDismissed {

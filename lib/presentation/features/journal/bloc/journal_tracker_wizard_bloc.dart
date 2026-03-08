@@ -17,8 +17,6 @@ enum JournalTrackerScopeOption { day, entry, sleepNight }
 
 enum JournalTrackerMeasurementType { toggle, rating, quantity, choice }
 
-enum JournalTrackerKind { activity, aggregate }
-
 sealed class JournalTrackerWizardEvent {
   const JournalTrackerWizardEvent();
 }
@@ -282,7 +280,6 @@ class JournalTrackerWizardBloc
     required AppErrorReporter errorReporter,
     required DateTime Function() nowUtc,
     this.forcedScope,
-    this.trackerKind,
   }) : _repository = repository,
        _errorReporter = errorReporter,
        _nowUtc = nowUtc,
@@ -317,7 +314,6 @@ class JournalTrackerWizardBloc
   final AppErrorReporter _errorReporter;
   final DateTime Function() _nowUtc;
   final JournalTrackerScopeOption? forcedScope;
-  final JournalTrackerKind? trackerKind;
   final OperationContextFactory _contextFactory =
       const OperationContextFactory();
 
@@ -386,24 +382,13 @@ class JournalTrackerWizardBloc
                 active.isNotEmpty
             ? active.first.id
             : state.groupId;
-        final defaultScope = switch (trackerKind) {
-          JournalTrackerKind.activity => JournalTrackerScopeOption.entry,
-          JournalTrackerKind.aggregate => JournalTrackerScopeOption.day,
-          null => forcedScope,
-        };
-        final defaultMeasurement = switch (trackerKind) {
-          JournalTrackerKind.aggregate =>
-            JournalTrackerMeasurementType.quantity,
-          JournalTrackerKind.activity =>
-            state.measurement ?? JournalTrackerMeasurementType.toggle,
-          null => state.measurement,
-        };
         return state.copyWith(
           status: const JournalTrackerWizardIdle(),
           groups: active,
           groupId: defaultGroupId,
-          scope: defaultScope,
-          measurement: defaultMeasurement,
+          scope: forcedScope ?? state.scope,
+          measurement:
+              state.measurement ?? JournalTrackerMeasurementType.toggle,
         );
       },
       onError: (e, st) {
@@ -807,9 +792,7 @@ class JournalTrackerWizardBloc
 
       final opKind = switch (measurement) {
         JournalTrackerMeasurementType.quantity =>
-          trackerKind == JournalTrackerKind.activity
-              ? 'set'
-              : (scope == JournalTrackerScopeOption.entry ? 'set' : 'add'),
+          scope == JournalTrackerScopeOption.entry ? 'set' : 'add',
         _ => 'set',
       };
 
@@ -823,7 +806,7 @@ class JournalTrackerWizardBloc
           valueKind: valueKind,
           opKind: opKind,
           aggregationKind: measurement == JournalTrackerMeasurementType.quantity
-              ? (trackerKind == JournalTrackerKind.aggregate
+              ? (scope == JournalTrackerScopeOption.day
                     ? state.aggregationKind
                     : 'sum')
               : 'sum',

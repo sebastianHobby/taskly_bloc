@@ -22,7 +22,7 @@ void main() {
     await tester.pumpForStream();
   }
 
-  testWidgetsSafe('activity selection goes straight to configure', (
+  testWidgetsSafe('scope selection goes straight to configure', (
     tester,
   ) async {
     final router = GoRouter(
@@ -35,7 +35,7 @@ void main() {
         GoRoute(
           path: '/journal/trackers/configure',
           builder: (_, state) =>
-              Text('configure:${state.uri.queryParameters['kind']}'),
+              Text('configure:${state.uri.queryParameters['scope']}'),
         ),
         GoRoute(
           path: '/journal/trackers/templates',
@@ -46,10 +46,10 @@ void main() {
 
     await pumpPage(tester, router: router);
 
-    await tester.tap(find.text('Activity tracker'));
+    await tester.tap(find.text('Moments'));
     await tester.pumpForStream();
 
-    expect(find.text('configure:activity'), findsOneWidget);
+    expect(find.text('configure:entry'), findsOneWidget);
     expect(find.text('templates'), findsNothing);
   });
 }

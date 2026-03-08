@@ -115,7 +115,7 @@ void main() {
     );
   }
 
-  testWidgetsSafe('renders group section and tracker actions', (tester) async {
+  testWidgetsSafe('renders system and custom tracker sections', (tester) async {
     final now = DateTime.utc(2025, 1, 15);
     groupsSubject.add([
       TrackerGroup(
@@ -129,6 +129,16 @@ void main() {
       ),
     ]);
     defsSubject.add([
+      TrackerDefinition(
+        id: 't-system',
+        name: 'Sleep quality',
+        scope: 'sleep_night',
+        valueType: 'yes_no',
+        source: 'system',
+        systemKey: 'sleep_quality',
+        createdAt: now,
+        updatedAt: now,
+      ),
       TrackerDefinition(
         id: 't-1',
         name: 'Energy',
@@ -145,6 +155,9 @@ void main() {
 
     expect(find.text('Trackers'), findsOneWidget);
     expect(find.text('Groups'), findsOneWidget);
+    expect(find.text('System trackers'), findsOneWidget);
+    expect(find.text('Custom trackers'), findsOneWidget);
+    expect(find.text('Sleep quality'), findsOneWidget);
     expect(find.text('Mindset'), findsWidgets);
     expect(find.text('Energy'), findsOneWidget);
 

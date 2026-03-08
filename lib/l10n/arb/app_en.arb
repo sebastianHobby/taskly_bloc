@@ -3716,6 +3716,14 @@
     "journalLogsTitle": "Logs",
     "journalManageTrackersLabel": "Manage trackers",
     "journalManageTrackersTitle": "Manage trackers",
+    "journalSystemTrackersTitle": "System trackers",
+    "@journalSystemTrackersTitle": {
+        "description": "Title for the system/default trackers section in manage trackers"
+    },
+    "journalCustomTrackersTitle": "Custom trackers",
+    "@journalCustomTrackersTitle": {
+        "description": "Title for the custom trackers section in manage trackers"
+    },
     "journalMeasurementTitle": "Measurement",
     "journalMoodAverageEmpty": "No mood data yet",
     "journalMoodAverageValue": "Average {value}",
