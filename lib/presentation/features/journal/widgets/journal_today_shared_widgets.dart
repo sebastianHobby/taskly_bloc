@@ -43,6 +43,16 @@ class _JournalLogCardState extends State<JournalLogCard> {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
     final l10n = context.l10n;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final compactLayout =
+        widget.density == DisplayDensity.compact || screenWidth < 400;
+    final railWidth = compactLayout ? 34.0 : 40.0;
+    final moodBadgeSize = compactLayout ? 32.0 : 36.0;
+    final moodIconSize = compactLayout ? 18.0 : 20.0;
+    final railGap = compactLayout ? tokens.spaceXs : tokens.spaceSm;
+    final cardPadding = compactLayout ? tokens.spaceSm : tokens.spaceMd;
+    final timelineLineHeight = compactLayout ? 68.0 : 84.0;
+    final chipSpacing = compactLayout ? tokens.spaceXs : tokens.spaceSm;
 
     final mood = _findMood();
     final summaryItems = _buildSummaryItems(l10n);
@@ -63,12 +73,12 @@ class _JournalLogCardState extends State<JournalLogCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 40,
+          width: railWidth,
           child: Column(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: moodBadgeSize,
+                height: moodBadgeSize,
                 decoration: BoxDecoration(
                   color: moodColor.withValues(alpha: hasMood ? 0.18 : 0.1),
                   shape: BoxShape.circle,
@@ -78,7 +88,7 @@ class _JournalLogCardState extends State<JournalLogCard> {
                 ),
                 child: Icon(
                   _timelineMoodIcon(mood),
-                  size: 20,
+                  size: moodIconSize,
                   color: moodColor,
                 ),
               ),
@@ -93,7 +103,7 @@ class _JournalLogCardState extends State<JournalLogCard> {
               if (widget.showTimelineLine)
                 Container(
                   width: 2,
-                  height: 84,
+                  height: timelineLineHeight,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(tokens.radiusSm),
                     gradient: LinearGradient(
@@ -111,7 +121,7 @@ class _JournalLogCardState extends State<JournalLogCard> {
             ],
           ),
         ),
-        SizedBox(width: tokens.spaceSm),
+        SizedBox(width: railGap),
         Expanded(
           child: Container(
             decoration: BoxDecoration(
@@ -145,7 +155,7 @@ class _JournalLogCardState extends State<JournalLogCard> {
                 curve: kJournalMotionCurve,
                 scale: _pressed ? 0.985 : 1,
                 child: Padding(
-                  padding: EdgeInsets.all(tokens.spaceMd),
+                  padding: EdgeInsets.all(cardPadding),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -163,12 +173,14 @@ class _JournalLogCardState extends State<JournalLogCard> {
                       if (summaryItems.isNotEmpty) ...[
                         SizedBox(
                           height: note != null && note.isNotEmpty
-                              ? tokens.spaceSm
+                              ? (compactLayout
+                                    ? tokens.spaceXs
+                                    : tokens.spaceSm)
                               : tokens.spaceXxs,
                         ),
                         Wrap(
-                          spacing: tokens.spaceSm,
-                          runSpacing: tokens.spaceSm,
+                          spacing: chipSpacing,
+                          runSpacing: chipSpacing,
                           children: [
                             for (final item in summaryItems)
                               JournalFactorToken(

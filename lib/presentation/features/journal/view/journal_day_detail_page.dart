@@ -10,6 +10,7 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -99,6 +100,9 @@ class _DayDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
+    final useCompactMoments = state.density == DisplayDensity.compact;
+    final sectionGap = useCompactMoments ? tokens.spaceSm : tokens.spaceMd;
+    final momentGap = useCompactMoments ? tokens.spaceXs : tokens.spaceSm;
     final day = dateOnly(dayUtc);
     final summary = state.days.firstWhere(
       (d) => dateOnly(d.day) == day,
@@ -170,7 +174,7 @@ class _DayDetailBody extends StatelessWidget {
             return [for (final choice in choices) choice.label];
           },
         ),
-        SizedBox(height: tokens.spaceMd),
+        SizedBox(height: sectionGap),
         Row(
           children: [
             Expanded(
@@ -190,7 +194,7 @@ class _DayDetailBody extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: tokens.spaceSm),
+        SizedBox(height: momentGap),
         if (summary.entries.isEmpty)
           Text(
             context.l10n.journalNoLogsForDay,
@@ -201,7 +205,7 @@ class _DayDetailBody extends StatelessWidget {
         else
           for (final entry in summary.entries)
             Padding(
-              padding: EdgeInsets.only(bottom: tokens.spaceSm),
+              padding: EdgeInsets.only(bottom: momentGap),
               child: JournalLogCard(
                 entry: entry,
                 events:

@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/taskly_bottom_sheet.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_chrome.dart';
@@ -39,6 +40,9 @@ class _TodayJournalBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final theme = Theme.of(context);
+    final useCompactMoments = state.density == DisplayDensity.compact;
+    final sectionGap = useCompactMoments ? tokens.spaceMd : tokens.spaceLg;
+    final momentGap = useCompactMoments ? tokens.spaceXs : tokens.spaceSm;
     final todayUtc = dateOnly(todayLocal);
     final summaries = state.days;
     final todayIndex = summaries.indexWhere(
@@ -95,9 +99,9 @@ class _TodayJournalBody extends StatelessWidget {
           summary: todaySummary,
           hiddenTrackerIds: state.hiddenSummaryTrackerIds,
         ),
-        SizedBox(height: tokens.spaceLg),
+        SizedBox(height: sectionGap),
         _SectionHeader(title: context.l10n.journalMomentsTitle.toUpperCase()),
-        SizedBox(height: tokens.spaceSm),
+        SizedBox(height: momentGap),
         if (todaySummary.entries.isEmpty)
           TasklyCardSurface(
             variant: TasklyCardVariant.subtle,
@@ -141,7 +145,7 @@ class _TodayJournalBody extends StatelessWidget {
         else
           for (var i = 0; i < todaySummary.entries.length; i++)
             Padding(
-              padding: EdgeInsets.only(bottom: tokens.spaceSm),
+              padding: EdgeInsets.only(bottom: momentGap),
               child: JournalLogCard(
                 entry: todaySummary.entries[i],
                 events:
