@@ -102,7 +102,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
           return null;
         },
         enabled: enabled,
-        builder: (FormFieldState<Color> field) {
+        builder: (field) {
           final currentColor =
               field.value ?? initialValue ?? colorScheme.primary;
           final resolvedChipLabel =

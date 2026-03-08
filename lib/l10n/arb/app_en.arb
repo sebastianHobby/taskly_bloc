@@ -3840,6 +3840,18 @@
     "journalRightNowSubtitle": "What happened right now?",
     "journalRightNowTitle": "Right now",
     "journalSavedLogSnack": "Log saved",
+    "journalDeletedLogSnack": "Log deleted",
+    "@journalDeletedLogSnack": {
+        "description": "Snackbar message shown after deleting a journal moment."
+    },
+    "journalDeleteMomentTitle": "Delete moment?",
+    "@journalDeleteMomentTitle": {
+        "description": "Title for the delete journal moment confirmation dialog."
+    },
+    "journalDeleteMomentMessage": "This permanently deletes this moment and its tracker values.",
+    "@journalDeleteMomentMessage": {
+        "description": "Body text for the delete journal moment confirmation dialog."
+    },
     "journalSaveLogButton": "Save log",
     "journalScopeDailyTotalSubtitle": "One total per day",
     "journalScopeMomentarySubtitle": "Each entry has its own value",
@@ -4265,7 +4277,7 @@
     "@planMyDayInfoCardTitle": {
         "description": "Title for Plan My Day committed-items info card"
     },
-    "planMyDayInfoCardBody": "Weve included due, planned, and scheduled items so nothing gets missed. To remove one, reschedule, skip, or pause.",
+    "planMyDayInfoCardBody": "We've included due, planned, and scheduled items so nothing gets missed. To remove one, reschedule, skip, or pause.",
     "@planMyDayInfoCardBody": {
         "description": "Body for Plan My Day committed-items info card"
     },

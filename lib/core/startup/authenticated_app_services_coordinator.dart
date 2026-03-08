@@ -118,4 +118,12 @@ class AuthenticatedAppServicesCoordinator {
     );
     _startInFlight = null;
   }
+
+  Future<void> refreshNotificationSchedules({
+    String source = 'permission_changed',
+  }) async {
+    if (!_started) return;
+    await _planMyDayReminderSchedulerService.refreshNow(source: source);
+    await _taskReminderSchedulerService.refreshNow(source: source);
+  }
 }

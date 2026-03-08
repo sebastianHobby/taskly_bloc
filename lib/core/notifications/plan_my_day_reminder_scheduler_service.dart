@@ -98,6 +98,12 @@ class PlanMyDayReminderSchedulerService {
     );
   }
 
+  Future<void> refreshNow({String source = 'manual'}) async {
+    if (!_started) return;
+    _scheduleRefresh(source: source);
+    await _refreshQueue;
+  }
+
   void _resubscribeToday() {
     if (!_started) return;
     final currentDayKeyUtc = _homeDayKeyService.todayDayKeyUtc(

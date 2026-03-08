@@ -2,6 +2,18 @@ import 'dart:io';
 
 import 'package:git_hooks/git_hooks.dart';
 
+const _schemaRelevantPathPrefixes = <String>[
+  'supabase/migrations/',
+  'packages/taskly_data/lib/src/infrastructure/powersync/',
+  'packages/taskly_data/lib/src/infrastructure/drift/',
+  'packages/taskly_data/lib/src/features/',
+];
+
+const _schemaRelevantFiles = <String>{
+  'tool/validate_supabase_schema_alignment.dart',
+  'doc/architecture/runbooks/SUPABASE_SCHEMA_PARITY.md',
+};
+
 void main(List<String> arguments) {
   final params = <Git, UserBackFun>{
     Git.preCommit: preCommit,
@@ -18,6 +30,15 @@ Future<bool> preCommit() async {
 
 Future<bool> prePush() async {
   print('Running pre-push checks...\n');
+  final schemaCheckMode = await _determineSchemaCheckMode();
+  print('Schema parity mode: ${schemaCheckMode.label}');
+  if (schemaCheckMode.paths.isNotEmpty) {
+    print('Schema-relevant changes:');
+    for (final path in schemaCheckMode.paths) {
+      print(' - $path');
+    }
+  }
+  print('');
 
   if (!await _runDependencyResolutionChecks()) {
     _printFailure();
@@ -34,7 +55,7 @@ Future<bool> prePush() async {
     return false;
   }
 
-  if (!await _runSchemaParityCheck()) {
+  if (!await _runSchemaParityCheck(schemaCheckMode)) {
     _printFailure();
     return false;
   }
@@ -153,19 +174,30 @@ Future<bool> _runAnalyze() async {
   }
 }
 
-Future<bool> _runSchemaParityCheck() async {
-  print('Running Supabase linked-remote schema parity check...');
+Future<bool> _runSchemaParityCheck(_SchemaCheckMode mode) async {
+  if (mode.strictDdl) {
+    print('Running Supabase linked-remote schema parity check (strict DDL)...');
+  } else {
+    print(
+      'Running Supabase linked-remote schema parity check '
+      '(lightweight; strict DDL skipped)...',
+    );
+  }
 
   try {
+    final args = <String>[
+      'run',
+      'tool/validate_supabase_schema_alignment.dart',
+      '--linked-only',
+    ];
+    if (mode.strictDdl) {
+      args
+        ..add('--require-db')
+        ..add('--strict-ddl');
+    }
     final result = await Process.run(
       'dart',
-      [
-        'run',
-        'tool/validate_supabase_schema_alignment.dart',
-        '--require-db',
-        '--linked-only',
-        '--strict-ddl',
-      ],
+      args,
       runInShell: true,
     );
 
@@ -177,6 +209,101 @@ Future<bool> _runSchemaParityCheck() async {
     print('   Could not run schema parity check: $e');
     return false;
   }
+}
+
+Future<_SchemaCheckMode> _determineSchemaCheckMode() async {
+  final changedPaths = await _changedPathsAgainstUpstream();
+  if (changedPaths == null) {
+    return const _SchemaCheckMode(
+      strictDdl: true,
+      label: 'strict (could not determine changed paths)',
+      paths: <String>[],
+    );
+  }
+
+  final relevant = changedPaths
+      .where(_isSchemaRelevantPath)
+      .toList(growable: false);
+  if (relevant.isEmpty) {
+    return const _SchemaCheckMode(
+      strictDdl: false,
+      label: 'lightweight (no schema-relevant paths changed)',
+      paths: <String>[],
+    );
+  }
+
+  return _SchemaCheckMode(
+    strictDdl: true,
+    label: 'strict (schema-relevant paths changed)',
+    paths: relevant,
+  );
+}
+
+Future<List<String>?> _changedPathsAgainstUpstream() async {
+  final upstream = await _resolveUpstreamRef();
+  if (upstream == null) {
+    return null;
+  }
+
+  try {
+    final result = await Process.run(
+      'git',
+      ['diff', '--name-only', '$upstream...HEAD'],
+      runInShell: true,
+    );
+    if (result.exitCode != 0) {
+      stderr.write(result.stderr);
+      return null;
+    }
+
+    return (result.stdout as String)
+        .split(RegExp(r'[\r\n]+'))
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty)
+        .toList(growable: false);
+  } catch (e) {
+    print('   Could not determine changed paths from git diff: $e');
+    return null;
+  }
+}
+
+Future<String?> _resolveUpstreamRef() async {
+  try {
+    final upstreamResult = await Process.run(
+      'git',
+      ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'],
+      runInShell: true,
+    );
+    if (upstreamResult.exitCode == 0) {
+      final upstream = (upstreamResult.stdout as String).trim();
+      if (upstream.isNotEmpty) return upstream;
+    }
+  } catch (_) {
+    // Fall through to origin/main fallback.
+  }
+
+  try {
+    final fallbackResult = await Process.run(
+      'git',
+      ['rev-parse', '--verify', 'origin/main'],
+      runInShell: true,
+    );
+    if (fallbackResult.exitCode == 0) {
+      return 'origin/main';
+    }
+  } catch (_) {
+    // Fall through to null.
+  }
+
+  print('   Could not resolve an upstream ref; running strict schema check.');
+  return null;
+}
+
+bool _isSchemaRelevantPath(String path) {
+  if (_schemaRelevantFiles.contains(path)) {
+    return true;
+  }
+  return _schemaRelevantPathPrefixes.any(path.startsWith);
 }
 
 Future<bool> _runFastTests() async {
@@ -214,4 +341,16 @@ Future<bool> _runFastTests() async {
 void _printFailure() {
   print('\nPre-push checks failed. Fix issues before pushing.');
   print('   Use "git push --no-verify" to bypass (not recommended).');
+}
+
+class _SchemaCheckMode {
+  const _SchemaCheckMode({
+    required this.strictDdl,
+    required this.label,
+    required this.paths,
+  });
+
+  final bool strictDdl;
+  final String label;
+  final List<String> paths;
 }

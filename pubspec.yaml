@@ -10,11 +10,11 @@ environment:
 dependencies:
   app_links: ^6.4.1
   app_settings: ^6.1.1
-  bloc: ^9.0.1
+  bloc: ^9.2.0
   bloc_concurrency: ^0.3.0
   characters: ^1.4.0
   collection: ^1.19.0
-  drift: ^2.20.3
+  drift: ^2.31.0
   drift_sqlite_async: ^0.2.6
   equatable: ^2.0.7
   fleather: ^1.26.0
@@ -22,20 +22,20 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
-  flutter_form_builder: ^10.2.0
-  flutter_local_notifications: ^19.4.2
+  flutter_form_builder: ^10.3.0+2
+  flutter_local_notifications: ^19.5.0
   flutter_localizations:
     sdk: flutter
   flutter_speed_dial: ^7.0.0
-  get_it: ^9.2.0
-  go_router: ^17.0.1
+  get_it: ^9.2.1
+  go_router: ^17.1.0
   intl: ^0.20.2
-  json_annotation: ^4.9.0
+  json_annotation: ^4.11.0
   meta: ^1.17.0
   ml_linalg: ^13.12.6
   path: ^1.9.1
   path_provider: ^2.1.5
-  powersync: ^1.16.2
+  powersync: ^1.18.0
   provider: ^6.1.5
   rrule: ^0.2.17
   rxdart: ^0.28.0
@@ -43,8 +43,8 @@ dependencies:
   statistics: ^1.2.1
   supabase_auth_ui: ^0.5.5
   supabase_flutter: ^2.10.3
-  talker_bloc_logger: ^5.1.9
-  talker_flutter: ^5.1.9
+  talker_bloc_logger: ^5.1.15
+  talker_flutter: ^5.1.15
   # Local extraction packages (Option B1)
   taskly_core:
     path: packages/taskly_core
@@ -55,13 +55,13 @@ dependencies:
   taskly_ui:
     path: packages/taskly_ui
   timezone: ^0.10.1
-  uuid: ^4.4.2
+  uuid: ^4.5.3
 dev_dependencies:
   async: ^2.13.0
   bloc_test: ^10.0.0
-  build_runner: ^2.10.4
+  build_runner: ^2.12.2
   checks: ^0.3.1
-  drift_dev: ^2.20.3
+  drift_dev: ^2.31.0
   flutter_test:
     sdk: flutter
   freezed: ^3.2.3
@@ -70,8 +70,8 @@ dev_dependencies:
   golden_toolkit: ^0.15.0
   integration_test:
     sdk: flutter
-  json_serializable: ^6.9.5
-  material_symbols_icons: ^4.2892.0
+  json_serializable: ^6.13.0
+  material_symbols_icons: ^4.2906.0
   mocktail: ^1.0.4
   very_good_analysis: ^10.0.0
 

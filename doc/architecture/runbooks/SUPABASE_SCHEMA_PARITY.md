@@ -29,10 +29,23 @@ This command validates:
 ## Before Push
 
 - Ensure `git_hooks.dart` pre-push remains enabled.
-- Pre-push must run strict parity check with:
+- Pre-push always runs linked schema parity.
+- Pre-push runs the strict local replay check only when outgoing commits touch
+  schema-relevant paths, currently:
+  - `supabase/migrations/**`
+  - `packages/taskly_data/lib/src/infrastructure/powersync/**`
+  - `packages/taskly_data/lib/src/infrastructure/drift/**`
+  - `packages/taskly_data/lib/src/features/**`
+  - `tool/validate_supabase_schema_alignment.dart`
+  - `doc/architecture/runbooks/SUPABASE_SCHEMA_PARITY.md`
+- When those paths are touched, pre-push must run with:
   - `--require-db`
   - `--linked-only`
   - `--strict-ddl`
+- When those paths are not touched, pre-push may run the lightweight linked
+  parity path without `--require-db` / `--strict-ddl`.
+- If pre-push cannot determine the upstream ref or changed paths, it must
+  fall back to the strict path.
 
 ## Weekly / Release Check
 

@@ -509,10 +509,26 @@ class _AuthenticatedRouteShell extends StatelessWidget {
       ),
     );
 
-    return _DebugBootstrapper(
-      enabled: debugBootstrapEnabled,
-      router: router,
-      child: wrapped,
+    return BlocListener<
+      NotificationPermissionBloc,
+      NotificationPermissionState
+    >(
+      listenWhen: (previous, current) =>
+          previous.status != current.status && !current.isLoading,
+      listener: (context, state) {
+        unawaited(
+          context
+              .read<AuthenticatedAppServicesCoordinator>()
+              .refreshNotificationSchedules(
+                source: 'permission_status_${state.status.name}',
+              ),
+        );
+      },
+      child: _DebugBootstrapper(
+        enabled: debugBootstrapEnabled,
+        router: router,
+        child: wrapped,
+      ),
     );
   }
 }

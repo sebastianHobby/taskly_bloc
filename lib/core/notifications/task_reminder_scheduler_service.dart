@@ -77,6 +77,12 @@ class TaskReminderSchedulerService {
     );
   }
 
+  Future<void> refreshNow({String source = 'manual'}) async {
+    if (!_started) return;
+    _scheduleRefresh(source: source);
+    await _refreshQueue;
+  }
+
   void _scheduleRefresh({required String source}) {
     _refreshQueue = _refreshQueue
         .catchError((_) {})

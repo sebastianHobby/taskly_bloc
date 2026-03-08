@@ -88,6 +88,12 @@ void main() {
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async => 'entry-1');
+    when(
+      () => repository.deleteJournalEntry(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -333,6 +339,36 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.text('Focus'), findsOneWidget);
+  });
+
+  testWidgetsSafe('shows delete action in overflow for existing entry only', (
+    tester,
+  ) async {
+    final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
+    defsSubject.add([moodDef]);
+
+    when(
+      () => repository.getJournalEntryById('entry-1'),
+    ).thenAnswer((_) async => _entry('entry-1', 'Note'));
+    when(
+      () => repository.watchTrackerEvents(
+        anchorType: any(named: 'anchorType'),
+        entryId: 'entry-1',
+        range: any(named: 'range'),
+        anchorDate: any(named: 'anchorDate'),
+        trackerId: any(named: 'trackerId'),
+      ),
+    ).thenAnswer((_) => Stream<List<TrackerEvent>>.value(const []));
+
+    await pumpPage(tester, entryId: 'entry-1');
+    await tester.pumpForStream();
+
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    expect(find.byIcon(Icons.more_vert), findsNothing);
   });
 
   testWidgetsSafe('renders choice chips and updates selection', (tester) async {

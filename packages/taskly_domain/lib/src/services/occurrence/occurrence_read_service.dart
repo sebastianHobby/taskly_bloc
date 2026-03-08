@@ -77,7 +77,7 @@ final class OccurrenceReadService {
     return Rx.combineLatest2(
       baseTasksStream,
       nextOccurrenceByTaskIdStream,
-      (List<Task> tasks, Map<String, OccurrenceData> nextById) {
+      (tasks, nextById) {
         return tasks
             .map((task) {
               if (!task.isRepeating || task.seriesEnded) return task;

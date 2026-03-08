@@ -74,6 +74,10 @@ final class JournalEntryEditorSaveRequested extends JournalEntryEditorEvent {
   const JournalEntryEditorSaveRequested();
 }
 
+final class JournalEntryEditorDeleteRequested extends JournalEntryEditorEvent {
+  const JournalEntryEditorDeleteRequested();
+}
+
 sealed class JournalEntryEditorStatus {
   const JournalEntryEditorStatus();
 }
@@ -90,8 +94,16 @@ final class JournalEntryEditorSaving extends JournalEntryEditorStatus {
   const JournalEntryEditorSaving();
 }
 
+final class JournalEntryEditorDeleting extends JournalEntryEditorStatus {
+  const JournalEntryEditorDeleting();
+}
+
 final class JournalEntryEditorSaved extends JournalEntryEditorStatus {
   const JournalEntryEditorSaved();
+}
+
+final class JournalEntryEditorDeleted extends JournalEntryEditorStatus {
+  const JournalEntryEditorDeleted();
 }
 
 final class JournalEntryEditorError extends JournalEntryEditorStatus {
@@ -230,6 +242,10 @@ class JournalEntryEditorBloc
     );
     on<JournalEntryEditorSaveRequested>(
       _onSaveRequested,
+      transformer: sequential(),
+    );
+    on<JournalEntryEditorDeleteRequested>(
+      _onDeleteRequested,
       transformer: sequential(),
     );
   }
@@ -868,6 +884,59 @@ class JournalEntryEditorBloc
             _uiMessageFor(
               error,
               fallback: 'Failed to save log. Please try again.',
+            ),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onDeleteRequested(
+    JournalEntryEditorDeleteRequested event,
+    Emitter<JournalEntryEditorState> emit,
+  ) async {
+    final entryId = state.entryId?.trim();
+    if (entryId == null || entryId.isEmpty) {
+      emit(
+        state.copyWith(
+          status: const JournalEntryEditorError(
+            'Only existing logs can be deleted.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    emit(state.copyWith(status: const JournalEntryEditorDeleting()));
+
+    final context = _newContext(
+      intent: 'delete',
+      operation: 'journal.entry_editor.delete',
+      entryId: entryId,
+    );
+
+    try {
+      await _repository.deleteJournalEntry(entryId, context: context);
+      emit(
+        state.copyWith(
+          status: const JournalEntryEditorDeleted(),
+          isDirty: false,
+        ),
+      );
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalEntryEditorBloc] delete failed',
+      );
+
+      emit(
+        state.copyWith(
+          status: JournalEntryEditorError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to delete log. Please try again.',
             ),
           ),
         ),

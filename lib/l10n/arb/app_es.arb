@@ -3726,6 +3726,18 @@
     "journalRightNowSubtitle": "Qu ocurri justo ahora?",
     "journalRightNowTitle": "Ahora",
     "journalSavedLogSnack": "Registro guardado",
+    "journalDeletedLogSnack": "Registro eliminado",
+    "@journalDeletedLogSnack": {
+        "description": "Snackbar message shown after deleting a journal moment."
+    },
+    "journalDeleteMomentTitle": "¿Eliminar momento?",
+    "@journalDeleteMomentTitle": {
+        "description": "Title for the delete journal moment confirmation dialog."
+    },
+    "journalDeleteMomentMessage": "Esto elimina permanentemente este momento y sus valores de trackers.",
+    "@journalDeleteMomentMessage": {
+        "description": "Body text for the delete journal moment confirmation dialog."
+    },
     "journalSaveLogButton": "Guardar registro",
     "journalScopeDailyTotalSubtitle": "Un total por da",
     "journalScopeMomentarySubtitle": "Cada entrada tiene su propio valor",

@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/core/notifications/notification_permission_service.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/notification_permission_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
@@ -726,118 +729,161 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     required bool hasRecurrence,
   }) {
     const options = <int>[5, 10, 15, 30, 60, 120, 24 * 60];
+    final permissionBloc = context.read<NotificationPermissionBloc>();
     return showModalBottomSheet<_ReminderSelectionResult>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,
       builder: (sheetContext) {
-        return ListView(
-          shrinkWrap: true,
-          children: [
-            if (hasRecurrence && dueDate != null)
-              ListTile(
-                dense: true,
-                leading: const Icon(Icons.repeat),
-                title: Text(context.l10n.taskReminderBeforeDueLabel),
-                subtitle: Text(context.l10n.taskReminderRecurringBeforeDueHint),
-              ),
-            ListTile(
-              leading: const Icon(Icons.notifications_off_outlined),
-              title: Text(context.l10n.offLabel),
-              trailing: currentKind == TaskReminderKind.none
-                  ? Icon(
-                      Icons.check,
-                      color: Theme.of(context).colorScheme.primary,
+        return BlocProvider.value(
+          value: permissionBloc,
+          child: BlocBuilder<NotificationPermissionBloc, NotificationPermissionState>(
+            builder: (context, permissionState) {
+              final notificationsGranted = permissionState.status.isGranted;
+
+              return ListView(
+                shrinkWrap: true,
+                children: [
+                  if (permissionState.isLoading)
+                    const LinearProgressIndicator(),
+                  if (!notificationsGranted)
+                    _TaskReminderPermissionGate(
+                      status: permissionState.status,
+                      onEnableRequested:
+                          permissionState.status ==
+                              NotificationPermissionStatus.denied
+                          ? () {
+                              context.read<NotificationPermissionBloc>().add(
+                                const NotificationPermissionRequestRequested(),
+                              );
+                            }
+                          : null,
+                      onOpenSettingsRequested:
+                          permissionState.status ==
+                              NotificationPermissionStatus.denied
+                          ? () {
+                              context.read<NotificationPermissionBloc>().add(
+                                const NotificationPermissionOpenSettingsRequested(),
+                              );
+                            }
+                          : null,
                     )
-                  : null,
-              onTap: () => Navigator.of(sheetContext).pop(
-                const _ReminderSelectionResult(
-                  mode: _ReminderSelectionMode.none,
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.schedule),
-              title: Text(context.l10n.taskReminderAtLabel),
-              subtitle: switch ((currentKind, hasRecurrence)) {
-                (TaskReminderKind.absolute, _) => Text(
-                  _formatReminderLabel(
-                    context,
-                    reminderKind: currentKind,
-                    reminderAtUtc: currentAtUtc,
-                    reminderMinutesBeforeDue: currentBeforeDueMinutes,
-                  ),
-                ),
-                (_, true) => Text(
-                  context.l10n.taskReminderRecurringAbsoluteHint,
-                ),
-                _ => null,
-              },
-              onTap: () async {
-                final nowLocal = context.read<NowService>().nowLocal();
-                final initialDate = currentAtUtc?.toLocal() ?? nowLocal;
-                final date = await showDatePicker(
-                  context: sheetContext,
-                  initialDate: initialDate,
-                  firstDate: DateTime(nowLocal.year - 2),
-                  lastDate: DateTime(nowLocal.year + 10),
-                );
-                if (date == null || !sheetContext.mounted) return;
-
-                final initialTime = TimeOfDay.fromDateTime(initialDate);
-                final time = await showTimePicker(
-                  context: sheetContext,
-                  initialTime: initialTime,
-                );
-                if (time == null || !sheetContext.mounted) return;
-
-                final localDateTime = DateTime(
-                  date.year,
-                  date.month,
-                  date.day,
-                  time.hour,
-                  time.minute,
-                );
-                Navigator.of(sheetContext).pop(
-                  _ReminderSelectionResult(
-                    mode: _ReminderSelectionMode.absolute,
-                    reminderAtUtc: localDateTime.toUtc(),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: Text(context.l10n.taskReminderBeforeDueLabel),
-              subtitle: dueDate == null
-                  ? Text(context.l10n.taskReminderDueDateRequiredHint)
-                  : hasRecurrence
-                  ? Text(context.l10n.taskReminderRecurringBeforeDueHint)
-                  : null,
-            ),
-            for (final minutes in options)
-              ListTile(
-                enabled: dueDate != null,
-                contentPadding: const EdgeInsets.only(left: 72, right: 16),
-                title: Text(_beforeDueLabel(context, minutes)),
-                trailing:
-                    currentKind == TaskReminderKind.beforeDue &&
-                        currentBeforeDueMinutes == minutes
-                    ? Icon(
-                        Icons.check,
-                        color: Theme.of(context).colorScheme.primary,
-                      )
-                    : null,
-                onTap: dueDate == null
-                    ? null
-                    : () => Navigator.of(sheetContext).pop(
-                        _ReminderSelectionResult(
-                          mode: _ReminderSelectionMode.beforeDue,
-                          reminderMinutesBeforeDue: minutes,
+                  else ...[
+                    if (hasRecurrence && dueDate != null)
+                      ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.repeat),
+                        title: Text(context.l10n.taskReminderBeforeDueLabel),
+                        subtitle: Text(
+                          context.l10n.taskReminderRecurringBeforeDueHint,
                         ),
                       ),
-              ),
-          ],
+                    ListTile(
+                      leading: const Icon(Icons.notifications_off_outlined),
+                      title: Text(context.l10n.offLabel),
+                      trailing: currentKind == TaskReminderKind.none
+                          ? Icon(
+                              Icons.check,
+                              color: Theme.of(context).colorScheme.primary,
+                            )
+                          : null,
+                      onTap: () => Navigator.of(sheetContext).pop(
+                        const _ReminderSelectionResult(
+                          mode: _ReminderSelectionMode.none,
+                        ),
+                      ),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.schedule),
+                      title: Text(context.l10n.taskReminderAtLabel),
+                      subtitle: switch ((currentKind, hasRecurrence)) {
+                        (TaskReminderKind.absolute, _) => Text(
+                          _formatReminderLabel(
+                            context,
+                            reminderKind: currentKind,
+                            reminderAtUtc: currentAtUtc,
+                            reminderMinutesBeforeDue: currentBeforeDueMinutes,
+                          ),
+                        ),
+                        (_, true) => Text(
+                          context.l10n.taskReminderRecurringAbsoluteHint,
+                        ),
+                        _ => null,
+                      },
+                      onTap: () async {
+                        final nowLocal = context.read<NowService>().nowLocal();
+                        final initialDate = currentAtUtc?.toLocal() ?? nowLocal;
+                        final date = await showDatePicker(
+                          context: sheetContext,
+                          initialDate: initialDate,
+                          firstDate: DateTime(nowLocal.year - 2),
+                          lastDate: DateTime(nowLocal.year + 10),
+                        );
+                        if (date == null || !sheetContext.mounted) return;
+
+                        final initialTime = TimeOfDay.fromDateTime(initialDate);
+                        final time = await showTimePicker(
+                          context: sheetContext,
+                          initialTime: initialTime,
+                        );
+                        if (time == null || !sheetContext.mounted) return;
+
+                        final localDateTime = DateTime(
+                          date.year,
+                          date.month,
+                          date.day,
+                          time.hour,
+                          time.minute,
+                        );
+                        Navigator.of(sheetContext).pop(
+                          _ReminderSelectionResult(
+                            mode: _ReminderSelectionMode.absolute,
+                            reminderAtUtc: localDateTime.toUtc(),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.flag_outlined),
+                      title: Text(context.l10n.taskReminderBeforeDueLabel),
+                      subtitle: dueDate == null
+                          ? Text(context.l10n.taskReminderDueDateRequiredHint)
+                          : hasRecurrence
+                          ? Text(
+                              context.l10n.taskReminderRecurringBeforeDueHint,
+                            )
+                          : null,
+                    ),
+                    for (final minutes in options)
+                      ListTile(
+                        enabled: dueDate != null,
+                        contentPadding: const EdgeInsets.only(
+                          left: 72,
+                          right: 16,
+                        ),
+                        title: Text(_beforeDueLabel(context, minutes)),
+                        trailing:
+                            currentKind == TaskReminderKind.beforeDue &&
+                                currentBeforeDueMinutes == minutes
+                            ? Icon(
+                                Icons.check,
+                                color: Theme.of(context).colorScheme.primary,
+                              )
+                            : null,
+                        onTap: dueDate == null
+                            ? null
+                            : () => Navigator.of(sheetContext).pop(
+                                _ReminderSelectionResult(
+                                  mode: _ReminderSelectionMode.beforeDue,
+                                  reminderMinutesBeforeDue: minutes,
+                                ),
+                              ),
+                      ),
+                  ],
+                ],
+              );
+            },
+          ),
         );
       },
     );
@@ -1804,6 +1850,88 @@ final class _ReminderSelectionResult {
   final _ReminderSelectionMode mode;
   final DateTime? reminderAtUtc;
   final int? reminderMinutesBeforeDue;
+}
+
+class _TaskReminderPermissionGate extends StatelessWidget {
+  const _TaskReminderPermissionGate({
+    required this.status,
+    this.onEnableRequested,
+    this.onOpenSettingsRequested,
+  });
+
+  final NotificationPermissionStatus status;
+  final VoidCallback? onEnableRequested;
+  final VoidCallback? onOpenSettingsRequested;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final title = switch (status) {
+      NotificationPermissionStatus.unsupported =>
+        context.l10n.settingsNotificationsUnsupportedTitle,
+      NotificationPermissionStatus.denied =>
+        context.l10n.settingsNotificationsPermissionTitle,
+      NotificationPermissionStatus.granted => '',
+    };
+    final body = switch (status) {
+      NotificationPermissionStatus.unsupported =>
+        context.l10n.settingsNotificationsUnsupportedBody,
+      NotificationPermissionStatus.denied =>
+        context.l10n.settingsNotificationsPermissionBody,
+      NotificationPermissionStatus.granted => '',
+    };
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceXs,
+        tokens.sectionPaddingH,
+        tokens.spaceSm,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(tokens.radiusMd),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spaceSm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              SizedBox(height: tokens.spaceXs2),
+              Text(body),
+              if (status == NotificationPermissionStatus.denied) ...[
+                SizedBox(height: tokens.spaceSm),
+                Wrap(
+                  spacing: tokens.spaceXs2,
+                  runSpacing: tokens.spaceXs2,
+                  children: [
+                    FilledButton.tonal(
+                      onPressed: onEnableRequested,
+                      child: Text(
+                        context.l10n.settingsNotificationsEnableAction,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: onOpenSettingsRequested,
+                      child: Text(
+                        context.l10n.settingsNotificationsOpenSettingsAction,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 enum _ReminderDueRemovalResolution {

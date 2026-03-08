@@ -2,7 +2,10 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/core/notifications/notification_permission_service.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/notification_permission_bloc.dart';
 import 'package:provider/provider.dart';
 
 import '../../../helpers/test_imports.dart';
@@ -22,6 +25,30 @@ class _FakeNowService implements NowService {
 
   @override
   DateTime nowUtc() => now.toUtc();
+}
+
+class _FakeNotificationPermissionService
+    implements NotificationPermissionService {
+  _FakeNotificationPermissionService(this.status);
+
+  NotificationPermissionStatus status;
+  int requestCalls = 0;
+  int openSettingsCalls = 0;
+
+  @override
+  Future<NotificationPermissionStatus> getStatus() async => status;
+
+  @override
+  Future<void> openSettings() async {
+    openSettingsCalls += 1;
+  }
+
+  @override
+  Future<NotificationPermissionStatus> requestPermission() async {
+    requestCalls += 1;
+    status = NotificationPermissionStatus.granted;
+    return status;
+  }
 }
 
 void main() {
@@ -50,12 +77,19 @@ void main() {
             theme: AppTheme.lightTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: TaskForm(
-                formKey: formKey,
-                initialData: task,
-                submitTooltip: 'save',
-                onSubmit: () {},
+            home: BlocProvider(
+              create: (_) => NotificationPermissionBloc(
+                permissionService: _FakeNotificationPermissionService(
+                  NotificationPermissionStatus.granted,
+                ),
+              ),
+              child: Scaffold(
+                body: TaskForm(
+                  formKey: formKey,
+                  initialData: task,
+                  submitTooltip: 'save',
+                  onSubmit: () {},
+                ),
               ),
             ),
           ),
@@ -105,11 +139,18 @@ void main() {
             theme: AppTheme.lightTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: TaskForm(
-                formKey: formKey,
-                submitTooltip: 'save',
-                onSubmit: () {},
+            home: BlocProvider(
+              create: (_) => NotificationPermissionBloc(
+                permissionService: _FakeNotificationPermissionService(
+                  NotificationPermissionStatus.granted,
+                ),
+              ),
+              child: Scaffold(
+                body: TaskForm(
+                  formKey: formKey,
+                  submitTooltip: 'save',
+                  onSubmit: () {},
+                ),
               ),
             ),
           ),
@@ -122,6 +163,64 @@ void main() {
 
       expect(find.text('Repeat'), findsWidgets);
       expect(find.byType(CalendarDatePicker), findsOneWidget);
+    },
+  );
+
+  testWidgetsSafe(
+    'reminder sheet gates options until notification permission is granted',
+    (tester) async {
+      final formKey = GlobalKey<FormBuilderState>();
+      final permissionService = _FakeNotificationPermissionService(
+        NotificationPermissionStatus.denied,
+      );
+      tester.binding.window.physicalSizeTestValue = const Size(1200, 1800);
+      tester.binding.window.devicePixelRatioTestValue = 1.0;
+      addTearDown(() {
+        tester.binding.window.clearPhysicalSizeTestValue();
+        tester.binding.window.clearDevicePixelRatioTestValue();
+      });
+
+      await tester.pumpWidget(
+        Provider<NowService>.value(
+          value: _FakeNowService(DateTime(2026, 1, 2, 9, 0)),
+          child: MaterialApp(
+            theme: AppTheme.lightTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: BlocProvider(
+              create: (_) => NotificationPermissionBloc(
+                permissionService: permissionService,
+              ),
+              child: Scaffold(
+                body: TaskForm(
+                  formKey: formKey,
+                  submitTooltip: 'save',
+                  onSubmit: () {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpForStream();
+
+      await tester.tap(find.byIcon(Icons.notifications_none_rounded).first);
+      await tester.pumpForStream();
+
+      expect(find.text('Turn on notifications'), findsOneWidget);
+      expect(find.text('At date/time'), findsNothing);
+
+      final enableNotificationsButton = find.widgetWithText(
+        FilledButton,
+        'Enable notifications',
+      );
+      final button = tester.widget<FilledButton>(enableNotificationsButton);
+      button.onPressed!.call();
+      await tester.pumpForStream();
+
+      expect(permissionService.requestCalls, 1);
+      expect(find.text('At date/time'), findsOneWidget);
+      expect(find.text('Before due'), findsWidgets);
     },
   );
 }

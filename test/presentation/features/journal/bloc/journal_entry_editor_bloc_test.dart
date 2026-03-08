@@ -147,6 +147,12 @@ void main() {
       ),
     ).thenAnswer((_) async => 'entry-1');
     when(
+      () => repository.deleteJournalEntry(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
       () => repository.updateJournalEntry(
         any(),
         context: any(named: 'context'),
@@ -714,4 +720,71 @@ void main() {
     expect(bloc.state.dailyDraftValues, isEmpty);
     expect(bloc.state.dayStateByTrackerId['daily-1']?.value, 200);
   });
+
+  blocTestSafe<JournalEntryEditorBloc, JournalEntryEditorState>(
+    'delete existing entry emits deleted status and forwards context',
+    build: () => buildBloc(entryId: 'entry-1'),
+    seed: () => JournalEntryEditorState.initial(entryId: 'entry-1').copyWith(
+      status: const JournalEntryEditorIdle(),
+    ),
+    act: (bloc) => bloc.add(const JournalEntryEditorDeleteRequested()),
+    expect: () => [
+      isA<JournalEntryEditorState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalEntryEditorDeleting>(),
+      ),
+      isA<JournalEntryEditorState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalEntryEditorDeleted>(),
+      ),
+    ],
+    verify: (_) {
+      final captured = verify(
+        () => repository.deleteJournalEntry(
+          'entry-1',
+          context: captureAny(named: 'context'),
+        ),
+      ).captured;
+      final ctx = captured.single as OperationContext;
+      expect(ctx.feature, 'journal');
+      expect(ctx.screen, 'journal_entry_editor');
+      expect(ctx.intent, 'delete');
+      expect(ctx.operation, 'journal.entry_editor.delete');
+    },
+  );
+
+  blocTestSafe<JournalEntryEditorBloc, JournalEntryEditorState>(
+    'delete failure emits error status',
+    build: () {
+      when(
+        () => repository.deleteJournalEntry(
+          any(),
+          context: any(named: 'context'),
+        ),
+      ).thenThrow(Exception('boom'));
+      return buildBloc(entryId: 'entry-1');
+    },
+    seed: () => JournalEntryEditorState.initial(entryId: 'entry-1').copyWith(
+      status: const JournalEntryEditorIdle(),
+    ),
+    act: (bloc) => bloc.add(const JournalEntryEditorDeleteRequested()),
+    expect: () => [
+      isA<JournalEntryEditorState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalEntryEditorDeleting>(),
+      ),
+      isA<JournalEntryEditorState>().having(
+        (s) => s.status,
+        'status',
+        isA<JournalEntryEditorError>().having(
+          (s) => s.message,
+          'message',
+          'Failed to delete log. Please try again.',
+        ),
+      ),
+    ],
+  );
 }

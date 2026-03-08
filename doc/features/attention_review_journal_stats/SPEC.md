@@ -16,6 +16,8 @@ Defines support signals, weekly review cards, journal integration, and stats con
 - Journal home quick capture uses a modal bottom-sheet editor optimized for
   rapid logging; full-screen route edit/create remains available for detailed
   edits.
+- Existing journal moments expose delete from the editor header overflow with a
+  confirmation step; new/unsaved moments do not show delete.
 - Journal home is summary-first for **today**:
   - "Your Day" card first (today summary with full day factors),
   - moments list second (today only, newest first),

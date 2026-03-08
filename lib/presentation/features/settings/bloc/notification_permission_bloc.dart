@@ -131,6 +131,7 @@ class NotificationPermissionBloc
   ) async {
     try {
       await _permissionService.openSettings();
+      await _refresh(emit);
     } catch (error, stackTrace) {
       talker.handle(
         error,

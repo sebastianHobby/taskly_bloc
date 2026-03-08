@@ -13,8 +13,8 @@ class _FakeNotificationPermissionService
     required this.requestStatus,
   });
 
-  final NotificationPermissionStatus initialStatus;
-  final NotificationPermissionStatus requestStatus;
+  NotificationPermissionStatus initialStatus;
+  NotificationPermissionStatus requestStatus;
   int requestCalls = 0;
   int openSettingsCalls = 0;
 
@@ -86,4 +86,31 @@ void main() {
 
     expect(service.openSettingsCalls, 1);
   });
+
+  blocTestSafe<NotificationPermissionBloc, NotificationPermissionState>(
+    'open settings refreshes status after returning from system settings',
+    build: () {
+      final service = _FakeNotificationPermissionService(
+        initialStatus: NotificationPermissionStatus.denied,
+        requestStatus: NotificationPermissionStatus.denied,
+      )..initialStatus = NotificationPermissionStatus.granted;
+      return NotificationPermissionBloc(permissionService: service);
+    },
+    seed: () => const NotificationPermissionState(
+      status: NotificationPermissionStatus.denied,
+      isLoading: false,
+    ),
+    act: (bloc) =>
+        bloc.add(const NotificationPermissionOpenSettingsRequested()),
+    expect: () => const <NotificationPermissionState>[
+      NotificationPermissionState(
+        status: NotificationPermissionStatus.denied,
+        isLoading: true,
+      ),
+      NotificationPermissionState(
+        status: NotificationPermissionStatus.granted,
+        isLoading: false,
+      ),
+    ],
+  );
 }

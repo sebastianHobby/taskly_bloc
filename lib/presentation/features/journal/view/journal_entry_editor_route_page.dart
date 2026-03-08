@@ -402,6 +402,32 @@ class _JournalEntryEditorRoutePageState
     );
   }
 
+  Future<void> _confirmDeleteMoment(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(context.l10n.journalDeleteMomentTitle),
+          content: Text(context.l10n.journalDeleteMomentMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(context.l10n.cancelLabel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(context.l10n.deleteLabel),
+            ),
+          ],
+        );
+      },
+    );
+    if (!context.mounted || confirmed != true) return;
+    context.read<JournalEntryEditorBloc>().add(
+      const JournalEntryEditorDeleteRequested(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final repository = context.read<JournalRepositoryContract>();
@@ -435,6 +461,15 @@ class _JournalEntryEditorRoutePageState
                 ),
               );
               context.pop(true);
+            case JournalEntryEditorDeleted():
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(context.l10n.journalDeletedLogSnack),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+              context.pop(true);
             case JournalEntryEditorError(:final message):
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -452,8 +487,10 @@ class _JournalEntryEditorRoutePageState
           final tokens = TasklyTokens.of(context);
           final materialL10n = MaterialLocalizations.of(context);
           final isSaving = state.status is JournalEntryEditorSaving;
+          final isDeleting = state.status is JournalEntryEditorDeleting;
           final isLoading = state.status is JournalEntryEditorLoading;
-          final canSave = !isSaving && state.mood != null;
+          final isBusy = isSaving || isDeleting || isLoading;
+          final canSave = !isBusy && state.mood != null;
           final momentTimeLabel = materialL10n.formatTimeOfDay(
             TimeOfDay.fromDateTime(state.occurredAtLocal),
           );
@@ -1637,6 +1674,25 @@ class _JournalEntryEditorRoutePageState
                     ? l10n.journalEditLogTitle
                     : l10n.journalNewLogTitle,
               ),
+              actions: [
+                if (state.isEditingExisting)
+                  PopupMenuButton<_JournalEntryEditorAction>(
+                    tooltip: l10n.moreLabel,
+                    enabled: !isBusy,
+                    onSelected: (action) async {
+                      switch (action) {
+                        case _JournalEntryEditorAction.delete:
+                          await _confirmDeleteMoment(context);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem<_JournalEntryEditorAction>(
+                        value: _JournalEntryEditorAction.delete,
+                        child: Text(l10n.deleteLabel),
+                      ),
+                    ],
+                  ),
+              ],
             ),
             bottomNavigationBar: SafeArea(
               child: Padding(
@@ -1658,6 +1714,8 @@ class _JournalEntryEditorRoutePageState
     );
   }
 }
+
+enum _JournalEntryEditorAction { delete }
 
 class _MoodScalePicker extends StatelessWidget {
   const _MoodScalePicker({
