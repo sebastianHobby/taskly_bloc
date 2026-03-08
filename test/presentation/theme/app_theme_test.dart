@@ -108,7 +108,7 @@ void main() {
     expect(
       cardTheme!.surface(TasklyCardVariant.subtle),
       Color.alphaBlend(
-        theme.colorScheme.surfaceContainerLowest.withValues(alpha: 0.7),
+        theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.72),
         theme.colorScheme.surface,
       ),
     );
