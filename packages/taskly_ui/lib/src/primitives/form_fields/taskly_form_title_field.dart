@@ -36,6 +36,8 @@ class TasklyFormTitleField extends StatelessWidget {
       style: theme.textTheme.headlineSmall?.copyWith(
         fontWeight: FontWeight.w600,
       ),
+      minLines: 1,
+      maxLines: 2,
       textCapitalization: textCapitalization,
       textInputAction: textInputAction,
       focusNode: focusNode,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_tokens.dart';
 import 'package:taskly_ui/src/foundations/icons/taskly_symbol_icon.dart';
 
 void main() {
@@ -49,6 +51,51 @@ void main() {
       expect(deleteCalls, 1);
       expect(closeCalls, 1);
       expect(submitCalls, 2);
+    });
+  });
+
+  group('Editor title overflow', () {
+    testWidgets('TasklyFormTitleField allows up to two lines', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FormBuilder(
+              child: const TasklyFormTitleField(
+                name: 'title',
+                hintText: 'Title',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.minLines, 1);
+      expect(editable.maxLines, 2);
+    });
+
+    testWidgets('TasklyFormSheet title truncates after two lines', (
+      tester,
+    ) async {
+      const title = 'A very long editor title that should be constrained';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: TasklyFormSheet(
+              title: title,
+              preset: TasklyFormPreset.standard(
+                TasklyTokens.fromTheme(ThemeData()),
+              ),
+              child: const SizedBox(height: 100, child: Text('Content')),
+            ),
+          ),
+        ),
+      );
+
+      final titleText = tester.widget<Text>(find.text(title));
+      expect(titleText.maxLines, 2);
+      expect(titleText.overflow, TextOverflow.ellipsis);
     });
   });
 

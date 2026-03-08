@@ -475,6 +475,9 @@ class _RoutineFormState extends State<RoutineForm> with FormDirtyStateMixin {
     final colorScheme = theme.colorScheme;
     final headerTitle = Text(
       isCreating ? l10n.routineFormNewTitle : l10n.routineFormEditTitle,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
       style: theme.textTheme.bodyMedium?.copyWith(
         fontWeight: FontWeight.w600,
       ),

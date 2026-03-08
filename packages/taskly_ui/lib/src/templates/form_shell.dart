@@ -208,6 +208,9 @@ class FormShell extends StatelessWidget {
         ...resolvedTrailingActions,
       ],
     );
+    final centeredTitlePadding = EdgeInsets.symmetric(
+      horizontal: tokens.minTapTargetSize * 2,
+    );
     final headerContent = headerTitle == null
         ? headerRow
         : centerHeaderTitle
@@ -215,15 +218,19 @@ class FormShell extends StatelessWidget {
             alignment: Alignment.center,
             children: [
               headerRow,
-              Center(child: headerTitle),
+              IgnorePointer(
+                child: Padding(
+                  padding: centeredTitlePadding,
+                  child: Center(child: headerTitle),
+                ),
+              ),
             ],
           )
         : Row(
             children: [
               ...resolvedLeadingActions,
               SizedBox(width: tokens.spaceMd),
-              headerTitle!,
-              const Spacer(),
+              Expanded(child: headerTitle!),
               ...resolvedTrailingActions,
             ],
           );

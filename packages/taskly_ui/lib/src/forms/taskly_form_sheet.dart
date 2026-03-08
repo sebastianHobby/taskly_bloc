@@ -44,6 +44,8 @@ class TasklyFormSheet extends StatelessWidget {
                       Text(
                         title!,
                         style: theme.textTheme.headlineSmall,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: tokens.spaceXl),
                     ],

@@ -947,6 +947,9 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
         : formPreset.ux.sectionGapRegular;
     final headerTitle = Text(
       isCreating ? l10n.taskFormNewTitle : l10n.taskFormEditTitle,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
       style: theme.textTheme.bodyMedium?.copyWith(
         fontWeight: FontWeight.w600,
       ),

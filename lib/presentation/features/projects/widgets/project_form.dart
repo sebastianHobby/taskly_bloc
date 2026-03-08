@@ -495,6 +495,9 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
 
     final headerTitle = Text(
       isCreating ? l10n.projectFormNewTitle : l10n.projectFormEditTitle,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
       style: theme.textTheme.bodyMedium?.copyWith(
         fontWeight: FontWeight.w600,
       ),
