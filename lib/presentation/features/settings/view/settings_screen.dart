@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -13,7 +13,10 @@ class SettingsScreen extends StatelessWidget {
     final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
-        title: const _SettingsAppBarTitle(),
+        title: TasklyPageHeader(
+          screenId: 'settings',
+          title: l10n.settingsTitle,
+        ),
         centerTitle: false,
       ),
       body: ResponsiveBody(
@@ -93,47 +96,6 @@ class _SettingsNavItem extends StatelessWidget {
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
-    );
-  }
-}
-
-class _SettingsAppBarTitle extends StatelessWidget {
-  const _SettingsAppBarTitle();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final tokens = TasklyTokens.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final iconSet = const NavigationIconResolver().resolve(
-      screenId: 'settings',
-      iconName: null,
-    );
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.sectionPaddingH,
-        tokens.spaceMd,
-        tokens.sectionPaddingH,
-        tokens.spaceSm,
-      ),
-      child: Row(
-        children: [
-          Icon(
-            iconSet.selectedIcon,
-            color: scheme.primary,
-            size: tokens.spaceLg3,
-          ),
-          SizedBox(width: tokens.spaceSm),
-          Text(
-            l10n.settingsTitle,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

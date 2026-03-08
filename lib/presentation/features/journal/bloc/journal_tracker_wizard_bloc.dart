@@ -130,6 +130,13 @@ final class JournalTrackerWizardChoiceUpdated
   final String label;
 }
 
+final class JournalTrackerWizardCreateGroupRequested
+    extends JournalTrackerWizardEvent {
+  const JournalTrackerWizardCreateGroupRequested(this.name);
+
+  final String name;
+}
+
 final class JournalTrackerWizardSaveRequested
     extends JournalTrackerWizardEvent {
   const JournalTrackerWizardSaveRequested();
@@ -296,6 +303,10 @@ class JournalTrackerWizardBloc
     on<JournalTrackerWizardChoiceAdded>(_onChoiceAdded);
     on<JournalTrackerWizardChoiceRemoved>(_onChoiceRemoved);
     on<JournalTrackerWizardChoiceUpdated>(_onChoiceUpdated);
+    on<JournalTrackerWizardCreateGroupRequested>(
+      _onCreateGroupRequested,
+      transformer: sequential(),
+    );
     on<JournalTrackerWizardSaveRequested>(
       _onSaveRequested,
       transformer: sequential(),
@@ -380,9 +391,13 @@ class JournalTrackerWizardBloc
           JournalTrackerKind.aggregate => JournalTrackerScopeOption.day,
           null => forcedScope,
         };
-        final defaultMeasurement = trackerKind == JournalTrackerKind.aggregate
-            ? JournalTrackerMeasurementType.quantity
-            : state.measurement;
+        final defaultMeasurement = switch (trackerKind) {
+          JournalTrackerKind.aggregate =>
+            JournalTrackerMeasurementType.quantity,
+          JournalTrackerKind.activity =>
+            state.measurement ?? JournalTrackerMeasurementType.toggle,
+          null => state.measurement,
+        };
         return state.copyWith(
           status: const JournalTrackerWizardIdle(),
           groups: active,
@@ -586,6 +601,80 @@ class JournalTrackerWizardBloc
         status: const JournalTrackerWizardIdle(),
       ),
     );
+  }
+
+  Future<void> _onCreateGroupRequested(
+    JournalTrackerWizardCreateGroupRequested event,
+    Emitter<JournalTrackerWizardState> emit,
+  ) async {
+    final trimmed = event.name.trim();
+    if (trimmed.isEmpty) {
+      emit(
+        state.copyWith(
+          status: const JournalTrackerWizardError('Group name is required.'),
+        ),
+      );
+      return;
+    }
+
+    final context = _newContext(
+      intent: 'create_group',
+      operation: 'journal.saveTrackerGroup',
+      extraFields: <String, Object?>{'groupName': trimmed},
+    );
+
+    emit(state.copyWith(status: const JournalTrackerWizardSaving()));
+    try {
+      final groups = await _repository.watchTrackerGroups().first;
+      final sortOrder = groups.length * 10 + 100;
+      final now = _nowUtc();
+      await _repository.saveTrackerGroup(
+        TrackerGroup(
+          id: '',
+          name: trimmed,
+          sortOrder: sortOrder,
+          isActive: true,
+          createdAt: now,
+          updatedAt: now,
+          userId: null,
+        ),
+        context: context,
+      );
+
+      final refreshed = await _repository.watchTrackerGroups().first;
+      final created =
+          refreshed
+              .where((group) => group.isActive)
+              .where(
+                (group) =>
+                    group.name.trim().toLowerCase() == trimmed.toLowerCase(),
+              )
+              .toList(growable: false)
+            ..sort((a, b) => b.sortOrder.compareTo(a.sortOrder));
+      emit(
+        state.copyWith(
+          groupId: created.isNotEmpty ? created.first.id : state.groupId,
+          status: const JournalTrackerWizardIdle(),
+        ),
+      );
+    } catch (error, stackTrace) {
+      _reportIfUnexpectedOrUnmapped(
+        error,
+        stackTrace,
+        context: context,
+        message: '[JournalTrackerWizardBloc] createGroup failed',
+      );
+      emit(
+        state.copyWith(
+          status: JournalTrackerWizardError(
+            _uiMessageFor(
+              error,
+              fallback: 'Failed to create group. Please try again.',
+            ),
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _onSaveRequested(

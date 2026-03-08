@@ -36,7 +36,7 @@ class JournalTrackerTypeSelectionPage extends StatelessWidget {
             icon: Icons.event_note_outlined,
             title: context.l10n.journalTrackerTypeActivityTitle,
             subtitle: context.l10n.journalTrackerTypeActivitySubtitle,
-            onTap: () => Routing.toJournalTrackerTemplates(
+            onTap: () => Routing.toJournalTrackerConfigure(
               context,
               kind: 'activity',
             ),
@@ -46,37 +46,9 @@ class JournalTrackerTypeSelectionPage extends StatelessWidget {
             icon: Icons.bar_chart_outlined,
             title: context.l10n.journalTrackerTypeAggregateTitle,
             subtitle: context.l10n.journalTrackerTypeAggregateSubtitle,
-            onTap: () => Routing.toJournalTrackerTemplates(
+            onTap: () => Routing.toJournalTrackerConfigure(
               context,
               kind: 'aggregate',
-            ),
-          ),
-          SizedBox(height: tokens.spaceLg),
-          Container(
-            padding: EdgeInsets.all(tokens.spaceMd),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(tokens.radiusMd),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 18,
-                  color: theme.colorScheme.primary,
-                ),
-                SizedBox(width: tokens.spaceSm),
-                Expanded(
-                  child: Text(
-                    context.l10n.journalTrackerTypeInfoTip,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// Centralized application theme.
@@ -60,10 +61,16 @@ class AppTheme {
       colorScheme: scheme,
     );
     final tokens = TasklyTokens.fromTheme(base);
+    final chromeTheme = TasklyAppChromeTheme.fromTheme(base);
+    final pageHeaderTheme = TasklyPageHeaderTheme.fromTheme(base);
+    final panelTheme = TasklyPanelTheme.fromTheme(base);
 
     return base.copyWith(
       extensions: <ThemeExtension<dynamic>>[
         tokens,
+        chromeTheme,
+        pageHeaderTheme,
+        panelTheme,
       ],
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -96,10 +103,20 @@ class AppTheme {
     final tokens = TasklyTokens.fromTheme(
       ThemeData(colorScheme: colorScheme, textTheme: textTheme),
     );
+    final semanticBase = ThemeData(
+      colorScheme: colorScheme,
+      textTheme: textTheme,
+    );
+    final chromeTheme = TasklyAppChromeTheme.fromTheme(semanticBase);
+    final pageHeaderTheme = TasklyPageHeaderTheme.fromTheme(semanticBase);
+    final panelTheme = TasklyPanelTheme.fromTheme(semanticBase);
 
     return base.copyWith(
       extensions: <ThemeExtension<dynamic>>[
         tokens,
+        chromeTheme,
+        pageHeaderTheme,
+        panelTheme,
       ],
 
       // AppBar theme
@@ -219,8 +236,8 @@ class AppTheme {
       // Navigation rail theme
       navigationRailTheme: NavigationRailThemeData(
         elevation: 0,
-        backgroundColor: colorScheme.surfaceContainerLow,
-        indicatorColor: colorScheme.primaryContainer,
+        backgroundColor: chromeTheme.navigationSurface,
+        indicatorColor: chromeTheme.navigationIndicator,
         selectedIconTheme: IconThemeData(
           color: colorScheme.onPrimaryContainer,
         ),
@@ -242,8 +259,8 @@ class AppTheme {
       // Bottom navigation bar theme (for mobile)
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,
-        backgroundColor: colorScheme.surfaceContainerLow,
-        indicatorColor: colorScheme.primaryContainer,
+        backgroundColor: chromeTheme.navigationSurface,
+        indicatorColor: chromeTheme.navigationIndicator,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return TextStyle(

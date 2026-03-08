@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 Future<String?> showMoreDestinationsSheet({
@@ -57,6 +58,7 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final panelTheme = TasklyPanelTheme.of(context);
 
     final filtered = widget.destinations
         .where((d) {
@@ -109,7 +111,7 @@ class _MoreDestinationsSheetState extends State<_MoreDestinationsSheet> {
                 itemCount: filtered.length,
                 separatorBuilder: (_, __) => Divider(
                   height: 1,
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                  color: panelTheme.mutedBorder,
                 ),
                 itemBuilder: (context, index) {
                   final dest = filtered[index];

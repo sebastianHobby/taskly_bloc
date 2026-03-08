@@ -12,6 +12,8 @@ import 'package:taskly_bloc/presentation/features/journal/widgets/journal_factor
 import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_page_gradient_surface.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/services.dart';
@@ -196,17 +198,7 @@ class _HistoryBody extends StatelessWidget {
     final hasDateRange = filters.rangeStart != null && filters.rangeEnd != null;
     final days = state.days;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.surface,
-            Theme.of(context).colorScheme.surfaceContainerLow,
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+    return TasklyPageGradientSurface(
       child: ListView(
         controller: scrollController,
         padding: EdgeInsets.fromLTRB(
@@ -421,6 +413,7 @@ class _HistoryDayCardState extends State<_HistoryDayCard> {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final theme = Theme.of(context);
+    final panelTheme = TasklyPanelTheme.of(context);
     final l10n = context.l10n;
     final dayLocal = DateTime(
       widget.summary.day.year,
@@ -458,9 +451,9 @@ class _HistoryDayCardState extends State<_HistoryDayCard> {
         child: Container(
           padding: EdgeInsets.all(tokens.spaceMd),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerLow,
+            color: panelTheme.subtleSurface,
             borderRadius: BorderRadius.circular(tokens.radiusLg),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            border: Border.all(color: panelTheme.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

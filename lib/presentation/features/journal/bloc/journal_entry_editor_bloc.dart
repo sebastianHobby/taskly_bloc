@@ -31,6 +31,13 @@ final class JournalEntryEditorNoteChanged extends JournalEntryEditorEvent {
   final String note;
 }
 
+final class JournalEntryEditorOccurredAtChanged
+    extends JournalEntryEditorEvent {
+  const JournalEntryEditorOccurredAtChanged(this.occurredAtLocal);
+
+  final DateTime occurredAtLocal;
+}
+
 final class JournalEntryEditorEntryValueChanged
     extends JournalEntryEditorEvent {
   const JournalEntryEditorEntryValueChanged({
@@ -98,6 +105,7 @@ final class JournalEntryEditorState {
     required this.status,
     required this.entryId,
     required this.selectedDayLocal,
+    required this.occurredAtLocal,
     required this.groups,
     required this.trackers,
     required this.dailyTrackers,
@@ -117,6 +125,7 @@ final class JournalEntryEditorState {
       status: const JournalEntryEditorLoading(),
       entryId: entryId,
       selectedDayLocal: DateTime(2000),
+      occurredAtLocal: DateTime(2000),
       groups: const <TrackerGroup>[],
       trackers: const <TrackerDefinition>[],
       dailyTrackers: const <TrackerDefinition>[],
@@ -135,6 +144,7 @@ final class JournalEntryEditorState {
   final JournalEntryEditorStatus status;
   final String? entryId;
   final DateTime selectedDayLocal;
+  final DateTime occurredAtLocal;
   final List<TrackerGroup> groups;
   final List<TrackerDefinition> trackers;
   final List<TrackerDefinition> dailyTrackers;
@@ -154,6 +164,7 @@ final class JournalEntryEditorState {
     JournalEntryEditorStatus? status,
     String? entryId,
     DateTime? selectedDayLocal,
+    DateTime? occurredAtLocal,
     List<TrackerGroup>? groups,
     List<TrackerDefinition>? trackers,
     List<TrackerDefinition>? dailyTrackers,
@@ -171,6 +182,7 @@ final class JournalEntryEditorState {
       status: status ?? this.status,
       entryId: entryId ?? this.entryId,
       selectedDayLocal: selectedDayLocal ?? this.selectedDayLocal,
+      occurredAtLocal: occurredAtLocal ?? this.occurredAtLocal,
       groups: groups ?? this.groups,
       trackers: trackers ?? this.trackers,
       dailyTrackers: dailyTrackers ?? this.dailyTrackers,
@@ -206,6 +218,7 @@ class JournalEntryEditorBloc
     on<JournalEntryEditorStarted>(_onStarted, transformer: restartable());
     on<JournalEntryEditorMoodChanged>(_onMoodChanged);
     on<JournalEntryEditorNoteChanged>(_onNoteChanged);
+    on<JournalEntryEditorOccurredAtChanged>(_onOccurredAtChanged);
     on<JournalEntryEditorEntryValueChanged>(_onEntryValueChanged);
     on<JournalEntryEditorDailyValueChanged>(
       _onDailyValueChanged,
@@ -291,22 +304,32 @@ class JournalEntryEditorBloc
     );
   }
 
-  DateTime _entryOccurredAtForSelectedDay({
+  DateTime _defaultOccurredAtLocalForSelectedDay({
     required DateTime selectedDayLocal,
     required DateTime nowUtc,
   }) {
     final nowLocal = nowUtc.toLocal();
-    final local = DateTime(
+    return DateTime(
       selectedDayLocal.year,
       selectedDayLocal.month,
       selectedDayLocal.day,
       nowLocal.hour,
       nowLocal.minute,
-      nowLocal.second,
-      nowLocal.millisecond,
-      nowLocal.microsecond,
     );
-    return local.toUtc();
+  }
+
+  DateTime _normalizeOccurredAtLocal(DateTime localDateTime) {
+    return DateTime(
+      _selectedDayLocal.year,
+      _selectedDayLocal.month,
+      _selectedDayLocal.day,
+      localDateTime.hour,
+      localDateTime.minute,
+    );
+  }
+
+  DateTime _occurredAtUtcFromState(JournalEntryEditorState currentState) {
+    return currentState.occurredAtLocal.toUtc();
   }
 
   Object? _effectiveDailyValue(String trackerId) {
@@ -320,13 +343,15 @@ class JournalEntryEditorBloc
   MoodRating? _initialMood;
   String _initialNote = '';
   Map<String, Object?> _initialEntryValues = const <String, Object?>{};
+  DateTime _initialOccurredAtLocal = DateTime(2000);
   DateTime _selectedDayLocal = DateTime(2000);
 
   Future<void> _onStarted(
     JournalEntryEditorStarted event,
     Emitter<JournalEntryEditorState> emit,
   ) async {
-    final nowLocal = _nowUtc().toLocal();
+    final nowUtc = _nowUtc();
+    final nowLocal = nowUtc.toLocal();
     final initialLocalDay = _selectedDayLocalOverride == null
         ? DateTime(nowLocal.year, nowLocal.month, nowLocal.day)
         : DateTime(
@@ -335,7 +360,16 @@ class JournalEntryEditorBloc
             _selectedDayLocalOverride.day,
           );
     _selectedDayLocal = initialLocalDay;
-    emit(state.copyWith(selectedDayLocal: _selectedDayLocal));
+    final initialOccurredAtLocal = _defaultOccurredAtLocalForSelectedDay(
+      selectedDayLocal: _selectedDayLocal,
+      nowUtc: nowUtc,
+    );
+    emit(
+      state.copyWith(
+        selectedDayLocal: _selectedDayLocal,
+        occurredAtLocal: initialOccurredAtLocal,
+      ),
+    );
 
     try {
       final entryId = _entryId;
@@ -346,6 +380,7 @@ class JournalEntryEditorBloc
         _initialMood = null;
         _initialNote = '';
         _initialEntryValues = _seedPreselectedValues();
+        _initialOccurredAtLocal = initialOccurredAtLocal;
         emit(
           state.copyWith(
             entryValues: _initialEntryValues,
@@ -522,6 +557,19 @@ class JournalEntryEditorBloc
     emit(_withIdleAndDirty(state.copyWith(note: event.note)));
   }
 
+  void _onOccurredAtChanged(
+    JournalEntryEditorOccurredAtChanged event,
+    Emitter<JournalEntryEditorState> emit,
+  ) {
+    emit(
+      _withIdleAndDirty(
+        state.copyWith(
+          occurredAtLocal: _normalizeOccurredAtLocal(event.occurredAtLocal),
+        ),
+      ),
+    );
+  }
+
   void _onEntryValueChanged(
     JournalEntryEditorEntryValueChanged event,
     Emitter<JournalEntryEditorState> emit,
@@ -544,7 +592,8 @@ class JournalEntryEditorBloc
     final definition = state.definitionById[trackerId];
     if (definition == null) return;
 
-    final nextDraft = {...state.dailyDraftValues};
+    final previousDraft = {...state.dailyDraftValues};
+    final nextDraft = {...previousDraft};
     nextDraft[trackerId] = event.value;
 
     emit(
@@ -576,10 +625,7 @@ class JournalEntryEditorBloc
           anchorDate: dayUtc,
           op: op.isEmpty ? 'set' : op,
           value: event.value,
-          occurredAt: _entryOccurredAtForSelectedDay(
-            selectedDayLocal: state.selectedDayLocal,
-            nowUtc: nowUtc,
-          ),
+          occurredAt: _occurredAtUtcFromState(state),
           recordedAt: nowUtc,
         ),
         context: context,
@@ -602,6 +648,7 @@ class JournalEntryEditorBloc
               fallback: 'Failed to update daily factor. Please try again.',
             ),
           ),
+          dailyDraftValues: previousDraft,
         ),
       );
     }
@@ -617,13 +664,14 @@ class JournalEntryEditorBloc
     final definition = state.definitionById[trackerId];
     if (definition == null) return;
 
+    final previousDraft = {...state.dailyDraftValues};
     final current = _effectiveDailyValue(trackerId);
     final currentNum = switch (current) {
       final int v => v.toDouble(),
       final double v => v,
       _ => 0.0,
     };
-    final nextDraft = {...state.dailyDraftValues};
+    final nextDraft = {...previousDraft};
     nextDraft[trackerId] = currentNum + event.delta;
 
     emit(
@@ -655,10 +703,7 @@ class JournalEntryEditorBloc
           anchorDate: dayUtc,
           op: 'add',
           value: event.delta,
-          occurredAt: _entryOccurredAtForSelectedDay(
-            selectedDayLocal: state.selectedDayLocal,
-            nowUtc: nowUtc,
-          ),
+          occurredAt: _occurredAtUtcFromState(state),
           recordedAt: nowUtc,
         ),
         context: context,
@@ -681,6 +726,7 @@ class JournalEntryEditorBloc
               fallback: 'Failed to update daily factor. Please try again.',
             ),
           ),
+          dailyDraftValues: previousDraft,
         ),
       );
     }
@@ -731,12 +777,7 @@ class JournalEntryEditorBloc
       final dayUtc = _dayUtcFromLocal(state.selectedDayLocal);
 
       final existing = _initialEntry;
-      final occurredAt =
-          existing?.occurredAt ??
-          _entryOccurredAtForSelectedDay(
-            selectedDayLocal: state.selectedDayLocal,
-            nowUtc: nowUtc,
-          );
+      final occurredAt = _occurredAtUtcFromState(state);
 
       final entryToSave = existing == null
           ? JournalEntry(
@@ -755,37 +796,29 @@ class JournalEntryEditorBloc
               deletedAt: null,
             )
           : existing.copyWith(
+              entryTime: occurredAt,
+              occurredAt: occurredAt,
+              localDate: DateTime(
+                state.selectedDayLocal.year,
+                state.selectedDayLocal.month,
+                state.selectedDayLocal.day,
+              ),
               journalText: state.note.trim().isEmpty ? null : state.note.trim(),
               updatedAt: nowUtc,
             );
 
-      late final String entryId;
-      if (existing == null) {
-        entryId = await _repository.createJournalEntry(
-          entryToSave,
-          context: context,
-        );
-      } else {
-        await _repository.updateJournalEntry(
-          entryToSave.copyWith(id: existing.id),
-          context: context,
-        );
-        entryId = existing.id;
-      }
-
-      await _repository.appendTrackerEvent(
+      final trackerEvents = <TrackerEvent>[
         TrackerEvent(
           id: '',
           trackerId: moodTrackerId,
           anchorType: 'entry',
-          entryId: entryId,
+          anchorDate: dayUtc,
           op: 'set',
           value: mood.value,
           occurredAt: occurredAt,
           recordedAt: nowUtc,
         ),
-        context: context,
-      );
+      ];
 
       for (final entryValue in state.entryValues.entries) {
         final trackerId = entryValue.key;
@@ -794,21 +827,27 @@ class JournalEntryEditorBloc
         if (value == null) continue;
 
         final op = state.definitionById[trackerId]?.opKind ?? 'set';
-
-        await _repository.appendTrackerEvent(
+        trackerEvents.add(
           TrackerEvent(
             id: '',
             trackerId: trackerId,
             anchorType: 'entry',
-            entryId: entryId,
+            anchorDate: dayUtc,
             op: op.isEmpty ? 'set' : op,
             value: value,
             occurredAt: occurredAt,
             recordedAt: nowUtc,
           ),
-          context: context,
         );
       }
+
+      final entryId = await _repository.saveJournalEntryWithEntryEvents(
+        entry: existing == null
+            ? entryToSave
+            : entryToSave.copyWith(id: existing.id),
+        trackerEvents: trackerEvents,
+        context: context,
+      );
 
       emit(
         state.copyWith(
@@ -858,6 +897,7 @@ class JournalEntryEditorBloc
       entry.localDate.month,
       entry.localDate.day,
     );
+    final existingOccurredAtLocal = entry.occurredAt.toLocal();
 
     final defs = await _repository.watchTrackerDefinitions().first;
     String? moodTrackerId;
@@ -877,7 +917,7 @@ class JournalEntryEditorBloc
 
     for (final e in events) {
       if (moodTrackerId != null && e.trackerId == moodTrackerId) {
-        if (e.value is int) {
+        if (mood == null && e.value is int) {
           mood = MoodRating.fromValue(e.value! as int);
         }
         continue;
@@ -895,12 +935,20 @@ class JournalEntryEditorBloc
     _initialEntryValues = {...values};
     _initialMood = mood;
     _initialNote = entry.journalText ?? '';
+    _initialOccurredAtLocal = DateTime(
+      _selectedDayLocal.year,
+      _selectedDayLocal.month,
+      _selectedDayLocal.day,
+      existingOccurredAtLocal.hour,
+      existingOccurredAtLocal.minute,
+    );
 
     return state.copyWith(
       mood: mood,
       note: entry.journalText ?? '',
       entryValues: values,
       selectedDayLocal: _selectedDayLocal,
+      occurredAtLocal: _initialOccurredAtLocal,
       status: const JournalEntryEditorIdle(),
       isDirty: false,
     );
@@ -921,8 +969,12 @@ class JournalEntryEditorBloc
     final initialNote = _initialNote.trim();
     final noteChanged = nextNote != initialNote;
 
+    final occurredAtChanged =
+        next.occurredAtLocal.hour != _initialOccurredAtLocal.hour ||
+        next.occurredAtLocal.minute != _initialOccurredAtLocal.minute;
+
     final entriesChanged = !_sameMap(next.entryValues, _initialEntryValues);
-    return moodChanged || noteChanged || entriesChanged;
+    return moodChanged || noteChanged || occurredAtChanged || entriesChanged;
   }
 
   bool _sameMap(Map<String, Object?> a, Map<String, Object?> b) {

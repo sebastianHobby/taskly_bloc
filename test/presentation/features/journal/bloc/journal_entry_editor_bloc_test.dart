@@ -140,6 +140,13 @@ void main() {
       ),
     ).thenAnswer((_) async => 'entry-1');
     when(
+      () => repository.saveJournalEntryWithEntryEvents(
+        entry: any(named: 'entry'),
+        trackerEvents: any(named: 'trackerEvents'),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async => 'entry-1');
+    when(
       () => repository.updateJournalEntry(
         any(),
         context: any(named: 'context'),
@@ -301,86 +308,123 @@ void main() {
     ],
     verify: (_) {
       final captured = verify(
-        () => repository.appendTrackerEvent(
-          captureAny<TrackerEvent>(),
+        () => repository.saveJournalEntryWithEntryEvents(
+          entry: captureAny(named: 'entry'),
+          trackerEvents: captureAny(named: 'trackerEvents'),
           context: captureAny(named: 'context'),
         ),
       ).captured;
-      expect(captured.length, 4);
+      final entry =
+          captured.firstWhere((item) => item is JournalEntry) as JournalEntry;
+      final trackerEvents =
+          captured.firstWhere((item) => item is List<TrackerEvent>)
+              as List<TrackerEvent>;
       final ctx =
-          captured.firstWhere(
-                (item) => item is OperationContext,
-              )
+          captured.firstWhere((item) => item is OperationContext)
               as OperationContext;
+      expect(entry.journalText, 'Hello');
+      expect(trackerEvents, hasLength(2));
       expect(ctx.feature, 'journal');
       expect(ctx.screen, 'journal_entry_editor');
       expect(ctx.intent, 'save');
       expect(ctx.operation, 'journal.entry_editor.save');
-      for (final forwarded in captured.whereType<OperationContext>().skip(1)) {
-        expect(forwarded.correlationId, ctx.correlationId);
-      }
     },
   );
 
-  blocTestSafe<JournalEntryEditorBloc, JournalEntryEditorState>(
-    'save uses selected day with local time for occurredAt',
-    build: () {
-      final nowUtcForTest = DateTime.utc(2025, 1, 16, 2, 30);
-      final nowLocal = nowUtcForTest.toLocal();
-      final selectedDayLocal = DateTime(
-        nowLocal.year,
-        nowLocal.month,
-        nowLocal.day,
+  testSafe('save uses selected day with local time for occurredAt', () async {
+    final nowUtcForTest = DateTime.utc(2025, 1, 16, 2, 30);
+    final nowLocal = nowUtcForTest.toLocal();
+    final selectedDayLocal = DateTime(
+      nowLocal.year,
+      nowLocal.month,
+      nowLocal.day,
+    );
+    final bloc = buildBloc(
+      nowUtcOverride: nowUtcForTest,
+      selectedDayLocal: selectedDayLocal,
+    );
+    addTearDown(bloc.close);
+
+    defsController.emit([
+      TrackerDefinition(
+        id: 'mood',
+        name: 'Mood',
+        scope: 'entry',
+        valueType: 'rating',
+        systemKey: 'mood',
+        createdAt: nowUtcForTest,
+        updatedAt: nowUtcForTest,
+      ),
+    ]);
+    bloc.add(const JournalEntryEditorStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+    bloc.add(JournalEntryEditorMoodChanged(MoodRating.good));
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    bloc.add(const JournalEntryEditorSaveRequested());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    final expectedLocal = DateTime(
+      selectedDayLocal.year,
+      selectedDayLocal.month,
+      selectedDayLocal.day,
+      nowLocal.hour,
+      nowLocal.minute,
+      nowLocal.second,
+      nowLocal.millisecond,
+      nowLocal.microsecond,
+    );
+
+    final captured = verify(
+      () => repository.saveJournalEntryWithEntryEvents(
+        entry: captureAny(named: 'entry'),
+        trackerEvents: captureAny(named: 'trackerEvents'),
+        context: any(named: 'context'),
+      ),
+    ).captured;
+    final entry =
+        captured.firstWhere((item) => item is JournalEntry) as JournalEntry;
+    expect(entry.occurredAt, expectedLocal.toUtc());
+  });
+
+  testSafe(
+    'changing occurredAt updates saved timestamp',
+    () async {
+      final selectedDay = DateTime(2025, 1, 15);
+      final bloc = buildBloc(selectedDayLocal: selectedDay);
+      addTearDown(bloc.close);
+
+      defsController.emit([
+        TrackerDefinition(
+          id: 'mood',
+          name: 'Mood',
+          scope: 'entry',
+          valueType: 'rating',
+          systemKey: 'mood',
+          createdAt: nowUtc,
+          updatedAt: nowUtc,
+        ),
+      ]);
+      bloc.add(const JournalEntryEditorStarted());
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      bloc.add(
+        JournalEntryEditorOccurredAtChanged(DateTime(2025, 1, 15, 14, 45)),
       );
-      return buildBloc(
-        nowUtcOverride: nowUtcForTest,
-        selectedDayLocal: selectedDayLocal,
-      );
-    },
-    seed: () {
-      final nowUtcForTest = DateTime.utc(2025, 1, 16, 2, 30);
-      final nowLocal = nowUtcForTest.toLocal();
-      final selectedDayLocal = DateTime(
-        nowLocal.year,
-        nowLocal.month,
-        nowLocal.day,
-      );
-      return JournalEntryEditorState.initial(entryId: null).copyWith(
-        status: const JournalEntryEditorIdle(),
-        selectedDayLocal: selectedDayLocal,
-        moodTrackerId: 'mood',
-        mood: MoodRating.good,
-      );
-    },
-    act: (bloc) => bloc.add(const JournalEntryEditorSaveRequested()),
-    verify: (_) {
-      final nowUtcForTest = DateTime.utc(2025, 1, 16, 2, 30);
-      final nowLocal = nowUtcForTest.toLocal();
-      final selectedDayLocal = DateTime(
-        nowLocal.year,
-        nowLocal.month,
-        nowLocal.day,
-      );
-      final expectedLocal = DateTime(
-        selectedDayLocal.year,
-        selectedDayLocal.month,
-        selectedDayLocal.day,
-        nowLocal.hour,
-        nowLocal.minute,
-        nowLocal.second,
-        nowLocal.millisecond,
-        nowLocal.microsecond,
-      );
+      bloc.add(JournalEntryEditorMoodChanged(MoodRating.good));
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      bloc.add(const JournalEntryEditorSaveRequested());
+      await Future<void>.delayed(const Duration(milliseconds: 30));
 
       final captured = verify(
-        () => repository.createJournalEntry(
-          captureAny(),
+        () => repository.saveJournalEntryWithEntryEvents(
+          entry: captureAny(named: 'entry'),
+          trackerEvents: captureAny(named: 'trackerEvents'),
           context: any(named: 'context'),
         ),
       ).captured;
       final entry =
           captured.firstWhere((item) => item is JournalEntry) as JournalEntry;
-      expect(entry.occurredAt, expectedLocal.toUtc());
+      expect(entry.occurredAt.toLocal().hour, 14);
+      expect(entry.occurredAt.toLocal().minute, 45);
     },
   );
 
@@ -496,8 +540,11 @@ void main() {
 
     expect(bloc.state.status, isA<JournalEntryEditorSaved>());
     verifyNever(
-      () =>
-          repository.createJournalEntry(any(), context: any(named: 'context')),
+      () => repository.saveJournalEntryWithEntryEvents(
+        entry: any(named: 'entry'),
+        trackerEvents: any(named: 'trackerEvents'),
+        context: any(named: 'context'),
+      ),
     );
     verifyNever(
       () =>
@@ -569,14 +616,16 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 40));
 
       verify(
-        () => repository.updateJournalEntry(
-          any(
+        () => repository.saveJournalEntryWithEntryEvents(
+          entry: any(
+            named: 'entry',
             that: isA<JournalEntry>().having(
               (e) => e.journalText,
               'journalText',
               'Updated note',
             ),
           ),
+          trackerEvents: any(named: 'trackerEvents'),
           context: any(named: 'context'),
         ),
       ).called(1);
@@ -605,5 +654,57 @@ void main() {
 
     final errorStatus = seenStatuses.whereType<JournalEntryEditorError>().last;
     expect(errorStatus.message, contains('Failed to load log'));
+  });
+
+  testSafe('failed daily value change rolls back optimistic draft', () async {
+    final selectedDay = DateTime(2025, 1, 14);
+    when(
+      () => repository.appendTrackerEvent(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenThrow(Exception('boom'));
+
+    final bloc = buildBloc(selectedDayLocal: selectedDay);
+    addTearDown(bloc.close);
+
+    bloc.add(const JournalEntryEditorStarted());
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    defsController.emit([
+      TrackerDefinition(
+        id: 'daily-1',
+        name: 'Water',
+        scope: 'day',
+        valueType: 'quantity',
+        opKind: 'set',
+        createdAt: nowUtc,
+        updatedAt: nowUtc,
+      ),
+    ]);
+    dayStateController.emit([
+      TrackerStateDay(
+        id: 'state-1',
+        anchorType: 'day',
+        anchorDate: DateTime.utc(2025, 1, 14),
+        trackerId: 'daily-1',
+        value: 200,
+        lastEventId: 'last-1',
+        updatedAt: nowUtc,
+      ),
+    ]);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    bloc.add(
+      const JournalEntryEditorDailyValueChanged(
+        trackerId: 'daily-1',
+        value: 350,
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 30));
+
+    expect(bloc.state.status, isA<JournalEntryEditorError>());
+    expect(bloc.state.dailyDraftValues, isEmpty);
+    expect(bloc.state.dayStateByTrackerId['daily-1']?.value, 200);
   });
 }

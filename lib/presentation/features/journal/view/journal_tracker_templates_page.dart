@@ -116,7 +116,7 @@ class _TemplateList extends StatelessWidget {
             crossAxisCount: 2,
             mainAxisSpacing: tokens.spaceSm,
             crossAxisSpacing: tokens.spaceSm,
-            childAspectRatio: 0.95,
+            childAspectRatio: 1.08,
           ),
           itemBuilder: (context, index) {
             final tracker = trackers[index];
@@ -141,7 +141,10 @@ class _TemplateList extends StatelessWidget {
             padding: EdgeInsets.all(tokens.spaceMd),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(tokens.radiusLg),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant,
+                style: BorderStyle.solid,
+              ),
             ),
             child: Row(
               children: [
@@ -186,45 +189,6 @@ class _TemplateList extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(height: tokens.spaceMd),
-        Container(
-          padding: EdgeInsets.all(tokens.spaceMd),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(tokens.radiusLg),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.lightbulb_outline,
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                  SizedBox(width: tokens.spaceXs),
-                  Text(
-                    context.l10n.journalProTipLabel.toUpperCase(),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: tokens.spaceSm),
-              Text(
-                context.l10n.journalTemplateProTipBody,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -249,14 +213,14 @@ class _TemplateCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(tokens.radiusLg),
       onTap: () => onToggleActive(tracker, !selected),
       child: Ink(
-        padding: EdgeInsets.all(tokens.spaceMd),
+        padding: EdgeInsets.all(tokens.spaceSm),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
+          color: selected
+              ? theme.colorScheme.primaryContainer.withValues(alpha: 0.12)
+              : theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(tokens.radiusLg),
           border: Border.all(
-            color: selected
-                ? theme.colorScheme.primary
-                : theme.colorScheme.outlineVariant,
+            color: theme.colorScheme.outlineVariant,
           ),
         ),
         child: Column(
@@ -269,7 +233,7 @@ class _TemplateCard extends StatelessWidget {
                   height: 40,
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primaryContainer.withValues(
-                      alpha: 0.5,
+                      alpha: selected ? 0.22 : 0.14,
                     ),
                     borderRadius: BorderRadius.circular(tokens.radiusSm),
                   ),
@@ -279,20 +243,38 @@ class _TemplateCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Icon(
-                  selected ? Icons.check_circle : Icons.add_circle_outline,
-                  color: selected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected
+                        ? theme.colorScheme.primary.withValues(alpha: 0.16)
+                        : Colors.transparent,
+                    border: Border.all(
+                      color: selected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.7,
+                            ),
+                    ),
+                  ),
+                  child: Icon(
+                    selected ? Icons.check : Icons.add,
+                    size: 14,
+                    color: selected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
-            SizedBox(height: tokens.spaceSm),
+            SizedBox(height: tokens.spaceXs),
             Text(
               tracker.name,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
+              style: theme.textTheme.labelLarge?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -301,7 +283,7 @@ class _TemplateCard extends StatelessWidget {
               _metaLabel(context, tracker),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
+              style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),

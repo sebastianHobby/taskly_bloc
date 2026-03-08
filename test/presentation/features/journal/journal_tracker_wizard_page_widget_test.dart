@@ -31,6 +31,16 @@ void main() {
   setUpAll(() {
     setUpAllTestEnvironment();
     registerAllFallbackValues();
+    registerFallbackValue(
+      TrackerGroup(
+        id: 'fallback-group',
+        name: 'Fallback',
+        sortOrder: 0,
+        isActive: true,
+        createdAt: DateTime(2025, 1, 1),
+        updatedAt: DateTime(2025, 1, 1),
+      ),
+    );
   });
   setUp(setUpTestEnvironment);
 
@@ -65,6 +75,12 @@ void main() {
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => repository.saveTrackerGroup(
+        any(),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
@@ -74,6 +90,7 @@ void main() {
   Future<void> pumpPage(
     WidgetTester tester, {
     JournalTrackerWizardMode mode = JournalTrackerWizardMode.tracker,
+    JournalTrackerKind? trackerKind,
   }) async {
     await tester.pumpApp(
       MultiRepositoryProvider(
@@ -86,7 +103,7 @@ void main() {
             value: FakeNowService(DateTime(2025, 1, 15, 9)),
           ),
         ],
-        child: JournalTrackerWizardPage(mode: mode),
+        child: JournalTrackerWizardPage(mode: mode, trackerKind: trackerKind),
       ),
     );
   }
@@ -139,6 +156,52 @@ void main() {
             ).captured.single
             as TrackerDefinition;
     expect(captured.scope, 'day');
+  });
+
+  testWidgetsSafe('activity configure shows preview and saves', (tester) async {
+    final now = DateTime(2025, 1, 15);
+    groupsSubject.add([
+      TrackerGroup(
+        id: 'group-1',
+        name: 'Sport',
+        sortOrder: 10,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      ),
+      TrackerGroup(
+        id: 'group-2',
+        name: 'Health',
+        sortOrder: 20,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      ),
+    ]);
+
+    await pumpPage(tester, trackerKind: JournalTrackerKind.activity);
+    await tester.pumpForStream();
+
+    expect(find.text('New tracker'), findsOneWidget);
+    expect(find.text('New group'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).first, 'Running');
+    await tester.pumpForStream();
+
+    _requestSave(tester);
+    await tester.pumpForStream();
+    await tester.pumpForStream();
+
+    final captured =
+        verify(
+              () => repository.saveTrackerDefinition(
+                captureAny(),
+                context: any(named: 'context'),
+              ),
+            ).captured.last
+            as TrackerDefinition;
+    expect(captured.scope, 'entry');
+    expect(captured.groupId, 'group-1');
   });
 }
 

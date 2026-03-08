@@ -33,16 +33,23 @@ class JournalFactorToken extends StatelessWidget {
       curve: kJournalMotionCurve,
       decoration: BoxDecoration(
         color: colors.background,
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
         border: Border.all(color: colors.border),
+        boxShadow: [
+          BoxShadow(
+            color: scheme.shadow.withValues(alpha: 0.025),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spaceSm,
-            vertical: tokens.spaceXs,
+            vertical: tokens.spaceXs - 1,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -57,6 +64,7 @@ class JournalFactorToken extends StatelessWidget {
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: colors.foreground,
                     fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ),
@@ -73,7 +81,7 @@ class JournalFactorToken extends StatelessWidget {
     if (!enabled) {
       return (
         background: scheme.surfaceContainerLow,
-        border: scheme.outlineVariant.withValues(alpha: 0.5),
+        border: scheme.outlineVariant.withValues(alpha: 0.32),
         foreground: scheme.onSurfaceVariant.withValues(alpha: 0.55),
       );
     }
@@ -86,18 +94,21 @@ class JournalFactorToken extends StatelessWidget {
     }
     return switch (state) {
       JournalTrackerValueState.warn => (
-        background: scheme.errorContainer.withValues(alpha: 0.3),
-        border: scheme.error.withValues(alpha: 0.7),
+        background: scheme.errorContainer.withValues(alpha: 0.22),
+        border: scheme.error.withValues(alpha: 0.36),
         foreground: scheme.onSurface,
       ),
       JournalTrackerValueState.goalHit => (
-        background: scheme.tertiaryContainer.withValues(alpha: 0.45),
-        border: scheme.tertiary.withValues(alpha: 0.75),
+        background: scheme.tertiaryContainer.withValues(alpha: 0.28),
+        border: scheme.tertiary.withValues(alpha: 0.34),
         foreground: scheme.onSurface,
       ),
       JournalTrackerValueState.normal => (
-        background: scheme.surface,
-        border: scheme.outlineVariant.withValues(alpha: 0.85),
+        background: Color.alphaBlend(
+          scheme.primary.withValues(alpha: 0.03),
+          scheme.surfaceContainerHigh,
+        ),
+        border: scheme.outlineVariant.withValues(alpha: 0.26),
         foreground: scheme.onSurfaceVariant,
       ),
     };

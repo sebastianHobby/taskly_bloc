@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 import '../../helpers/test_environment.dart';
@@ -60,6 +61,26 @@ void main() {
       scheme.errorContainer.withValues(alpha: 0.2),
     );
     expect(tokens.neonAccent, scheme.primary);
+    expect(theme.extension<TasklyAppChromeTheme>(), isNotNull);
+    expect(theme.extension<TasklyPageHeaderTheme>(), isNotNull);
+    expect(theme.extension<TasklyPanelTheme>(), isNotNull);
+  });
+
+  testSafe('Semantic theme extensions derive expected default roles', () async {
+    final theme = AppTheme.lightTheme(seedColor: AppColors.blueberry80);
+    final chromeTheme = theme.extension<TasklyAppChromeTheme>();
+    final headerTheme = theme.extension<TasklyPageHeaderTheme>();
+    final panelTheme = theme.extension<TasklyPanelTheme>();
+
+    expect(chromeTheme, isNotNull);
+    expect(headerTheme, isNotNull);
+    expect(panelTheme, isNotNull);
+    expect(
+      chromeTheme!.navigationSurface,
+      theme.colorScheme.surfaceContainerLow,
+    );
+    expect(headerTheme!.iconColor, theme.colorScheme.primary);
+    expect(panelTheme!.subtleSurface, theme.colorScheme.surfaceContainerLow);
   });
 
   testSafe('TasklyTokens copyWith and lerp preserve values', () async {

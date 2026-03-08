@@ -81,6 +81,13 @@ void main() {
         context: any(named: 'context'),
       ),
     ).thenAnswer((_) async {});
+    when(
+      () => repository.saveJournalEntryWithEntryEvents(
+        entry: any(named: 'entry'),
+        trackerEvents: any(named: 'trackerEvents'),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async => 'entry-1');
   });
 
   tearDown(() async {
@@ -187,19 +194,6 @@ void main() {
   testWidgetsSafe('saves new entry and shows success snack', (tester) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     defsSubject.add([moodDef]);
-    when(
-      () => repository.createJournalEntry(
-        any(),
-        context: any(named: 'context'),
-      ),
-    ).thenAnswer((_) async => 'entry-1');
-    when(
-      () => repository.appendTrackerEvent(
-        any(),
-        context: any(named: 'context'),
-      ),
-    ).thenAnswer((_) async {});
-
     await pumpPage(tester);
     await tester.pumpForStream();
 
@@ -210,17 +204,12 @@ void main() {
     await tester.pumpForStream();
 
     verify(
-      () => repository.createJournalEntry(
-        any(),
+      () => repository.saveJournalEntryWithEntryEvents(
+        entry: any(named: 'entry'),
+        trackerEvents: any(named: 'trackerEvents'),
         context: any(named: 'context'),
       ),
     ).called(1);
-    verify(
-      () => repository.appendTrackerEvent(
-        any(),
-        context: any(named: 'context'),
-      ),
-    ).called(greaterThanOrEqualTo(1));
 
     expect(find.text(_l10n(tester).journalSavedLogSnack), findsOneWidget);
   });
@@ -229,8 +218,9 @@ void main() {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
     defsSubject.add([moodDef]);
     when(
-      () => repository.createJournalEntry(
-        any(),
+      () => repository.saveJournalEntryWithEntryEvents(
+        entry: any(named: 'entry'),
+        trackerEvents: any(named: 'trackerEvents'),
         context: any(named: 'context'),
       ),
     ).thenThrow(Exception('save failed'));
@@ -462,6 +452,7 @@ void main() {
 
     expect(find.text('Mindset'), findsOneWidget);
     expect(find.text('Gratitude'), findsOneWidget);
+    expect(find.text('Daily Factors'), findsOneWidget);
 
     await _tapTextButton(tester, 'Gratitude');
     await tester.pumpForStream();
@@ -517,6 +508,37 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgetsSafe(
+    'full editor shows daily factors alongside entry trackers',
+    (tester) async {
+      final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');
+      final energyDef = _trackerDef('energy', 'Energy Level', scope: 'entry');
+      final sleepDef = _trackerDef(
+        'sleep',
+        'Sleep Quality',
+        scope: 'sleep_night',
+      );
+      final waterDef = _trackerDef(
+        'water',
+        'Water Intake',
+        scope: 'day',
+        valueType: 'quantity',
+        valueKind: 'number',
+      );
+      defsSubject.add([moodDef, energyDef, sleepDef, waterDef]);
+
+      await pumpPage(tester);
+      await tester.pumpForStream();
+      await _tapMood(tester, _l10n(tester).moodGoodLabel);
+      await tester.pumpForStream();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Daily Factors'), findsOneWidget);
+      expect(find.text('Sleep Quality'), findsOneWidget);
+      expect(find.text('Water Intake'), findsOneWidget);
+    },
+  );
 
   testWidgetsSafe('choice bottom sheet selects option', (tester) async {
     final moodDef = _trackerDef('mood', 'Mood', systemKey: 'mood');

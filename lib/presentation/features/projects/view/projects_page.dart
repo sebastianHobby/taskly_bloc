@@ -7,10 +7,11 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/entity_tiles/mappers/project_tile_mapper.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
-import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
+import 'package:taskly_bloc/presentation/features/scope_context/model/projects_scope.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_chrome_icon_button.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
@@ -21,9 +22,9 @@ import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart
 import 'package:taskly_bloc/presentation/shared/widgets/display_density_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/filter_sort_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/display_density_bloc.dart';
-import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
@@ -305,21 +306,11 @@ class _ProjectsViewState extends State<_ProjectsView> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final chrome = TasklyTokens.of(context);
     final density = context.select<DisplayDensityBloc, DisplayDensity>(
       (bloc) => bloc.state.density,
     );
-    final iconButtonStyle = IconButton.styleFrom(
-      backgroundColor: scheme.surfaceContainerHighest.withValues(
-        alpha: chrome.iconButtonBackgroundAlpha,
-      ),
-      foregroundColor: scheme.onSurface,
-      shape: const CircleBorder(),
-      minimumSize: Size.square(chrome.iconButtonMinSize),
-      padding: chrome.iconButtonPadding,
-    );
+    final iconButtonStyle = tasklyChromeIconButtonStyle(context);
 
     return MultiBlocListener(
       listeners: [
@@ -1268,39 +1259,9 @@ class _ProjectsTitleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final iconSet = const NavigationIconResolver().resolve(
+    return TasklyPageHeader(
       screenId: 'projects',
-      iconName: null,
-    );
-
-    return Padding(
-      padding: tokens.projectsHeaderPadding,
-      child: Row(
-        children: [
-          Icon(
-            iconSet.selectedIcon,
-            color: scheme.primary,
-            size: tokens.spaceLg3,
-          ),
-          SizedBox(width: tokens.spaceSm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.projectsTitle,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      title: context.l10n.projectsTitle,
     );
   }
 }

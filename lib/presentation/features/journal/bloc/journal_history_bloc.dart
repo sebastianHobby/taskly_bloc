@@ -1057,74 +1057,80 @@ class JournalHistoryBloc
     final moodTrackerId = _findMoodTrackerId(defs);
 
     final entriesByDay = <DateTime, List<JournalEntry>>{};
+    final entryDayById = <String, DateTime>{};
     for (final entry in entries) {
       final day = dateOnly(entry.localDate);
+      entryDayById[entry.id] = day;
       (entriesByDay[day] ??= <JournalEntry>[]).add(entry);
     }
     for (final dayEntries in entriesByDay.values) {
       dayEntries.sort((a, b) => b.entryTime.compareTo(a.entryTime));
     }
 
-    final eventsByEntryId = <String, List<TrackerEvent>>{};
+    final latestEntryEventByEntryAndTracker =
+        <String, Map<String, TrackerEvent>>{};
+    final dayEvents = <TrackerEvent>[];
+    for (final event in events) {
+      final entryId = event.entryId?.trim();
+      if (entryId == null || entryId.isEmpty) {
+        dayEvents.add(event);
+        continue;
+      }
+      final byTracker = latestEntryEventByEntryAndTracker[entryId] ??=
+          <String, TrackerEvent>{};
+      final previous = byTracker[event.trackerId];
+      if (previous == null || _isTrackerEventLater(event, previous)) {
+        byTracker[event.trackerId] = event;
+      }
+    }
+
+    final eventsByEntryId = <String, List<TrackerEvent>>{
+      for (final entry in latestEntryEventByEntryAndTracker.entries)
+        entry.key: entry.value.values.toList(growable: false)
+          ..sort(_compareTrackerEventsDesc),
+    };
     final latestEventByDayTracker = <DateTime, Map<String, TrackerEvent>>{};
     final moodValuesByDay = <DateTime, List<int>>{};
     final quantityTotalsByDayTracker = <DateTime, Map<String, double>>{};
     final numericStatsByDayTracker =
         <DateTime, Map<String, ({double sum, int count})>>{};
     final daysWithEvents = <DateTime>{};
-    for (final event in events) {
-      final entryId = event.entryId;
-      if (entryId != null) {
-        (eventsByEntryId[entryId] ??= <TrackerEvent>[]).add(event);
-      }
 
-      final day = dateOnly(event.occurredAt.toUtc());
+    for (final entry in eventsByEntryId.entries) {
+      final resolvedDay =
+          entryDayById[entry.key] ??
+          _eventDayKeyLocal(
+            entry.value.first,
+            entryDayById: entryDayById,
+          );
+      daysWithEvents.add(resolvedDay);
+      for (final event in entry.value) {
+        _accumulateNormalizedEvent(
+          event: event,
+          day: resolvedDay,
+          definitionById: definitionById,
+          moodTrackerId: moodTrackerId,
+          latestEventByDayTracker: latestEventByDayTracker,
+          moodValuesByDay: moodValuesByDay,
+          quantityTotalsByDayTracker: quantityTotalsByDayTracker,
+          numericStatsByDayTracker: numericStatsByDayTracker,
+        );
+      }
+    }
+
+    for (final event in dayEvents) {
+      final day = _eventDayKeyLocal(event, entryDayById: entryDayById);
       daysWithEvents.add(day);
-      final latestByTracker = latestEventByDayTracker[day] ??=
-          <String, TrackerEvent>{};
-      final previousByTracker = latestByTracker[event.trackerId];
-      if (previousByTracker == null ||
-          previousByTracker.occurredAt.isBefore(event.occurredAt)) {
-        latestByTracker[event.trackerId] = event;
-      }
-      final def = definitionById[event.trackerId];
-      if (def != null && _isQuantityDefinition(def)) {
-        final amount = switch (event.value) {
-          final int v => v.toDouble(),
-          final double v => v,
-          _ => null,
-        };
-        if (amount != null) {
-          final totalsByTracker = quantityTotalsByDayTracker[day] ??=
-              <String, double>{};
-          totalsByTracker[event.trackerId] =
-              (totalsByTracker[event.trackerId] ?? 0) + amount;
-        }
-      }
-      if (def != null && _isNumericDefinition(def)) {
-        final amount = switch (event.value) {
-          final int v => v.toDouble(),
-          final double v => v,
-          _ => null,
-        };
-        if (amount != null) {
-          final statsByTracker = numericStatsByDayTracker[day] ??=
-              <String, ({double sum, int count})>{};
-          final current = statsByTracker[event.trackerId];
-          if (current == null) {
-            statsByTracker[event.trackerId] = (sum: amount, count: 1);
-          } else {
-            statsByTracker[event.trackerId] = (
-              sum: current.sum + amount,
-              count: current.count + 1,
-            );
-          }
-        }
-      }
-
-      if (moodTrackerId == null || event.trackerId != moodTrackerId) continue;
-      if (event.value is! int) continue;
-      (moodValuesByDay[day] ??= <int>[]).add(event.value! as int);
+      _accumulateDayEvent(
+        event: event,
+        day: day,
+        definitionById: definitionById,
+        moodTrackerId: moodTrackerId,
+        latestEventByDayTracker: latestEventByDayTracker,
+        moodValuesByDay: moodValuesByDay,
+        quantityTotalsByDayTracker: quantityTotalsByDayTracker,
+        numericStatsByDayTracker: numericStatsByDayTracker,
+      );
     }
 
     final allDays = <DateTime>{
@@ -1165,6 +1171,131 @@ class JournalHistoryBloc
           );
         }(),
     ];
+  }
+
+  void _accumulateNormalizedEvent({
+    required TrackerEvent event,
+    required DateTime day,
+    required Map<String, TrackerDefinition> definitionById,
+    required String? moodTrackerId,
+    required Map<DateTime, Map<String, TrackerEvent>> latestEventByDayTracker,
+    required Map<DateTime, List<int>> moodValuesByDay,
+    required Map<DateTime, Map<String, double>> quantityTotalsByDayTracker,
+    required Map<DateTime, Map<String, ({double sum, int count})>>
+    numericStatsByDayTracker,
+  }) {
+    final latestByTracker = latestEventByDayTracker[day] ??=
+        <String, TrackerEvent>{};
+    final previousByTracker = latestByTracker[event.trackerId];
+    if (previousByTracker == null ||
+        _isTrackerEventLater(event, previousByTracker)) {
+      latestByTracker[event.trackerId] = event;
+    }
+
+    if (moodTrackerId != null &&
+        event.trackerId == moodTrackerId &&
+        event.value is int) {
+      (moodValuesByDay[day] ??= <int>[]).add(event.value! as int);
+    }
+
+    final definition = definitionById[event.trackerId];
+    final amount = _numericValue(event.value);
+    if (definition == null || amount == null) return;
+
+    if (_isQuantityDefinition(definition) &&
+        definition.opKind.trim().toLowerCase() == 'add') {
+      final totalsByTracker = quantityTotalsByDayTracker[day] ??=
+          <String, double>{};
+      totalsByTracker[event.trackerId] =
+          (totalsByTracker[event.trackerId] ?? 0) + amount;
+    }
+    if (_isNumericDefinition(definition)) {
+      final statsByTracker = numericStatsByDayTracker[day] ??=
+          <String, ({double sum, int count})>{};
+      final current = statsByTracker[event.trackerId];
+      if (current == null) {
+        statsByTracker[event.trackerId] = (sum: amount, count: 1);
+      } else {
+        statsByTracker[event.trackerId] = (
+          sum: current.sum + amount,
+          count: current.count + 1,
+        );
+      }
+    }
+  }
+
+  void _accumulateDayEvent({
+    required TrackerEvent event,
+    required DateTime day,
+    required Map<String, TrackerDefinition> definitionById,
+    required String? moodTrackerId,
+    required Map<DateTime, Map<String, TrackerEvent>> latestEventByDayTracker,
+    required Map<DateTime, List<int>> moodValuesByDay,
+    required Map<DateTime, Map<String, double>> quantityTotalsByDayTracker,
+    required Map<DateTime, Map<String, ({double sum, int count})>>
+    numericStatsByDayTracker,
+  }) {
+    final definition = definitionById[event.trackerId];
+    final isAdditive =
+        definition != null && definition.opKind.trim().toLowerCase() == 'add';
+
+    _accumulateNormalizedEvent(
+      event: event,
+      day: day,
+      definitionById: definitionById,
+      moodTrackerId: moodTrackerId,
+      latestEventByDayTracker: latestEventByDayTracker,
+      moodValuesByDay: moodValuesByDay,
+      quantityTotalsByDayTracker: quantityTotalsByDayTracker,
+      numericStatsByDayTracker: numericStatsByDayTracker,
+    );
+
+    if (definition == null || isAdditive || !_isNumericDefinition(definition)) {
+      return;
+    }
+
+    final amount = _numericValue(event.value);
+    if (amount == null) return;
+
+    final statsByTracker = numericStatsByDayTracker[day];
+    if (statsByTracker == null) return;
+    statsByTracker[event.trackerId] = (sum: amount, count: 1);
+  }
+
+  DateTime _eventDayKeyLocal(
+    TrackerEvent event, {
+    required Map<String, DateTime> entryDayById,
+  }) {
+    final anchorDate = event.anchorDate;
+    if (anchorDate != null) return dateOnly(anchorDate.toUtc());
+    final entryId = event.entryId;
+    if (entryId != null) {
+      final entryDay = entryDayById[entryId];
+      if (entryDay != null) return entryDay;
+    }
+    return dateOnly(event.occurredAt.toLocal());
+  }
+
+  bool _isTrackerEventLater(TrackerEvent candidate, TrackerEvent current) {
+    if (candidate.recordedAt.isAfter(current.recordedAt)) return true;
+    if (candidate.recordedAt.isBefore(current.recordedAt)) return false;
+    if (candidate.occurredAt.isAfter(current.occurredAt)) return true;
+    if (candidate.occurredAt.isBefore(current.occurredAt)) return false;
+    return candidate.id.compareTo(current.id) > 0;
+  }
+
+  int _compareTrackerEventsDesc(TrackerEvent a, TrackerEvent b) {
+    if (_isTrackerEventLater(a, b)) return -1;
+    if (_isTrackerEventLater(b, a)) return 1;
+    return 0;
+  }
+
+  double? _numericValue(Object? value) {
+    return switch (value) {
+      final int v => v.toDouble(),
+      final double v => v,
+      _ => null,
+    };
   }
 
   Map<String, double> _resolveDayAggregateValues({

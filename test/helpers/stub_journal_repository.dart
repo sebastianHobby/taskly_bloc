@@ -42,6 +42,15 @@ class StubJournalRepository implements JournalRepositoryContract {
   }) async {}
 
   @override
+  Future<String> saveJournalEntryWithEntryEvents({
+    required JournalEntry entry,
+    required List<TrackerEvent> trackerEvents,
+    OperationContext? context,
+  }) async {
+    return entry.id;
+  }
+
+  @override
   Future<void> deleteJournalEntry(
     String id, {
     OperationContext? context,

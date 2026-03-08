@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 /// A scaffold with responsive navigation that adapts to screen size.
@@ -26,6 +27,7 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final isExtended = screenWidth >= Breakpoints.medium;
     final tokens = TasklyTokens.of(context);
+    final chromeTheme = TasklyAppChromeTheme.of(context);
 
     final selectedIndex = _selectedIndex(destinations);
 
@@ -57,9 +59,7 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
                               children: [
                                 Icon(
                                   Icons.check_circle_outline,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
+                                  color: chromeTheme.brandForeground,
                                   size: 28,
                                 ),
                                 SizedBox(width: tokens.spaceMd),
@@ -68,9 +68,7 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
                                   style: Theme.of(context).textTheme.titleLarge
                                       ?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
+                                        color: chromeTheme.brandForeground,
                                       ),
                                 ),
                               ],
@@ -80,7 +78,7 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
                             padding: EdgeInsets.only(bottom: tokens.spaceSm),
                             child: Icon(
                               Icons.check_circle_outline,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: chromeTheme.brandForeground,
                               size: 32,
                             ),
                           ),
@@ -90,7 +88,11 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
                     minExtendedWidth: 200,
                   ),
                 ),
-                const VerticalDivider(thickness: 1, width: 1),
+                VerticalDivider(
+                  thickness: 1,
+                  width: 1,
+                  color: chromeTheme.navigationDivider,
+                ),
                 Expanded(child: body),
               ],
             ),

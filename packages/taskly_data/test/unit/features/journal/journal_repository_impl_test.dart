@@ -621,6 +621,159 @@ void main() {
       expect(results.map((e) => e.id).toList(), ['e-in']);
     });
 
+    testSafe(
+      'saveJournalEntryWithEntryEvents replaces prior entry-scoped tracker events atomically',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = JournalRepositoryImpl(
+          db,
+          IdGenerator.withUserId('user-1'),
+        );
+        final now = DateTime.utc(2025, 1, 2, 10);
+
+        final entryId = await repo.saveJournalEntryWithEntryEvents(
+          entry: JournalEntry(
+            id: '',
+            entryDate: DateTime.utc(2025, 1, 2),
+            entryTime: now,
+            occurredAt: now,
+            localDate: DateTime.utc(2025, 1, 2),
+            journalText: 'First',
+            createdAt: now,
+            updatedAt: now,
+          ),
+          trackerEvents: [
+            TrackerEvent(
+              id: '',
+              trackerId: 'mood',
+              anchorType: 'entry',
+              anchorDate: DateTime.utc(2025, 1, 2),
+              op: 'set',
+              value: 3,
+              occurredAt: now,
+              recordedAt: now,
+            ),
+            TrackerEvent(
+              id: '',
+              trackerId: 'water',
+              anchorType: 'entry',
+              anchorDate: DateTime.utc(2025, 1, 2),
+              op: 'add',
+              value: 1,
+              occurredAt: now,
+              recordedAt: now,
+            ),
+          ],
+        );
+
+        await repo.saveJournalEntryWithEntryEvents(
+          entry: JournalEntry(
+            id: entryId,
+            entryDate: DateTime.utc(2025, 1, 2),
+            entryTime: now,
+            occurredAt: now,
+            localDate: DateTime.utc(2025, 1, 2),
+            journalText: 'Updated',
+            createdAt: now,
+            updatedAt: now.add(const Duration(minutes: 5)),
+          ),
+          trackerEvents: [
+            TrackerEvent(
+              id: '',
+              trackerId: 'mood',
+              anchorType: 'entry',
+              anchorDate: DateTime.utc(2025, 1, 2),
+              op: 'set',
+              value: 5,
+              occurredAt: now,
+              recordedAt: now.add(const Duration(minutes: 5)),
+            ),
+          ],
+        );
+
+        final entry = await repo.getJournalEntryById(entryId);
+        final trackerEvents = await repo
+            .watchTrackerEvents(anchorType: 'entry', entryId: entryId)
+            .first;
+
+        expect(entry?.journalText, 'Updated');
+        expect(trackerEvents, hasLength(1));
+        expect(trackerEvents.single.trackerId, 'mood');
+        expect(trackerEvents.single.value, 5);
+      },
+    );
+
+    testSafe(
+      'analytics helpers group by anchorDate when UTC occurredAt crosses day boundaries',
+      () async {
+        final db = createAutoClosingDb();
+        final repo = JournalRepositoryImpl(
+          db,
+          IdGenerator.withUserId('user-1'),
+        );
+        final localDay = DateTime.utc(2025, 1, 2);
+
+        await db
+            .into(db.trackerDefinitions)
+            .insert(
+              TrackerDefinitionsCompanion.insert(
+                id: const drift.Value('mood'),
+                name: 'Mood',
+                scope: 'entry',
+                roles: const drift.Value('["mood"]'),
+                valueType: 'rating',
+                config: const drift.Value('{}'),
+                goal: const drift.Value('{}'),
+                createdAt: drift.Value(localDay),
+                updatedAt: drift.Value(localDay),
+                systemKey: const drift.Value('mood'),
+              ),
+            );
+
+        await db
+            .into(db.trackerEvents)
+            .insert(
+              TrackerEventsCompanion.insert(
+                id: const drift.Value('mood-cross-day'),
+                trackerId: 'mood',
+                anchorType: 'entry',
+                entryId: const drift.Value('entry-1'),
+                anchorDate: drift.Value(localDay),
+                occurredAt: DateTime.utc(2025, 1, 1, 23, 30),
+                recordedAt: drift.Value(DateTime.utc(2025, 1, 2, 8)),
+                op: 'set',
+                value: const drift.Value('4'),
+              ),
+            );
+        await db
+            .into(db.trackerEvents)
+            .insert(
+              TrackerEventsCompanion.insert(
+                id: const drift.Value('water-cross-day'),
+                trackerId: 'water',
+                anchorType: 'entry',
+                entryId: const drift.Value('entry-1'),
+                anchorDate: drift.Value(localDay),
+                occurredAt: DateTime.utc(2025, 1, 1, 23, 30),
+                recordedAt: drift.Value(DateTime.utc(2025, 1, 2, 8)),
+                op: 'set',
+                value: const drift.Value('2'),
+              ),
+            );
+
+        final moodAverages = await repo.getDailyMoodAverages(
+          range: DateRange(start: localDay, end: localDay),
+        );
+        final trackerValues = await repo.getTrackerValues(
+          trackerId: 'water',
+          range: DateRange(start: localDay, end: localDay),
+        );
+
+        expect(moodAverages[localDay], 4);
+        expect(trackerValues[localDay], 2);
+      },
+    );
+
     testSafe('analytics helpers handle empty/legacy tracker values', () async {
       final db = createAutoClosingDb();
       final repo = JournalRepositoryImpl(db, IdGenerator.withUserId('user-1'));

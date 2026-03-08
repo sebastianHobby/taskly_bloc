@@ -107,6 +107,13 @@ void main() {
       () =>
           repository.createJournalEntry(any(), context: any(named: 'context')),
     ).thenAnswer((_) async => 'entry-1');
+    when(
+      () => repository.saveJournalEntryWithEntryEvents(
+        entry: any(named: 'entry'),
+        trackerEvents: any(named: 'trackerEvents'),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async => 'entry-1');
 
     when(
       () => settingsRepository.load(

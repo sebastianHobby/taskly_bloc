@@ -10,8 +10,9 @@ import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_scree
 import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_timeline_bloc.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/services/scheduled_session_query_service.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_scope_header.dart';
-import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_chrome_icon_button.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
@@ -309,7 +310,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   context,
                 ).scheduledAppBarHeight,
                 actions: [
-                  _CircleIconButton(
+                  TasklyChromeIconButton(
                     icon: Icons.calendar_month_rounded,
                     onPressed: null,
                   ),
@@ -318,22 +319,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                       context,
                     ).moreButtonTooltip,
                     icon: Icons.more_vert,
-                    style: IconButton.styleFrom(
-                      backgroundColor:
-                          Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest.withValues(
-                            alpha: TasklyTokens.of(
-                              context,
-                            ).iconButtonBackgroundAlpha,
-                          ),
-                      foregroundColor: Theme.of(context).colorScheme.onSurface,
-                      shape: const CircleBorder(),
-                      minimumSize: Size.square(
-                        TasklyTokens.of(context).iconButtonMinSize,
-                      ),
-                      padding: TasklyTokens.of(context).iconButtonPadding,
-                    ),
+                    style: tasklyChromeIconButtonStyle(context),
                     itemsBuilder: (context) => [
                       PopupMenuItem(
                         value: _ScheduledMenuAction.density,
@@ -377,7 +363,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                   context,
                 ).scheduledAppBarHeight,
                 actions: [
-                  _CircleIconButton(
+                  TasklyChromeIconButton(
                     icon: Icons.calendar_month_rounded,
                     onPressed: null,
                   ),
@@ -386,22 +372,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                       context,
                     ).moreButtonTooltip,
                     icon: Icons.more_vert,
-                    style: IconButton.styleFrom(
-                      backgroundColor:
-                          Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest.withValues(
-                            alpha: TasklyTokens.of(
-                              context,
-                            ).iconButtonBackgroundAlpha,
-                          ),
-                      foregroundColor: Theme.of(context).colorScheme.onSurface,
-                      shape: const CircleBorder(),
-                      minimumSize: Size.square(
-                        TasklyTokens.of(context).iconButtonMinSize,
-                      ),
-                      padding: TasklyTokens.of(context).iconButtonPadding,
-                    ),
+                    style: tasklyChromeIconButtonStyle(context),
                     itemsBuilder: (context) => [
                       PopupMenuItem(
                         value: _ScheduledMenuAction.density,
@@ -596,7 +567,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                     context,
                   ).scheduledAppBarHeight,
                   actions: [
-                    _CircleIconButton(
+                    TasklyChromeIconButton(
                       icon: Icons.calendar_month_rounded,
                       onPressed: () async {
                         await _pickDateAndJump(
@@ -610,24 +581,7 @@ class _ScheduledTimelineViewState extends State<_ScheduledTimelineView> {
                         context,
                       ).moreButtonTooltip,
                       icon: Icons.more_vert,
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHighest.withValues(
-                              alpha: TasklyTokens.of(
-                                context,
-                              ).iconButtonBackgroundAlpha,
-                            ),
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onSurface,
-                        shape: const CircleBorder(),
-                        minimumSize: Size.square(
-                          TasklyTokens.of(context).iconButtonMinSize,
-                        ),
-                        padding: TasklyTokens.of(context).iconButtonPadding,
-                      ),
+                      style: tasklyChromeIconButtonStyle(context),
                       itemsBuilder: (context) => [
                         PopupMenuItem(
                           value: _ScheduledMenuAction.density,
@@ -1028,66 +982,9 @@ class _ScheduledTitleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final iconSet = const NavigationIconResolver().resolve(
+    return TasklyPageHeader(
       screenId: 'scheduled',
-      iconName: null,
-    );
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.sectionPaddingH,
-        tokens.spaceMd,
-        tokens.sectionPaddingH,
-        tokens.spaceSm,
-      ),
-      child: Row(
-        children: [
-          Icon(
-            iconSet.selectedIcon,
-            color: scheme.primary,
-            size: tokens.spaceLg3,
-          ),
-          SizedBox(width: tokens.spaceSm),
-          Text(
-            context.l10n.scheduledTitle,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CircleIconButton extends StatelessWidget {
-  const _CircleIconButton({
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final chrome = TasklyTokens.of(context);
-    return IconButton(
-      icon: Icon(icon),
-      onPressed: onPressed,
-      style: IconButton.styleFrom(
-        backgroundColor: scheme.surfaceContainerHighest.withValues(
-          alpha: chrome.iconButtonBackgroundAlpha,
-        ),
-        foregroundColor: scheme.onSurface,
-        shape: const CircleBorder(),
-        minimumSize: Size.square(chrome.iconButtonMinSize),
-        padding: chrome.iconButtonPadding,
-      ),
+      title: context.l10n.scheduledTitle,
     );
   }
 }

@@ -33,6 +33,16 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
     - Insights
     - Manage Trackers (new)
   - Refined home timeline + summary density and manage trackers composition toward mockup structure while keeping tracker rows data-driven.
+  - 2026-03-08 alignment pass:
+    - Keep tracker type selection as a plain route page (not tab-shell embedded).
+    - Tighten template card density and lighter selection affordance.
+    - Refactor activity tracker configure toward the grouped/icon mockup layout.
+    - Add compact configure preview block for home/quick-capture representation.
+    - Refactor Manage Trackers to grouped custom rows with direct edit/delete or system toggle.
+  - 2026-03-08 tier-a home polish:
+    - Added softer layered journal-home background treatment and integrated FAB styling.
+    - Reduced border heaviness on daily summary and moment cards; added subtle elevation.
+    - Tightened summary tile proportions and hierarchy; warmed mood rail and contribution chip styling.
 
 ## Strict Side-by-Side Parity Pass (2026-03-01)
 
@@ -181,9 +191,10 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 ### Type Selection
 - Two large cards (Activity vs Aggregate).
 - No helper tips.
+- Remains a plain route page; do not embed the tracker flow in the tab shell solely for mockup parity.
 
 ### Templates
-- Flat list of templates (no sectioned Popular card grid).
+- Two-column template grid with tighter card density, lighter add/selected affordances, and mockup-aligned create-from-scratch treatment.
 - System defaults appear preselected with toggle on/off.
 - System defaults use user-friendly language and are toggle-only.
 - User-created trackers appear in list immediately after creation.
@@ -191,9 +202,11 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 ### Configure Tracker
 - Tracker name field.
 - Icon picker.
+- Activity tracker configure uses grouped-card selection + icon rail composition aligned to `taskly_home_high_density_dark_3`.
 - Aggregation type selector for aggregate trackers (Sum/Average).
 - Unit dropdown (data-backed catalog).
 - Daily goal stepper (optional).
+- Compact preview block shows how the tracker will read in quick capture and home surfaces before save.
 - Advanced settings row/accordion.
 
 ### AC
@@ -211,7 +224,7 @@ This spec defines the agreed UI/UX changes to align Taskly Journal with the mock
 ### UI Changes
 - Segmented control: Activity vs Aggregate.
 - Trackers grouped by user-defined groups.
-- Tracker rows show icon, name, subtitle.
+- Tracker rows use custom grouped containers with icon, name, subtitle, and direct trailing actions.
 - System trackers show toggle only; delete is hidden/disabled.
 
 ### AC

@@ -15,6 +15,8 @@ Architecture docs are split into normative rules, indexes, contracts, and operat
   [specs/RECURRENCE_SYNC_CONTRACT.md](specs/RECURRENCE_SYNC_CONTRACT.md)
 - Shared UI alignment:
   [specs/TASKLY_UI_MATERIAL_ALIGNMENT_OPTION_B.md](specs/TASKLY_UI_MATERIAL_ALIGNMENT_OPTION_B.md)
+- Semantic theming contract:
+  [specs/SEMANTIC_THEMING_CONTRACT.md](specs/SEMANTIC_THEMING_CONTRACT.md)
 - Local E2E stack:
   [runbooks/LOCAL_E2E_STACK.md](runbooks/LOCAL_E2E_STACK.md)
 - Supabase schema parity:

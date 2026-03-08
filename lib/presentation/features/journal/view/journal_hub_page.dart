@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_uti
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/services.dart';
@@ -34,6 +35,7 @@ class _TodayJournalBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
     final todayUtc = dateOnly(todayLocal);
     final summaries = state.days;
     final todayIndex = summaries.indexWhere(
@@ -57,81 +59,83 @@ class _TodayJournalBody extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.fromLTRB(
         tokens.spaceLg,
-        tokens.spaceXs,
+        tokens.spaceSm,
         tokens.spaceLg,
         tokens.spaceLg,
       ),
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                context.l10n.journalDailySummaryTitle.toUpperCase(),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.6,
-                ),
+        _SectionHeader(
+          title: context.l10n.journalDailySummaryTitle.toUpperCase(),
+          trailing: TextButton(
+            onPressed: () => Routing.toJournalHistory(context),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.primary,
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spaceSm,
+                vertical: tokens.spaceXxs,
+              ),
+              textStyle: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
             ),
-            TextButton(
-              onPressed: () => Routing.toJournalHistory(context),
-              child: Text('${context.l10n.viewLabel} ${context.l10n.allLabel}'),
-            ),
-          ],
+            child: Text('${context.l10n.viewLabel} ${context.l10n.allLabel}'),
+          ),
         ),
         SizedBox(height: tokens.spaceSm),
         _DailySummaryGrid(
           summary: todaySummary,
           hiddenTrackerIds: state.hiddenSummaryTrackerIds,
         ),
-        SizedBox(height: tokens.spaceMd),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                context.l10n.journalMomentsTitle.toUpperCase(),
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.6,
-                ),
-              ),
-            ),
-          ],
-        ),
+        SizedBox(height: tokens.spaceLg),
+        _SectionHeader(title: context.l10n.journalMomentsTitle.toUpperCase()),
         SizedBox(height: tokens.spaceSm),
         if (todaySummary.entries.isEmpty)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                context.l10n.journalNoLogsToday,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+          Container(
+            padding: EdgeInsets.all(tokens.spaceMd),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow.withValues(
+                alpha: 0.72,
               ),
-              SizedBox(height: tokens.spaceXxs),
-              Text(
-                context.l10n.journalTodayEmptyBody,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              borderRadius: BorderRadius.circular(tokens.radiusLg),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.34),
               ),
-              SizedBox(height: tokens.spaceSm),
-              Wrap(
-                spacing: tokens.spaceSm,
-                runSpacing: tokens.spaceSm,
-                children: [
-                  FilledButton(
-                    onPressed: () =>
-                        JournalEntryEditorRoutePage.showQuickCapture(
-                          context,
-                          selectedDayLocal: todayLocal,
-                        ),
-                    child: Text(context.l10n.journalAddEntry),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  context.l10n.journalNoLogsToday,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
                   ),
-                ],
-              ),
-            ],
+                ),
+                SizedBox(height: tokens.spaceXxs),
+                Text(
+                  context.l10n.journalTodayEmptyBody,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+                SizedBox(height: tokens.spaceSm),
+                Wrap(
+                  spacing: tokens.spaceSm,
+                  runSpacing: tokens.spaceSm,
+                  children: [
+                    FilledButton(
+                      onPressed: () =>
+                          JournalEntryEditorRoutePage.showQuickCapture(
+                            context,
+                            selectedDayLocal: todayLocal,
+                          ),
+                      child: Text(context.l10n.journalAddEntry),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           )
         else
           for (var i = 0; i < todaySummary.entries.length; i++)
@@ -154,9 +158,45 @@ class _TodayJournalBody extends StatelessWidget {
               ),
             ),
         if (state.topInsight != null) ...[
-          SizedBox(height: tokens.spaceSm),
-          _TopInsightCard(insight: state.topInsight!),
+          SizedBox(height: tokens.spaceMd),
+          _TopInsightCard(
+            insight: state.topInsight!,
+            onTap: () => Routing.toJournalInsights(context),
+          ),
+        ] else if (state.showInsightsNudge) ...[
+          SizedBox(height: tokens.spaceMd),
+          _InsightsNudgeCard(
+            onTap: () => Routing.toJournalInsights(context),
+          ),
         ],
+      ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({
+    required this.title,
+    this.trailing,
+  });
+
+  final String title;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        ...?((trailing == null) ? null : [trailing!]),
       ],
     );
   }
@@ -350,6 +390,8 @@ class _JournalHubPageState extends State<JournalHubPage> {
         },
         child: BlocBuilder<JournalHistoryBloc, JournalHistoryState>(
           builder: (context, state) {
+            final theme = Theme.of(context);
+            final scheme = theme.colorScheme;
             final body = switch (state) {
               JournalHistoryLoading() => const Center(
                 child: CircularProgressIndicator(),
@@ -367,13 +409,15 @@ class _JournalHubPageState extends State<JournalHubPage> {
               backgroundColor: Colors.transparent,
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
+                scrolledUnderElevation: 0,
                 title: Text(
                   '${context.l10n.dateToday}, ${DateFormat.MMMd().format(todayLocal)}',
                   style:
                       Theme.of(
                         context,
-                      ).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      ).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
                       ),
                 ),
                 actions: [
@@ -396,24 +440,85 @@ class _JournalHubPageState extends State<JournalHubPage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Theme.of(context).colorScheme.surface,
-                      Theme.of(context).colorScheme.surfaceContainerLow,
+                      scheme.surface,
+                      scheme.surfaceContainerLowest,
+                      scheme.surfaceContainerLow,
                     ],
+                    stops: const [0, 0.34, 1],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
                 ),
-                child: body,
-              ),
-              floatingActionButton: FloatingActionButton(
-                tooltip: context.l10n.journalAddEntry,
-                heroTag: 'journal_add_entry_fab',
-                elevation: 0,
-                onPressed: () => JournalEntryEditorRoutePage.showQuickCapture(
-                  context,
-                  selectedDayLocal: nowLocal,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: -120,
+                      right: -56,
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              radius: 0.9,
+                              colors: [
+                                scheme.primary.withValues(alpha: 0.09),
+                                scheme.primary.withValues(alpha: 0),
+                              ],
+                            ),
+                          ),
+                          child: const SizedBox(width: 280, height: 280),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 168,
+                      left: -72,
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              radius: 1,
+                              colors: [
+                                scheme.tertiary.withValues(alpha: 0.05),
+                                scheme.tertiary.withValues(alpha: 0),
+                              ],
+                            ),
+                          ),
+                          child: const SizedBox(width: 220, height: 220),
+                        ),
+                      ),
+                    ),
+                    body,
+                  ],
                 ),
-                child: const Icon(Icons.add),
+              ),
+              floatingActionButton: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: scheme.primary.withValues(alpha: 0.18),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  tooltip: context.l10n.journalAddEntry,
+                  heroTag: 'journal_add_entry_fab',
+                  backgroundColor: scheme.primaryContainer,
+                  foregroundColor: scheme.onPrimaryContainer,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  elevation: 0,
+                  onPressed: () => JournalEntryEditorRoutePage.showQuickCapture(
+                    context,
+                    selectedDayLocal: nowLocal,
+                  ),
+                  child: const Icon(Icons.add, size: 28),
+                ),
               ),
               floatingActionButtonLocation:
                   FloatingActionButtonLocation.endFloat,
@@ -426,78 +531,181 @@ class _JournalHubPageState extends State<JournalHubPage> {
 }
 
 class _TopInsightCard extends StatelessWidget {
-  const _TopInsightCard({required this.insight});
+  const _TopInsightCard({
+    required this.insight,
+    required this.onTap,
+  });
 
   final JournalTopInsight insight;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final theme = Theme.of(context);
+    final panelTheme = TasklyPanelTheme.of(context);
     final deltaValue = insight.deltaMood.abs().toStringAsFixed(1);
     final delta = insight.deltaMood >= 0 ? '+$deltaValue' : '-$deltaValue';
     final confidenceLabel = insight.confidence == JournalInsightConfidence.high
         ? context.l10n.journalInsightHighConfidence
         : context.l10n.journalInsightMediumConfidence;
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(tokens.radiusLg),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              panelTheme.emphasizedSurface,
+              panelTheme.subtleSurface,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(tokens.radiusLg),
+          border: Border.all(color: panelTheme.mutedBorder),
+          boxShadow: [
+            BoxShadow(
+              color: panelTheme.softShadow,
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        padding: EdgeInsets.all(tokens.spaceMd),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.lightbulb,
+                color: theme.colorScheme.onPrimaryContainer,
+                size: 18,
+              ),
+            ),
+            SizedBox(width: tokens.spaceSm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.insightTypeCorrelationDiscovery.toUpperCase(),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      letterSpacing: 0.8,
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: tokens.spaceXxs),
+                  Text(
+                    context.l10n.journalTopInsightAssociated(
+                      insight.factorName,
+                      delta,
+                    ),
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  SizedBox(height: tokens.spaceXxs),
+                  Text(
+                    context.l10n.journalTopInsightMeta(
+                      confidenceLabel,
+                      insight.sampleSize,
+                      insight.windowDays,
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
       ),
-      padding: EdgeInsets.all(tokens.spaceMd),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.lightbulb,
-              color: theme.colorScheme.onPrimaryContainer,
-              size: 18,
-            ),
+    );
+  }
+}
+
+class _InsightsNudgeCard extends StatelessWidget {
+  const _InsightsNudgeCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = TasklyTokens.of(context);
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(tokens.radiusLg),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.surfaceContainer,
+              theme.colorScheme.surfaceContainerLow,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          SizedBox(width: tokens.spaceSm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.insightTypeCorrelationDiscovery.toUpperCase(),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    letterSpacing: 0.8,
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: tokens.spaceXxs),
-                Text(
-                  context.l10n.journalTopInsightAssociated(
-                    insight.factorName,
-                    delta,
-                  ),
-                  style: theme.textTheme.bodyMedium,
-                ),
-                SizedBox(height: tokens.spaceXxs),
-                Text(
-                  context.l10n.journalTopInsightMeta(
-                    confidenceLabel,
-                    insight.sampleSize,
-                    insight.windowDays,
-                  ),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+          borderRadius: BorderRadius.circular(tokens.radiusLg),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.42),
           ),
-        ],
+        ),
+        padding: EdgeInsets.all(tokens.spaceMd),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.insights_outlined,
+                color: theme.colorScheme.onSecondaryContainer,
+                size: 18,
+              ),
+            ),
+            SizedBox(width: tokens.spaceSm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.l10n.journalInsightsTitle.toUpperCase(),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      letterSpacing: 0.8,
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(height: tokens.spaceXxs),
+                  Text(
+                    context.l10n.journalInsightsNudge,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -644,7 +852,7 @@ class _DailySummaryTile extends StatelessWidget {
   const _DailySummaryTile({required this.item});
 
   final _DailySummaryItem item;
-  static const double _tileHeight = 112;
+  static const double _tileHeight = 106;
 
   @override
   Widget build(BuildContext context) {
@@ -664,9 +872,26 @@ class _DailySummaryTile extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(tokens.spaceSm),
         decoration: BoxDecoration(
-          color: colors.background,
-          borderRadius: BorderRadius.circular(tokens.radiusMd),
+          gradient: LinearGradient(
+            colors: [
+              colors.background,
+              Color.alphaBlend(
+                colors.foreground.withValues(alpha: 0.02),
+                colors.background,
+              ),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(tokens.radiusLg),
           border: Border.all(color: colors.border),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.shadow.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -678,8 +903,8 @@ class _DailySummaryTile extends StatelessWidget {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: colors.foreground.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(tokens.radiusSm),
+                    color: colors.foreground.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(tokens.radiusMd),
                   ),
                   child: Icon(item.icon, size: 14, color: colors.foreground),
                 ),
@@ -691,8 +916,8 @@ class _DailySummaryTile extends StatelessWidget {
                     textAlign: TextAlign.right,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: colors.foreground,
-                      fontWeight: FontWeight.w600,
+                      color: colors.foreground.withValues(alpha: 0.78),
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -702,7 +927,8 @@ class _DailySummaryTile extends StatelessWidget {
               Text(
                 item.label,
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: colors.foreground.withValues(alpha: 0.78),
+                  color: colors.foreground.withValues(alpha: 0.66),
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             SizedBox(height: tokens.spaceSm),
@@ -712,7 +938,8 @@ class _DailySummaryTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.titleLarge?.copyWith(
                 color: colors.foreground,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.5,
               ),
             ),
           ],
@@ -730,24 +957,24 @@ class _DailySummaryTile extends StatelessWidget {
   if (!hasValue) {
     return (
       background: scheme.surfaceContainerLow,
-      border: scheme.outlineVariant.withValues(alpha: 0.6),
+      border: scheme.outlineVariant.withValues(alpha: 0.32),
       foreground: scheme.onSurfaceVariant,
     );
   }
   return switch (state) {
     JournalTrackerValueState.warn => (
       background: scheme.errorContainer.withValues(alpha: 0.25),
-      border: scheme.error.withValues(alpha: 0.7),
+      border: scheme.error.withValues(alpha: 0.42),
       foreground: scheme.onSurface,
     ),
     JournalTrackerValueState.goalHit => (
       background: scheme.tertiaryContainer.withValues(alpha: 0.4),
-      border: scheme.tertiary.withValues(alpha: 0.7),
+      border: scheme.tertiary.withValues(alpha: 0.42),
       foreground: scheme.onSurface,
     ),
     JournalTrackerValueState.normal => (
       background: scheme.surfaceContainerLow,
-      border: scheme.outlineVariant,
+      border: scheme.outlineVariant.withValues(alpha: 0.32),
       foreground: scheme.onSurface,
     ),
   };

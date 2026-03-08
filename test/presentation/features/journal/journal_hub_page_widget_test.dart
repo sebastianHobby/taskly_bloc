@@ -92,6 +92,13 @@ void main() {
       () =>
           repository.createJournalEntry(any(), context: any(named: 'context')),
     ).thenAnswer((_) async => 'entry-1');
+    when(
+      () => repository.saveJournalEntryWithEntryEvents(
+        entry: any(named: 'entry'),
+        trackerEvents: any(named: 'trackerEvents'),
+        context: any(named: 'context'),
+      ),
+    ).thenAnswer((_) async => 'entry-1');
 
     when(
       () => settingsRepository.load(
@@ -183,6 +190,10 @@ void main() {
         GoRoute(
           path: '/journal-manage-daily-checkins',
           builder: (_, __) => const Scaffold(body: Text('Daily route')),
+        ),
+        GoRoute(
+          path: '/journal/insights',
+          builder: (_, __) => const Scaffold(body: Text('Insights route')),
         ),
       ],
     );
@@ -318,6 +329,29 @@ void main() {
     await tester.pumpForStream();
 
     expect(find.byTooltip('Add entry'), findsOneWidget);
+  });
+
+  testWidgetsSafe('shows insights nudge when no top insight is available', (
+    tester,
+  ) async {
+    defsSubject.add([_trackerDef('mood', 'Mood', systemKey: 'mood')]);
+    entriesSubject.add([_entry(DateTime(2025, 1, 15), text: 'Note')]);
+    eventsSubject.add([
+      _event('mood-1', 'mood', 'entry-1', 4, DateTime(2025, 1, 15)),
+    ]);
+
+    await pumpPage(tester);
+    await tester.pumpForStream();
+
+    expect(
+      find.text('Keep logging moments and factors to unlock insights.'),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.text('Keep logging moments and factors to unlock insights.'),
+    );
+    await tester.pumpForStream();
+    expect(find.text('Insights route'), findsOneWidget);
   });
 
   testWidgetsSafe(

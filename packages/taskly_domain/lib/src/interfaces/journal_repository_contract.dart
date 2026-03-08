@@ -53,6 +53,18 @@ abstract class JournalRepositoryContract {
     OperationContext? context,
   });
 
+  /// Save a journal entry and replace its effective entry-scoped tracker
+  /// values atomically.
+  ///
+  /// If [entry.id] is empty, the implementation creates a new entry and returns
+  /// the generated id. Otherwise it updates the existing entry and replaces all
+  /// tracker events anchored to that entry with [trackerEvents].
+  Future<String> saveJournalEntryWithEntryEvents({
+    required JournalEntry entry,
+    required List<TrackerEvent> trackerEvents,
+    OperationContext? context,
+  });
+
   Future<void> deleteJournalEntry(String id, {OperationContext? context});
 
   // === Trackers (OPT-A: event-log + projections) ===

@@ -187,6 +187,105 @@ class JournalRepositoryImpl
   }
 
   @override
+  Future<String> saveJournalEntryWithEntryEvents({
+    required JournalEntry entry,
+    required List<TrackerEvent> trackerEvents,
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final normalizedEntryId = entry.id.trim();
+        final entryId = normalizedEntryId.isEmpty
+            ? _idGenerator.journalEntryId()
+            : normalizedEntryId;
+
+        await _database.transaction(() async {
+          if (normalizedEntryId.isEmpty) {
+            await _database
+                .into(_database.journalEntries)
+                .insert(
+                  JournalEntriesCompanion(
+                    id: Value(entryId),
+                    entryDate: Value(entry.entryDate),
+                    entryTime: Value(entry.entryTime),
+                    occurredAt: Value(entry.occurredAt),
+                    localDate: Value(entry.localDate),
+                    journalText: Value(entry.journalText),
+                    createdAt: Value(entry.createdAt),
+                    updatedAt: Value(entry.updatedAt),
+                    deletedAt: Value(entry.deletedAt),
+                  ),
+                  mode: InsertMode.insertOrAbort,
+                );
+          } else {
+            final updated =
+                await (_database.update(
+                  _database.journalEntries,
+                )..where((e) => e.id.equals(entryId))).write(
+                  JournalEntriesCompanion(
+                    entryDate: Value(entry.entryDate),
+                    entryTime: Value(entry.entryTime),
+                    occurredAt: Value(entry.occurredAt),
+                    localDate: Value(entry.localDate),
+                    journalText: Value(entry.journalText),
+                    updatedAt: Value(entry.updatedAt),
+                    deletedAt: Value(entry.deletedAt),
+                    createdAt: const Value<DateTime>.absent(),
+                  ),
+                );
+
+            if (updated == 0) {
+              if (!await _journalEntryExists(entryId)) {
+                throw RepositoryNotFoundException(
+                  'No journal entry found to update id=$entryId',
+                );
+              }
+            }
+          }
+
+          await (_database.delete(
+            _database.trackerEvents,
+          )..where((e) => e.entryId.equals(entryId))).go();
+
+          for (final event in trackerEvents) {
+            final eventId = event.id.isEmpty
+                ? _idGenerator.trackerEventId()
+                : event.id;
+            String? value;
+            if (event.value != null) {
+              value = event.value is String
+                  ? event.value! as String
+                  : jsonEncode(event.value);
+            }
+
+            await _database
+                .into(_database.trackerEvents)
+                .insert(
+                  TrackerEventsCompanion(
+                    id: Value(eventId),
+                    trackerId: Value(event.trackerId),
+                    anchorType: Value(event.anchorType),
+                    entryId: Value(entryId),
+                    anchorDate: Value(event.anchorDate),
+                    op: Value(event.op),
+                    value: Value(value),
+                    occurredAt: Value(event.occurredAt),
+                    recordedAt: Value(event.recordedAt),
+                  ),
+                  mode: InsertMode.insertOrAbort,
+                );
+          }
+        });
+
+        return entryId;
+      },
+      area: 'data.journal',
+      opName: 'saveJournalEntryWithEntryEvents',
+      context: context,
+    );
+  }
+
+  @override
   Future<void> deleteJournalEntry(
     String id, {
     OperationContext? context,
@@ -708,8 +807,12 @@ class JournalRepositoryImpl
     if (range != null) {
       query.where(
         (e) =>
-            e.occurredAt.isBiggerOrEqualValue(range.start) &
-            e.occurredAt.isSmallerOrEqualValue(range.end),
+            e.anchorDate.isNotNull() &
+                e.anchorDate.isBiggerOrEqualValue(range.start) &
+                e.anchorDate.isSmallerOrEqualValue(range.end) |
+            (e.anchorDate.isNull() &
+                e.occurredAt.isBiggerOrEqualValue(range.start) &
+                e.occurredAt.isSmallerOrEqualValue(range.end)),
       );
     }
     if (anchorType != null) {
@@ -725,7 +828,11 @@ class JournalRepositoryImpl
       query.where((e) => e.trackerId.equals(trackerId));
     }
 
-    query.orderBy([(e) => OrderingTerm.desc(e.occurredAt)]);
+    query.orderBy([
+      (e) => OrderingTerm.desc(e.recordedAt),
+      (e) => OrderingTerm.desc(e.occurredAt),
+      (e) => OrderingTerm.desc(e.id),
+    ]);
 
     return query.watch().map((rows) => rows.map(_mapToTrackerEvent).toList());
   }
@@ -745,8 +852,12 @@ class JournalRepositoryImpl
               ..where((e) => e.anchorType.equals('entry'))
               ..where(
                 (e) =>
-                    e.occurredAt.isBiggerOrEqualValue(range.start) &
-                    e.occurredAt.isSmallerOrEqualValue(range.end),
+                    ((e.anchorDate.isNotNull() &
+                        e.anchorDate.isBiggerOrEqualValue(range.start) &
+                        e.anchorDate.isSmallerOrEqualValue(range.end)) |
+                    (e.anchorDate.isNull() &
+                        e.occurredAt.isBiggerOrEqualValue(range.start) &
+                        e.occurredAt.isSmallerOrEqualValue(range.end))),
               ))
             .get();
 
@@ -761,7 +872,7 @@ class JournalRepositoryImpl
       };
       if (asNumber == null) continue;
 
-      final day = dateOnly(e.occurredAt.toUtc());
+      final day = dateOnly((e.anchorDate ?? e.occurredAt).toUtc());
       (valuesByDay[day] ??= <double>[]).add(asNumber);
     }
 
@@ -790,8 +901,12 @@ class JournalRepositoryImpl
               ..where((e) => e.anchorType.equals('entry'))
               ..where(
                 (e) =>
-                    e.occurredAt.isBiggerOrEqualValue(range.start) &
-                    e.occurredAt.isSmallerOrEqualValue(range.end),
+                    ((e.anchorDate.isNotNull() &
+                        e.anchorDate.isBiggerOrEqualValue(range.start) &
+                        e.anchorDate.isSmallerOrEqualValue(range.end)) |
+                    (e.anchorDate.isNull() &
+                        e.occurredAt.isBiggerOrEqualValue(range.start) &
+                        e.occurredAt.isSmallerOrEqualValue(range.end))),
               ))
             .get();
 
@@ -801,7 +916,7 @@ class JournalRepositoryImpl
 
     for (final e in events) {
       final decoded = _decodeTrackerValue(e.value);
-      final day = dateOnly(e.occurredAt.toUtc());
+      final day = dateOnly((e.anchorDate ?? e.occurredAt).toUtc());
 
       if (decoded is bool) {
         (boolValuesByDay[day] ??= <bool>[]).add(decoded);

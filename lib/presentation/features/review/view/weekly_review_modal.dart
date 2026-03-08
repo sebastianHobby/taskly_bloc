@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/features/review/widgets/weekly_value_ch
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
@@ -522,8 +523,9 @@ class _MaintenanceItem extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final panelTheme = TasklyPanelTheme.of(context);
     final cardColor = scheme.surfaceContainerLowest;
-    final borderColor = scheme.outlineVariant.withValues(alpha: 0.6);
+    final borderColor = panelTheme.mutedBorder;
     final isInteractive = onTap != null;
 
     return Material(
@@ -600,17 +602,18 @@ class _MaintenanceSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final panelTheme = TasklyPanelTheme.of(context);
     final countLabel = context.l10n.itemsCountLabel(itemCount);
 
     return Container(
       padding: EdgeInsets.all(tokens.spaceLg),
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: panelTheme.gradientStart,
         borderRadius: BorderRadius.circular(tokens.radiusXxl),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(color: panelTheme.mutedBorder),
         boxShadow: [
           BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.06),
+            color: panelTheme.softShadow,
             blurRadius: tokens.spaceLg,
             offset: const Offset(0, 6),
           ),
@@ -712,13 +715,14 @@ class _MaintenanceAllClearCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = TasklyTokens.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final panelTheme = TasklyPanelTheme.of(context);
 
     return Container(
       padding: EdgeInsets.all(tokens.spaceLg),
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: panelTheme.gradientStart,
         borderRadius: BorderRadius.circular(tokens.radiusXxl),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(color: panelTheme.mutedBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

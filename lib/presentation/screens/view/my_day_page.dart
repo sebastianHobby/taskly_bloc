@@ -14,6 +14,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.d
 import 'package:taskly_bloc/presentation/shared/selection/selection_app_bar.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/selection/selection_models.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/app_loading_screen.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/entity_add_controls.dart';
@@ -335,7 +336,6 @@ class _MyDayLoadedBody extends StatelessWidget {
             };
 
             return _MyDaySummaryHeader(
-              icon: iconSet.selectedIcon,
               title: context.l10n.myDayTitle,
               dateLabel: dateLabel,
               plannedCount: plannedCount,
@@ -409,7 +409,6 @@ class _MyDayLoadedBody extends StatelessWidget {
 
 class _MyDaySummaryHeader extends StatelessWidget {
   const _MyDaySummaryHeader({
-    required this.icon,
     required this.title,
     required this.dateLabel,
     required this.plannedCount,
@@ -418,7 +417,6 @@ class _MyDaySummaryHeader extends StatelessWidget {
     required this.onEditPlan,
   });
 
-  final IconData icon;
   final String title;
   final String dateLabel;
   final int? plannedCount;
@@ -428,100 +426,38 @@ class _MyDaySummaryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     final planned = plannedCount;
     final completed = completedCount;
     final l10n = context.l10n;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.sectionPaddingH,
-        tokens.spaceMd,
-        tokens.sectionPaddingH,
-        tokens.spaceSm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return TasklyPageHeader(
+      screenId: 'my_day',
+      title: title,
+      trailing: hasPlan && onEditPlan != null
+          ? TextButton(
+              onPressed: onEditPlan,
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              child: Text(l10n.myDayUpdatePlanTitle),
+            )
+          : null,
+      footer: Wrap(
+        spacing: TasklyTokens.of(context).spaceSm,
+        runSpacing: TasklyTokens.of(context).spaceXs2,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: scheme.primary,
-                size: tokens.spaceLg3,
-              ),
-              SizedBox(width: tokens.spaceSm),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              if (hasPlan && onEditPlan != null)
-                TextButton(
-                  onPressed: onEditPlan,
-                  style: TextButton.styleFrom(
-                    textStyle: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  child: Text(l10n.myDayUpdatePlanTitle),
-                ),
-            ],
-          ),
-          SizedBox(height: tokens.spaceSm),
-          Wrap(
-            spacing: tokens.spaceSm,
-            runSpacing: tokens.spaceXs2,
-            children: [
-              _MyDaySummaryPill(label: dateLabel),
-              if (planned != null)
-                _MyDaySummaryPill(
-                  label: context.l10n.myDayPlannedCountLabel(planned),
-                ),
-              if (completed != null)
-                _MyDaySummaryPill(
-                  label: context.l10n.myDayCompletedCountLabel(completed),
-                ),
-            ],
-          ),
+          TasklyHeaderChip(label: dateLabel),
+          if (planned != null)
+            TasklyHeaderChip(
+              label: context.l10n.myDayPlannedCountLabel(planned),
+            ),
+          if (completed != null)
+            TasklyHeaderChip(
+              label: context.l10n.myDayCompletedCountLabel(completed),
+            ),
         ],
-      ),
-    );
-  }
-}
-
-class _MyDaySummaryPill extends StatelessWidget {
-  const _MyDaySummaryPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final scheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(tokens.radiusPill),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spaceSm2,
-          vertical: tokens.spaceXs2,
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: scheme.onSurface,
-          ),
-        ),
       ),
     );
   }

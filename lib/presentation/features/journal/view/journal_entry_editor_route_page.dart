@@ -379,6 +379,28 @@ class _JournalEntryEditorRoutePageState
     );
   }
 
+  Future<void> _pickMomentTime(
+    BuildContext context,
+    JournalEntryEditorState state,
+  ) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(state.occurredAtLocal),
+    );
+    if (!context.mounted || picked == null) return;
+    context.read<JournalEntryEditorBloc>().add(
+      JournalEntryEditorOccurredAtChanged(
+        DateTime(
+          state.selectedDayLocal.year,
+          state.selectedDayLocal.month,
+          state.selectedDayLocal.day,
+          picked.hour,
+          picked.minute,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final repository = context.read<JournalRepositoryContract>();
@@ -427,9 +449,13 @@ class _JournalEntryEditorRoutePageState
           final theme = Theme.of(context);
           final l10n = context.l10n;
           final tokens = TasklyTokens.of(context);
+          final materialL10n = MaterialLocalizations.of(context);
           final isSaving = state.status is JournalEntryEditorSaving;
           final isLoading = state.status is JournalEntryEditorLoading;
           final canSave = !isSaving && state.mood != null;
+          final momentTimeLabel = materialL10n.formatTimeOfDay(
+            TimeOfDay.fromDateTime(state.occurredAtLocal),
+          );
 
           if (_noteController.text != state.note && !isLoading) {
             _noteController.text = state.note;
@@ -777,6 +803,56 @@ class _JournalEntryEditorRoutePageState
             );
           }
 
+          Widget momentTimeRow() {
+            return InkWell(
+              onTap: isSaving ? null : () => _pickMomentTime(context, state),
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+              child: Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spaceSm,
+                  vertical: tokens.spaceSm,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
+                  border: Border.all(
+                    color: theme.colorScheme.outlineVariant,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.schedule,
+                      size: 18,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    SizedBox(width: tokens.spaceXs),
+                    Expanded(
+                      child: Text(
+                        'Time of moment',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      momentTimeLabel,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(width: tokens.spaceXs),
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
           Widget trackerGroupCard({
             required String title,
             required IconData icon,
@@ -948,6 +1024,8 @@ class _JournalEntryEditorRoutePageState
                           .read<JournalEntryEditorBloc>()
                           .add(JournalEntryEditorMoodChanged(m)),
                     ),
+                    SizedBox(height: tokens.spaceSm),
+                    momentTimeRow(),
                     SizedBox(height: tokens.spaceLg),
                     if (!hasMood) moodGateHint(),
                     AnimatedSwitcher(
@@ -955,29 +1033,37 @@ class _JournalEntryEditorRoutePageState
                       child: _showPostMoodGroups
                           ? Padding(
                               padding: EdgeInsets.only(top: tokens.spaceLg),
-                              child: entryGroups.isEmpty
-                                  ? trackerGroupCard(
+                              child: Column(
+                                children: [
+                                  trackerGroupCard(
+                                    title: 'Daily Factors',
+                                    icon: Icons.water_drop_outlined,
+                                    trackers: state.dailyTrackers,
+                                    isDaily: true,
+                                    emptyLabel: l10n.journalDailyNoTrackers,
+                                  ),
+                                  SizedBox(height: tokens.spaceLg),
+                                  if (entryGroups.isEmpty)
+                                    trackerGroupCard(
                                       title: l10n.journalTrackersTitle,
                                       icon: Icons.tune,
                                       trackers: const <TrackerDefinition>[],
                                       isDaily: false,
                                       emptyLabel: l10n.journalNoEntryTrackers,
                                     )
-                                  : Column(
-                                      children: [
-                                        for (final group in entryGroups) ...[
-                                          trackerGroupCard(
-                                            title: group.title,
-                                            icon: Icons.tune,
-                                            trackers: group.trackers,
-                                            isDaily: false,
-                                            emptyLabel:
-                                                l10n.journalNoEntryTrackers,
-                                          ),
-                                          SizedBox(height: tokens.spaceLg),
-                                        ],
-                                      ],
-                                    ),
+                                  else
+                                    for (final group in entryGroups) ...[
+                                      trackerGroupCard(
+                                        title: group.title,
+                                        icon: Icons.tune,
+                                        trackers: group.trackers,
+                                        isDaily: false,
+                                        emptyLabel: l10n.journalNoEntryTrackers,
+                                      ),
+                                      SizedBox(height: tokens.spaceLg),
+                                    ],
+                                ],
+                              ),
                             )
                           : const SizedBox.shrink(),
                     ),
@@ -1066,26 +1152,6 @@ class _JournalEntryEditorRoutePageState
                     .where((group) => group.trackers.isNotEmpty)
                     .toList(growable: false);
 
-            void resetQuickCapture() {
-              _noteController.text = '';
-              context.read<JournalEntryEditorBloc>().add(
-                const JournalEntryEditorMoodChanged(null),
-              );
-              context.read<JournalEntryEditorBloc>().add(
-                const JournalEntryEditorNoteChanged(''),
-              );
-              for (final group in quickFactorGroups) {
-                for (final tracker in group.trackers) {
-                  context.read<JournalEntryEditorBloc>().add(
-                    JournalEntryEditorEntryValueChanged(
-                      trackerId: tracker.id,
-                      value: null,
-                    ),
-                  );
-                }
-              }
-            }
-
             final quickSaveButton = FilledButton(
               onPressed: canSave
                   ? () => context.read<JournalEntryEditorBloc>().add(
@@ -1153,10 +1219,6 @@ class _JournalEntryEditorRoutePageState
                             ),
                           ),
                           const Spacer(),
-                          TextButton(
-                            onPressed: isSaving ? null : resetQuickCapture,
-                            child: const Text('Reset'),
-                          ),
                         ],
                       ),
                     ),
@@ -1209,51 +1271,7 @@ class _JournalEntryEditorRoutePageState
                                 .add(JournalEntryEditorMoodChanged(m)),
                           ),
                           SizedBox(height: tokens.spaceSm),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: tokens.spaceSm,
-                              vertical: tokens.spaceSm,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerLow,
-                              borderRadius: BorderRadius.circular(
-                                tokens.radiusMd,
-                              ),
-                              border: Border.all(
-                                color: theme.colorScheme.outlineVariant,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.schedule,
-                                  size: 18,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                                SizedBox(width: tokens.spaceXs),
-                                Expanded(
-                                  child: Text(
-                                    'Time of moment',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  DateFormat.jm().format(nowService.nowLocal()),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                SizedBox(width: tokens.spaceXs),
-                                Icon(
-                                  Icons.access_time,
-                                  size: 16,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ],
-                            ),
-                          ),
+                          momentTimeRow(),
                           if (quickActivityGroups.isNotEmpty) ...[
                             SizedBox(height: tokens.spaceLg),
                             Divider(

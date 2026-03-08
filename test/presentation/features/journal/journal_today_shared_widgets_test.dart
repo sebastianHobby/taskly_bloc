@@ -2,6 +2,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/journal_factor_token.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/preferences.dart';
@@ -124,7 +125,7 @@ void main() {
     },
   );
 
-  testWidgetsSafe('JournalLogCard collapses chips to +more indicator', (
+  testWidgetsSafe('JournalLogCard renders all deduplicated summary chips', (
     tester,
   ) async {
     final day = DateTime(2025, 1, 15, 9);
@@ -180,6 +181,7 @@ void main() {
 
     await tester.pumpForStream();
 
-    expect(find.textContaining('+'), findsOneWidget);
+    expect(find.byType(JournalFactorToken), findsNWidgets(5));
+    expect(find.textContaining('+'), findsNothing);
   });
 }

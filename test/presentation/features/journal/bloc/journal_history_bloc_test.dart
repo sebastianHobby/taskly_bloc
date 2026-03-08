@@ -716,4 +716,105 @@ void main() {
     final state = bloc.state as JournalHistoryLoaded;
     expect(state.factorDefinitions.map((d) => d.id), ['user-1']);
   });
+
+  testSafe(
+    'uses latest effective entry value and keeps event day on entry local day',
+    () async {
+      final moodTracker = TrackerDefinition(
+        id: 'mood-1',
+        name: 'Mood',
+        scope: 'entry',
+        valueType: 'rating',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        systemKey: 'mood',
+        opKind: 'set',
+      );
+      final waterTracker = TrackerDefinition(
+        id: 'water-1',
+        name: 'Water',
+        scope: 'entry',
+        valueType: 'quantity',
+        valueKind: 'number',
+        createdAt: DateTime.utc(2026, 1, 1),
+        updatedAt: DateTime.utc(2026, 1, 1),
+        opKind: 'add',
+      );
+      defsController.emit([moodTracker, waterTracker]);
+
+      final localDay = DateTime.utc(2026, 1, 10);
+      entriesController.emit([
+        JournalEntry(
+          id: 'entry-1',
+          entryDate: localDay,
+          entryTime: DateTime.utc(2026, 1, 10, 8),
+          occurredAt: DateTime.utc(2026, 1, 10, 8),
+          localDate: localDay,
+          createdAt: localDay,
+          updatedAt: localDay,
+        ),
+      ]);
+      eventsController.emit([
+        TrackerEvent(
+          id: 'mood-old',
+          trackerId: 'mood-1',
+          anchorType: 'entry',
+          entryId: 'entry-1',
+          op: 'set',
+          value: 2,
+          occurredAt: DateTime.utc(2026, 1, 9, 23, 30),
+          recordedAt: DateTime.utc(2026, 1, 10, 8),
+        ),
+        TrackerEvent(
+          id: 'mood-new',
+          trackerId: 'mood-1',
+          anchorType: 'entry',
+          entryId: 'entry-1',
+          op: 'set',
+          value: 5,
+          occurredAt: DateTime.utc(2026, 1, 9, 23, 30),
+          recordedAt: DateTime.utc(2026, 1, 10, 9),
+        ),
+        TrackerEvent(
+          id: 'water-old',
+          trackerId: 'water-1',
+          anchorType: 'entry',
+          entryId: 'entry-1',
+          op: 'add',
+          value: 1,
+          occurredAt: DateTime.utc(2026, 1, 9, 23, 30),
+          recordedAt: DateTime.utc(2026, 1, 10, 8),
+        ),
+        TrackerEvent(
+          id: 'water-new',
+          trackerId: 'water-1',
+          anchorType: 'entry',
+          entryId: 'entry-1',
+          op: 'add',
+          value: 3,
+          occurredAt: DateTime.utc(2026, 1, 9, 23, 30),
+          recordedAt: DateTime.utc(2026, 1, 10, 9),
+        ),
+      ]);
+
+      final bloc = buildBloc();
+      addTearDown(bloc.close);
+      bloc.add(const JournalHistoryStarted());
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+
+      final state = bloc.state as JournalHistoryLoaded;
+      expect(state.days, hasLength(1));
+      expect(state.days.single.day, localDay);
+      expect(state.days.single.moodAverage, 5);
+      expect(state.days.single.dayQuantityTotalsByTrackerId['water-1'], 3);
+      expect(
+        state.days.single.eventsByEntryId['entry-1']?.map((e) => e.id),
+        containsAll(<String>['mood-new', 'water-new']),
+      );
+      expect(
+        state.days.single.eventsByEntryId['entry-1'],
+        hasLength(2),
+      );
+    },
+  );
 }

@@ -1123,6 +1123,13 @@ class _FakeJournalRepository implements JournalRepositoryContract {
   }) async => throw UnimplementedError();
 
   @override
+  Future<String> saveJournalEntryWithEntryEvents({
+    required JournalEntry entry,
+    required List<TrackerEvent> trackerEvents,
+    OperationContext? context,
+  }) async => throw UnimplementedError();
+
+  @override
   Future<void> deleteJournalEntry(
     String id, {
     OperationContext? context,

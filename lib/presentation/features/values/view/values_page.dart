@@ -4,8 +4,8 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/values_hero_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/model/value_sort_order.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/values_list.dart';
-import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/app_bar/taskly_page_header.dart';
 import 'package:taskly_bloc/presentation/shared/app_bar/taskly_overflow_menu.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
@@ -225,37 +225,9 @@ class _ValuesTitleHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = TasklyTokens.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final iconSet = const NavigationIconResolver().resolve(
+    return TasklyPageHeader(
       screenId: 'values',
-      iconName: null,
-    );
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        tokens.sectionPaddingH,
-        tokens.spaceMd,
-        tokens.sectionPaddingH,
-        tokens.spaceSm,
-      ),
-      child: Row(
-        children: [
-          Icon(
-            iconSet.selectedIcon,
-            color: scheme.primary,
-            size: tokens.spaceLg3,
-          ),
-          SizedBox(width: tokens.spaceSm),
-          Text(
-            context.l10n.valuesTitle,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
+      title: context.l10n.valuesTitle,
     );
   }
 }

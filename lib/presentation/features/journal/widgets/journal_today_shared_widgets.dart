@@ -36,7 +36,6 @@ class JournalLogCard extends StatefulWidget {
 }
 
 class _JournalLogCardState extends State<JournalLogCard> {
-  bool _expandedSummary = false;
   bool _pressed = false;
 
   @override
@@ -49,10 +48,12 @@ class _JournalLogCardState extends State<JournalLogCard> {
     final summaryItems = _buildSummaryItems(l10n);
 
     final note = widget.entry.journalText?.trim();
-    final maxChips = widget.density == DisplayDensity.compact ? 2 : 4;
 
-    final surface = theme.colorScheme.surfaceContainer;
-    final border = theme.colorScheme.outlineVariant;
+    final surface = Color.alphaBlend(
+      theme.colorScheme.surfaceTint.withValues(alpha: 0.015),
+      theme.colorScheme.surfaceContainer,
+    );
+    final border = theme.colorScheme.outlineVariant.withValues(alpha: 0.32);
     final hasMood = mood != null;
     final moodColor = hasMood
         ? _moodTint(theme.colorScheme, mood)
@@ -66,15 +67,18 @@ class _JournalLogCardState extends State<JournalLogCard> {
           child: Column(
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: moodColor.withValues(alpha: 0.2),
+                  color: moodColor.withValues(alpha: hasMood ? 0.18 : 0.1),
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: moodColor.withValues(alpha: hasMood ? 0.18 : 0.12),
+                  ),
                 ),
                 child: Icon(
                   _timelineMoodIcon(mood),
-                  size: 19,
+                  size: 20,
                   color: moodColor,
                 ),
               ),
@@ -90,8 +94,18 @@ class _JournalLogCardState extends State<JournalLogCard> {
                 Container(
                   width: 2,
                   height: 84,
-                  color: theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.7,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(tokens.radiusSm),
+                    gradient: LinearGradient(
+                      colors: [
+                        moodColor.withValues(alpha: 0.24),
+                        theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.16,
+                        ),
+                      ],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
                   ),
                 ),
             ],
@@ -101,9 +115,23 @@ class _JournalLogCardState extends State<JournalLogCard> {
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              color: surface,
-              borderRadius: BorderRadius.circular(tokens.radiusMd),
+              gradient: LinearGradient(
+                colors: [
+                  surface,
+                  theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.72),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(tokens.radiusLg),
               border: Border.all(color: border),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.shadow.withValues(alpha: 0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: InkWell(
               onTap: widget.onTap,
@@ -111,7 +139,7 @@ class _JournalLogCardState extends State<JournalLogCard> {
                 if (_pressed == value) return;
                 setState(() => _pressed = value);
               },
-              borderRadius: BorderRadius.circular(tokens.radiusMd),
+              borderRadius: BorderRadius.circular(tokens.radiusLg),
               child: AnimatedScale(
                 duration: kJournalMotionDuration,
                 curve: kJournalMotionCurve,
@@ -126,27 +154,27 @@ class _JournalLogCardState extends State<JournalLogCard> {
                           note,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyLarge,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            height: 1.28,
+                            letterSpacing: -0.1,
+                          ),
                         ),
                       if (summaryItems.isNotEmpty) ...[
-                        SizedBox(height: tokens.spaceSm),
+                        SizedBox(
+                          height: note != null && note.isNotEmpty
+                              ? tokens.spaceSm
+                              : tokens.spaceXxs,
+                        ),
                         Wrap(
                           spacing: tokens.spaceSm,
                           runSpacing: tokens.spaceSm,
                           children: [
-                            for (final item in _visibleSummaryItems(
-                              allItems: summaryItems,
-                              maxChips: maxChips,
-                            ))
+                            for (final item in summaryItems)
                               JournalFactorToken(
                                 icon: item.icon,
                                 text: item.text,
                                 state: item.state,
-                                onTap: item.isOverflow
-                                    ? () => setState(() {
-                                        _expandedSummary = true;
-                                      })
-                                    : null,
                               ),
                           ],
                         ),
@@ -182,11 +210,9 @@ class _JournalLogCardState extends State<JournalLogCard> {
 
   List<_TrackerSummaryChip> _buildSummaryItems(AppLocalizations l10n) {
     final candidates = <_TrackerSummaryChip>[];
-    final moodId = widget.moodTrackerId;
     final latestByTrackerId = <String, TrackerEvent>{};
 
     for (final e in widget.events) {
-      if (moodId != null && e.trackerId == moodId) continue;
       final previous = latestByTrackerId[e.trackerId];
       if (previous == null || previous.occurredAt.isBefore(e.occurredAt)) {
         latestByTrackerId[e.trackerId] = e;
@@ -196,8 +222,6 @@ class _JournalLogCardState extends State<JournalLogCard> {
     final orderedEvents = latestByTrackerId.values.toList(growable: false)
       ..sort((a, b) => a.trackerId.compareTo(b.trackerId));
     for (final e in orderedEvents) {
-      if (moodId != null && e.trackerId == moodId) continue;
-
       final definition = widget.definitionById[e.trackerId];
       final name = definition?.name ?? l10n.journalTrackerFallbackName;
       final icon = definition == null
@@ -220,23 +244,6 @@ class _JournalLogCardState extends State<JournalLogCard> {
     }
     return candidates;
   }
-
-  List<_TrackerSummaryChip> _visibleSummaryItems({
-    required List<_TrackerSummaryChip> allItems,
-    required int maxChips,
-  }) {
-    if (_expandedSummary || allItems.length <= maxChips) return allItems;
-    final remaining = allItems.length - maxChips;
-    return [
-      ...allItems.take(maxChips),
-      _TrackerSummaryChip(
-        text: '+$remaining',
-        icon: Icons.more_horiz,
-        state: JournalTrackerValueState.normal,
-        isOverflow: true,
-      ),
-    ];
-  }
 }
 
 final class _TrackerSummaryChip {
@@ -244,13 +251,11 @@ final class _TrackerSummaryChip {
     required this.text,
     required this.icon,
     required this.state,
-    this.isOverflow = false,
   });
 
   final String text;
   final IconData icon;
   final JournalTrackerValueState state;
-  final bool isOverflow;
 }
 
 Color _moodTint(ColorScheme scheme, MoodRating mood) {

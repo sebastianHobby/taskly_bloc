@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_page_gradient_surface.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_semantic_theme.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -21,7 +23,6 @@ class JournalInsightsPage extends StatelessWidget {
       )..add(const JournalHistoryStarted()),
       child: BlocBuilder<JournalHistoryBloc, JournalHistoryState>(
         builder: (context, state) {
-          final theme = Theme.of(context);
           final tokens = TasklyTokens.of(context);
           final loaded = state is JournalHistoryLoaded ? state : null;
           final insights = loaded?.insights ?? const <JournalTopInsight>[];
@@ -53,17 +54,7 @@ class JournalInsightsPage extends StatelessWidget {
                           ),
                         ),
                       )
-                    : DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              theme.colorScheme.surface,
-                              theme.colorScheme.surfaceContainerLow,
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                          ),
-                        ),
+                    : TasklyPageGradientSurface(
                         child: ListView.separated(
                           padding: EdgeInsets.fromLTRB(
                             tokens.spaceLg,
@@ -130,19 +121,20 @@ class _TopInsightHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
+    final panelTheme = TasklyPanelTheme.of(context);
     return Container(
       padding: EdgeInsets.all(tokens.spaceMd),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            theme.colorScheme.surfaceContainerHigh,
-            theme.colorScheme.surfaceContainerLow,
+            panelTheme.emphasizedSurface,
+            panelTheme.subtleSurface,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(tokens.radiusLg),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: panelTheme.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -181,7 +173,7 @@ class _TopInsightHeroCard extends StatelessWidget {
             width: double.infinity,
             padding: EdgeInsets.symmetric(horizontal: tokens.spaceXs),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withValues(alpha: 0.35),
+              color: panelTheme.gradientStart.withValues(alpha: 0.35),
               borderRadius: BorderRadius.circular(tokens.radiusMd),
             ),
             child: CustomPaint(
@@ -223,12 +215,13 @@ class _InsightEvidenceCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = TasklyTokens.of(context);
+    final panelTheme = TasklyPanelTheme.of(context);
     return Container(
       padding: EdgeInsets.all(tokens.spaceMd),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
+        color: panelTheme.subtleSurface,
         borderRadius: BorderRadius.circular(tokens.radiusLg),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: panelTheme.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
