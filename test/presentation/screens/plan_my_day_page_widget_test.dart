@@ -365,9 +365,10 @@ void main() {
       );
       await tester.pumpForStream();
 
-      final label = l10nFor(tester).planMyDaySortHighestAverage;
-      final header = l10nFor(tester).planMyDaySortByLabel(label);
-      expect(find.text(header), findsOneWidget);
+      expect(
+        find.text(l10nFor(tester).planMyDaySortHighestAverage),
+        findsOneWidget,
+      );
     },
   );
 

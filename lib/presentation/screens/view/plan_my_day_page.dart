@@ -942,6 +942,11 @@ class _ValueSortMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final currentLabel = _sortLabel(context, data.valueSort);
+    final scheme = Theme.of(context).colorScheme;
+    final labelStyle = Theme.of(context).textTheme.labelLarge?.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+    );
 
     return PopupMenuButton<PlanMyDayValueSort>(
       key: kPlanMyDayValueSortMenuButtonKey,
@@ -961,13 +966,17 @@ class _ValueSortMenu extends StatelessWidget {
         ),
       ],
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.sort),
-            const SizedBox(width: 8),
-            Text(l10n.planMyDaySortByLabel(currentLabel)),
+            Icon(
+              Icons.sort_rounded,
+              size: 18,
+              color: scheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 6),
+            Text(currentLabel, style: labelStyle),
           ],
         ),
       ),
