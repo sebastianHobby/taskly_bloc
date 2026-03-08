@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
+import 'package:taskly_bloc/presentation/features/settings/widgets/settings_navigation_tile.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_ui/taskly_ui_chrome.dart';
-import 'package:taskly_ui/taskly_ui_primitives.dart';
+import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -30,62 +31,65 @@ class SettingsScreen extends StatelessWidget {
               TasklyPageHeader(
                 icon: iconSet.selectedIcon,
                 title: l10n.settingsTitle,
+                variant: TasklyHeaderVariant.hero,
               ),
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: TasklyTokens.of(context).sectionPaddingH,
+              _SettingsSectionPadding(
+                child: SettingsNavigationTile(
+                  icon: Icons.palette_outlined,
+                  title: l10n.settingsAppearanceTitle,
+                  subtitle: l10n.settingsAppearanceSubtitle,
+                  onTap: () => Routing.pushSettingsAppearance(context),
                 ),
-                child: TasklyCardSurface(
-                  padding: EdgeInsets.symmetric(
-                    vertical: TasklyTokens.of(context).spaceXs2,
-                  ),
-                  child: Column(
-                    children: [
-                      _SettingsNavItem(
-                        icon: Icons.palette_outlined,
-                        title: l10n.settingsAppearanceTitle,
-                        subtitle: l10n.settingsAppearanceSubtitle,
-                        onTap: () => Routing.pushSettingsAppearance(context),
-                      ),
-                      _SettingsNavItem(
-                        icon: Icons.lightbulb_outline,
-                        title: l10n.settingsMicroLearningTitle,
-                        subtitle: l10n.settingsMicroLearningSubtitle,
-                        onTap: () => Routing.pushSettingsMicroLearning(context),
-                      ),
-                      _SettingsNavItem(
-                        icon: Icons.event_repeat_outlined,
-                        title: l10n.weeklyReviewTitle,
-                        subtitle: l10n.settingsWeeklyReviewSubtitle,
-                        onTap: () => Routing.pushSettingsWeeklyReview(context),
-                      ),
-                      _SettingsNavItem(
-                        icon: Icons.notifications_none_rounded,
-                        title: l10n.settingsNotificationsTitle,
-                        subtitle: l10n.settingsNotificationsSubtitle,
-                        onTap: () => Routing.pushSettingsNotifications(context),
-                      ),
-                      _SettingsNavItem(
-                        icon: Icons.language_outlined,
-                        title: l10n.settingsLanguageRegionTitle,
-                        subtitle: l10n.settingsLanguageRegionSubtitle,
-                        onTap: () =>
-                            Routing.pushSettingsLanguageRegion(context),
-                      ),
-                      _SettingsNavItem(
-                        icon: Icons.person_outline,
-                        title: l10n.settingsAccountTitle,
-                        subtitle: l10n.settingsAccountSubtitle,
-                        onTap: () => Routing.pushSettingsAccount(context),
-                      ),
-                      _SettingsNavItem(
-                        icon: Icons.bug_report_outlined,
-                        title: l10n.settingsDeveloperTitle,
-                        subtitle: l10n.settingsDeveloperSubtitle,
-                        onTap: () => Routing.pushSettingsDeveloper(context),
-                      ),
-                    ],
-                  ),
+              ),
+              _SettingsSectionPadding(
+                child: SettingsNavigationTile(
+                  icon: Icons.language_outlined,
+                  title: l10n.settingsLanguageRegionTitle,
+                  subtitle: l10n.settingsLanguageRegionSubtitle,
+                  onTap: () => Routing.pushSettingsLanguageRegion(context),
+                ),
+              ),
+              _SettingsSectionPadding(
+                child: SettingsNavigationTile(
+                  icon: Icons.person_outline,
+                  title: l10n.settingsAccountTitle,
+                  subtitle: l10n.settingsAccountSubtitle,
+                  onTap: () => Routing.pushSettingsAccount(context),
+                ),
+              ),
+              _SettingsSectionPadding(
+                child: SettingsNavigationTile(
+                  icon: Icons.event_repeat_outlined,
+                  title: l10n.weeklyReviewTitle,
+                  subtitle: l10n.settingsWeeklyReviewSubtitle,
+                  onTap: () => Routing.pushSettingsWeeklyReview(context),
+                  variant: TasklyCardVariant.maintenance,
+                ),
+              ),
+              _SettingsSectionPadding(
+                child: SettingsNavigationTile(
+                  icon: Icons.notifications_none_rounded,
+                  title: l10n.settingsNotificationsTitle,
+                  subtitle: l10n.settingsNotificationsSubtitle,
+                  onTap: () => Routing.pushSettingsNotifications(context),
+                  variant: TasklyCardVariant.maintenance,
+                ),
+              ),
+              _SettingsSectionPadding(
+                child: SettingsNavigationTile(
+                  icon: Icons.lightbulb_outline,
+                  title: l10n.settingsMicroLearningTitle,
+                  subtitle: l10n.settingsMicroLearningSubtitle,
+                  onTap: () => Routing.pushSettingsMicroLearning(context),
+                ),
+              ),
+              _SettingsSectionPadding(
+                child: SettingsNavigationTile(
+                  icon: Icons.bug_report_outlined,
+                  title: l10n.settingsDeveloperTitle,
+                  subtitle: l10n.settingsDeveloperSubtitle,
+                  onTap: () => Routing.pushSettingsDeveloper(context),
+                  variant: TasklyCardVariant.editor,
                 ),
               ),
             ],
@@ -96,27 +100,22 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-class _SettingsNavItem extends StatelessWidget {
-  const _SettingsNavItem({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
+class _SettingsSectionPadding extends StatelessWidget {
+  const _SettingsSectionPadding({required this.child});
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
+    final tokens = TasklyTokens.of(context);
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.sectionPaddingH,
+        tokens.spaceSm,
+        tokens.sectionPaddingH,
+        0,
+      ),
+      child: child,
     );
   }
 }

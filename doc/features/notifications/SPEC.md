@@ -9,6 +9,10 @@ Defines local reminder and notification planning behavior, including Plan My Day
 - Notification planning logic lives in domain services.
 - Notification delivery setup remains infrastructure concern.
 - Notification behavior must be safe under offline and delayed sync conditions.
+- Reminder settings that rely on local notifications must be permission-gated in
+  presentation before they are enabled.
+- When notification permission is unavailable or denied, settings UI must expose
+  the blocked state and a path to request/open system settings.
 
 ## Current implemented area
 
@@ -16,6 +20,8 @@ Defines local reminder and notification planning behavior, including Plan My Day
 - Task reminder delivery for task-level reminder metadata:
   - `At date/time`
   - `Before due`
+- Mobile delivery uses local notifications on Android/iOS when permission is
+  granted.
 
 ## Task reminder UX contract (current)
 

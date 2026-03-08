@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_bottom_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -22,6 +23,7 @@ Future<void> showJournalFiltersSheet(
 
   await showModalBottomSheet<void>(
     context: context,
+    sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,

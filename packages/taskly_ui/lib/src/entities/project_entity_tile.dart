@@ -110,15 +110,19 @@ class ProjectEntityTile extends StatelessWidget {
     const accentBarWidth = 4.0;
     const accentBarBlend = 0.6;
     const accentBarAlpha = 0.6;
-    final outlineColor = scheme.outlineVariant.withValues(alpha: 0.7);
+    final outlineColor = scheme.outlineVariant.withValues(alpha: 0.2);
     final accentBarColor = accentColor == null
         ? null
         : Color.lerp(accentColor, scheme.surface, accentBarBlend)!.withValues(
             alpha: accentBarAlpha,
           );
 
-    final cardColor = _isInbox ? scheme.surfaceContainerLow : scheme.surface;
-    final shadowAlpha = _isInbox ? 0.02 : 0.05;
+    final cardColor = Color.alphaBlend(
+      (_isInbox ? scheme.surfaceContainerLow : scheme.surfaceContainerLowest)
+          .withValues(alpha: _isInbox ? 0.8 : 0.72),
+      scheme.surface,
+    );
+    final shadowAlpha = _isInbox ? 0.05 : 0.08;
 
     final card = DecoratedBox(
       decoration: BoxDecoration(
@@ -128,8 +132,9 @@ class ProjectEntityTile extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: scheme.shadow.withValues(alpha: shadowAlpha),
-            blurRadius: tokens.cardShadowBlur,
-            offset: tokens.cardShadowOffset,
+            blurRadius: tokens.cardShadowBlur + 6,
+            offset: const Offset(0, 10),
+            spreadRadius: -6,
           ),
         ],
       ),

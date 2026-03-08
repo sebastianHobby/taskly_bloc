@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_ui/src/foundations/theme/taskly_semantic_themes.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 import 'package:taskly_ui/src/primitives/modal_chrome_scope.dart';
 
@@ -156,6 +157,7 @@ class FormShell extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final tokens = TasklyTokens.of(context);
+    final sheetTheme = TasklySheetTheme.of(context);
 
     final modalChrome = ModalChromeScope.maybeOf(context);
     final isCompact = MediaQuery.sizeOf(context).width < 600;
@@ -235,8 +237,19 @@ class FormShell extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surface,
+        color: sheetTheme.background(TasklySheetVariant.editor),
         borderRadius: BorderRadius.vertical(top: Radius.circular(borderRadius)),
+        border: Border.all(
+          color: sheetTheme.border(TasklySheetVariant.editor),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: sheetTheme.shadowColor,
+            blurRadius: 28,
+            offset: const Offset(0, -10),
+            spreadRadius: -8,
+          ),
+        ],
       ),
       child: Stack(
         children: [
@@ -287,12 +300,13 @@ class FormShell extends StatelessWidget {
                     tokens.spaceLg3,
                   ),
                   decoration: BoxDecoration(
-                    color: colorScheme.surface,
+                    color: sheetTheme.background(TasklySheetVariant.editor),
                     boxShadow: [
                       BoxShadow(
-                        color: colorScheme.shadow.withValues(alpha: 0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, -2),
+                        color: sheetTheme.shadowColor.withValues(alpha: 0.85),
+                        blurRadius: 18,
+                        offset: const Offset(0, -6),
+                        spreadRadius: -8,
                       ),
                     ],
                   ),

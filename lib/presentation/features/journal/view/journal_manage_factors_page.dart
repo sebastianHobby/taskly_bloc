@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_li
 import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_utils.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_bottom_sheet.dart';
 import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
@@ -506,6 +507,7 @@ Future<String?> _showNameSheet(
   final tokens = TasklyTokens.of(context);
   final value = await showModalBottomSheet<String>(
     context: context,
+    sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
@@ -556,6 +558,7 @@ Future<String?> _showIconPicker(
   final tokens = TasklyTokens.of(context);
   return showModalBottomSheet<String>(
     context: context,
+    sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
@@ -585,6 +588,7 @@ Future<String?> _showGroupPicker(
 }) {
   return showModalBottomSheet<String>(
     context: context,
+    sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
     useSafeArea: true,
     showDragHandle: true,
     builder: (sheetContext) => SafeArea(

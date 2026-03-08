@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_page_layout.dart';
 import 'package:taskly_bloc/presentation/features/settings/widgets/accent_palette_gallery.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
 import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -15,9 +15,7 @@ class SettingsAppearancePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.appearanceTitle),
-      ),
+      appBar: AppBar(),
       body: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
         builder: (context, state) {
           if (state.isLoading) {
@@ -26,19 +24,19 @@ class SettingsAppearancePage extends StatelessWidget {
 
           final settings = state.settings;
 
-          return ResponsiveBody(
-            isExpandedLayout: context.isExpandedScreen,
-            child: ListView(
-              children: [
-                _SettingsSectionPadding(
-                  child: _ThemeModeCard(settings: settings),
-                ),
-                _SettingsSectionPadding(
-                  child: _TextSizeCard(settings: settings),
-                ),
-                SizedBox(height: TasklyTokens.of(context).spaceSm),
-              ],
-            ),
+          return SettingsPageLayout(
+            icon: Icons.palette_outlined,
+            title: context.l10n.appearanceTitle,
+            subtitle: context.l10n.settingsAppearanceSubtitle,
+            children: [
+              _SettingsSectionPadding(
+                child: _ThemeModeCard(settings: settings),
+              ),
+              _SettingsSectionPadding(
+                child: _TextSizeCard(settings: settings),
+              ),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
+            ],
           );
         },
       ),

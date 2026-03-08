@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_bottom_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/widgets/display_density_toggle.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -11,6 +12,7 @@ Future<void> showDisplayDensitySheet({
 }) async {
   await showModalBottomSheet<void>(
     context: context,
+    sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
     showDragHandle: true,
     isScrollControlled: true,
     builder: (sheetContext) {

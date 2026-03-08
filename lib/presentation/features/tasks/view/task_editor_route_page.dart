@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.da
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 
 /// Route-backed entry point for the task editor.
 ///
@@ -69,22 +70,24 @@ class _TaskEditorFullPage extends StatelessWidget {
     final demoDataProvider = context.read<DemoDataProvider>();
 
     return Scaffold(
-      body: SafeArea(
-        child: BlocProvider(
-          create: (context) => TaskDetailBloc(
-            taskId: taskId,
-            taskRepository: taskRepository,
-            taskChecklistRepository: taskChecklistRepository,
-            projectRepository: projectRepository,
-            valueRepository: valueRepository,
-            taskWriteService: taskWriteService,
-            taskMyDayWriteService: taskMyDayWriteService,
-            errorReporter: context.read<AppErrorReporter>(),
-            demoModeService: demoModeService,
-            demoDataProvider: demoDataProvider,
-          ),
-          child: TaskDetailSheet(
-            defaultProjectId: defaultProjectId,
+      body: TasklyPageGradientSurface(
+        child: SafeArea(
+          child: BlocProvider(
+            create: (context) => TaskDetailBloc(
+              taskId: taskId,
+              taskRepository: taskRepository,
+              taskChecklistRepository: taskChecklistRepository,
+              projectRepository: projectRepository,
+              valueRepository: valueRepository,
+              taskWriteService: taskWriteService,
+              taskMyDayWriteService: taskMyDayWriteService,
+              errorReporter: context.read<AppErrorReporter>(),
+              demoModeService: demoModeService,
+              demoDataProvider: demoDataProvider,
+            ),
+            child: TaskDetailSheet(
+              defaultProjectId: defaultProjectId,
+            ),
           ),
         ),
       ),

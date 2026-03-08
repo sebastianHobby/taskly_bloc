@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_ui/src/foundations/theme/taskly_semantic_themes.dart';
 import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
+import 'package:taskly_ui/src/primitives/taskly_card_surface.dart';
+import 'package:taskly_ui/src/primitives/taskly_reveal.dart';
 
 /// A reusable empty state widget that displays an icon, title, and optional
 /// description with a call-to-action button.
@@ -96,22 +98,11 @@ class EmptyStateWidget extends StatelessWidget {
          key: key,
        );
 
-  /// The icon to display.
   final IconData icon;
-
-  /// The title text to display.
   final String title;
-
-  /// An optional description text.
   final String? description;
-
-  /// The label for the optional action button.
   final String? actionLabel;
-
-  /// Callback when the action button is pressed.
   final VoidCallback? onAction;
-
-  /// The size of the icon.
   final double iconSize;
 
   @override
@@ -123,49 +114,78 @@ class EmptyStateWidget extends StatelessWidget {
     return Center(
       child: Padding(
         padding: EdgeInsets.all(tokens.spaceXxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: iconSize + tokens.spaceXxl,
-              height: iconSize + tokens.spaceXxl,
-              decoration: BoxDecoration(
-                color: emptyTheme.iconSurface,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: iconSize,
-                color: emptyTheme.iconColor,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 440),
+          child: TasklyReveal(
+            offset: TasklyMotionTheme.of(context).pageOffset,
+            child: TasklyCardSurface(
+              variant: TasklyCardVariant.subtle,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: iconSize + tokens.spaceXxl + tokens.spaceLg,
+                    height: iconSize + tokens.spaceXxl + tokens.spaceLg,
+                    decoration: BoxDecoration(
+                      color: emptyTheme.haloSurface,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: iconSize + tokens.spaceXxl,
+                        height: iconSize + tokens.spaceXxl,
+                        decoration: BoxDecoration(
+                          color: emptyTheme.iconSurface,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: emptyTheme.panelBorder),
+                          boxShadow: [
+                            BoxShadow(
+                              color: emptyTheme.panelShadow,
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                              spreadRadius: -8,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          icon,
+                          size: iconSize,
+                          color: emptyTheme.iconColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: tokens.spaceXl),
+                  Text(
+                    title,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: emptyTheme.titleColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (description != null) ...[
+                    SizedBox(height: tokens.spaceSm),
+                    Text(
+                      description!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: emptyTheme.descriptionColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                  if (actionLabel != null && onAction != null) ...[
+                    SizedBox(height: tokens.spaceXl),
+                    FilledButton.icon(
+                      onPressed: onAction,
+                      icon: const Icon(Icons.arrow_forward_rounded),
+                      label: Text(actionLabel!),
+                    ),
+                  ],
+                ],
               ),
             ),
-            SizedBox(height: tokens.spaceXl),
-            Text(
-              title,
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: emptyTheme.titleColor,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (description != null) ...[
-              SizedBox(height: tokens.spaceSm),
-              Text(
-                description!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: emptyTheme.descriptionColor,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            if (actionLabel != null && onAction != null) ...[
-              SizedBox(height: tokens.spaceXl),
-              FilledButton.tonal(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

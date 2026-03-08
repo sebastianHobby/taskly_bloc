@@ -40,6 +40,110 @@ enum TasklyEntityRowChromeVariant {
   bulkSelection,
 }
 
+class TasklyMotionTheme extends ThemeExtension<TasklyMotionTheme> {
+  const TasklyMotionTheme({
+    required this.shortDuration,
+    required this.mediumDuration,
+    required this.longDuration,
+    required this.standardCurve,
+    required this.emphasizedCurve,
+    required this.exitCurve,
+    required this.pageOffset,
+    required this.sectionOffset,
+    required this.sheetOffset,
+    required this.pageScale,
+    required this.sheetScale,
+  });
+
+  factory TasklyMotionTheme.fromTheme(ThemeData _) {
+    return const TasklyMotionTheme(
+      shortDuration: Duration(milliseconds: 180),
+      mediumDuration: Duration(milliseconds: 240),
+      longDuration: Duration(milliseconds: 320),
+      standardCurve: Curves.easeOutCubic,
+      emphasizedCurve: Curves.easeOutQuart,
+      exitCurve: Curves.easeInOutCubic,
+      pageOffset: Offset(0, 0.04),
+      sectionOffset: Offset(0, 0.06),
+      sheetOffset: Offset(0, 0.08),
+      pageScale: 0.985,
+      sheetScale: 0.97,
+    );
+  }
+
+  static TasklyMotionTheme of(BuildContext context) {
+    final theme = Theme.of(context);
+    return theme.extension<TasklyMotionTheme>() ??
+        TasklyMotionTheme.fromTheme(theme);
+  }
+
+  final Duration shortDuration;
+  final Duration mediumDuration;
+  final Duration longDuration;
+  final Curve standardCurve;
+  final Curve emphasizedCurve;
+  final Curve exitCurve;
+  final Offset pageOffset;
+  final Offset sectionOffset;
+  final Offset sheetOffset;
+  final double pageScale;
+  final double sheetScale;
+
+  AnimationStyle get bottomSheetAnimationStyle => AnimationStyle(
+    duration: mediumDuration,
+    reverseDuration: shortDuration,
+  );
+
+  @override
+  TasklyMotionTheme copyWith({
+    Duration? shortDuration,
+    Duration? mediumDuration,
+    Duration? longDuration,
+    Curve? standardCurve,
+    Curve? emphasizedCurve,
+    Curve? exitCurve,
+    Offset? pageOffset,
+    Offset? sectionOffset,
+    Offset? sheetOffset,
+    double? pageScale,
+    double? sheetScale,
+  }) {
+    return TasklyMotionTheme(
+      shortDuration: shortDuration ?? this.shortDuration,
+      mediumDuration: mediumDuration ?? this.mediumDuration,
+      longDuration: longDuration ?? this.longDuration,
+      standardCurve: standardCurve ?? this.standardCurve,
+      emphasizedCurve: emphasizedCurve ?? this.emphasizedCurve,
+      exitCurve: exitCurve ?? this.exitCurve,
+      pageOffset: pageOffset ?? this.pageOffset,
+      sectionOffset: sectionOffset ?? this.sectionOffset,
+      sheetOffset: sheetOffset ?? this.sheetOffset,
+      pageScale: pageScale ?? this.pageScale,
+      sheetScale: sheetScale ?? this.sheetScale,
+    );
+  }
+
+  @override
+  TasklyMotionTheme lerp(ThemeExtension<TasklyMotionTheme>? other, double t) {
+    if (other is! TasklyMotionTheme) return this;
+    return TasklyMotionTheme(
+      shortDuration: t < 0.5 ? shortDuration : other.shortDuration,
+      mediumDuration: t < 0.5 ? mediumDuration : other.mediumDuration,
+      longDuration: t < 0.5 ? longDuration : other.longDuration,
+      standardCurve: t < 0.5 ? standardCurve : other.standardCurve,
+      emphasizedCurve: t < 0.5 ? emphasizedCurve : other.emphasizedCurve,
+      exitCurve: t < 0.5 ? exitCurve : other.exitCurve,
+      pageOffset: Offset.lerp(pageOffset, other.pageOffset, t) ?? pageOffset,
+      sectionOffset:
+          Offset.lerp(sectionOffset, other.sectionOffset, t) ?? sectionOffset,
+      sheetOffset:
+          Offset.lerp(sheetOffset, other.sheetOffset, t) ?? sheetOffset,
+      pageScale: lerpDouble(pageScale, other.pageScale, t) ?? pageScale,
+      sheetScale: lerpDouble(sheetScale, other.sheetScale, t) ?? sheetScale,
+    );
+  }
+}
+
 class TasklyAppChromeTheme extends ThemeExtension<TasklyAppChromeTheme> {
   const TasklyAppChromeTheme({
     required this.navigationSurface,
@@ -168,31 +272,35 @@ class TasklyPageHeaderTheme extends ThemeExtension<TasklyPageHeaderTheme> {
         tokens.spaceSm2,
       ),
       surfaceByVariant: <TasklyHeaderVariant, Color>{
-        TasklyHeaderVariant.screen: scheme.surfaceContainerLowest.withValues(
-          alpha: 0.96,
+        TasklyHeaderVariant.screen: Color.alphaBlend(
+          scheme.surfaceContainerLowest.withValues(alpha: 0.82),
+          scheme.primaryContainer.withValues(alpha: 0.06),
         ),
-        TasklyHeaderVariant.section: scheme.surfaceContainerLow,
+        TasklyHeaderVariant.section: Color.alphaBlend(
+          scheme.surfaceContainerLow.withValues(alpha: 0.7),
+          scheme.surface,
+        ),
         TasklyHeaderVariant.hero: Color.alphaBlend(
-          scheme.primaryContainer.withValues(alpha: 0.14),
+          scheme.primaryContainer.withValues(alpha: 0.2),
           scheme.surface,
         ),
         TasklyHeaderVariant.compact: Colors.transparent,
       },
       borderByVariant: <TasklyHeaderVariant, Color>{
         TasklyHeaderVariant.screen: scheme.outlineVariant.withValues(
-          alpha: 0.4,
+          alpha: 0.2,
         ),
         TasklyHeaderVariant.section: scheme.outlineVariant.withValues(
-          alpha: 0.35,
+          alpha: 0.14,
         ),
-        TasklyHeaderVariant.hero: scheme.primary.withValues(alpha: 0.18),
+        TasklyHeaderVariant.hero: scheme.primary.withValues(alpha: 0.12),
         TasklyHeaderVariant.compact: Colors.transparent,
       },
       iconSize: tokens.spaceLg2,
       iconContainerPadding: tokens.spaceXs2,
       iconColor: scheme.primary,
       iconSurface: Color.alphaBlend(
-        scheme.primaryContainer.withValues(alpha: 0.65),
+        scheme.primaryContainer.withValues(alpha: 0.52),
         scheme.surface,
       ),
       titleColor: scheme.onSurface,
@@ -309,6 +417,8 @@ class TasklyPanelTheme extends ThemeExtension<TasklyPanelTheme> {
     required this.mutedBorder,
     required this.gradientStart,
     required this.gradientEnd,
+    required this.ambientPrimary,
+    required this.ambientSecondary,
     required this.softShadow,
     required this.primaryTint,
   });
@@ -316,13 +426,27 @@ class TasklyPanelTheme extends ThemeExtension<TasklyPanelTheme> {
   factory TasklyPanelTheme.fromTheme(ThemeData theme) {
     final scheme = theme.colorScheme;
     return TasklyPanelTheme(
-      subtleSurface: scheme.surfaceContainerLow,
-      emphasizedSurface: scheme.surfaceContainerHighest,
-      border: scheme.outlineVariant,
-      mutedBorder: scheme.outlineVariant.withValues(alpha: 0.5),
-      gradientStart: scheme.surface,
-      gradientEnd: scheme.surfaceContainerLow,
-      softShadow: scheme.shadow.withValues(alpha: 0.06),
+      subtleSurface: Color.alphaBlend(
+        scheme.surfaceContainerLow.withValues(alpha: 0.84),
+        scheme.surface,
+      ),
+      emphasizedSurface: Color.alphaBlend(
+        scheme.surfaceContainerHighest.withValues(alpha: 0.72),
+        scheme.surface,
+      ),
+      border: scheme.outlineVariant.withValues(alpha: 0.3),
+      mutedBorder: scheme.outlineVariant.withValues(alpha: 0.18),
+      gradientStart: Color.alphaBlend(
+        scheme.surfaceContainerLowest.withValues(alpha: 0.9),
+        scheme.surface,
+      ),
+      gradientEnd: Color.alphaBlend(
+        scheme.surfaceContainerLow.withValues(alpha: 0.7),
+        scheme.surface,
+      ),
+      ambientPrimary: scheme.primary.withValues(alpha: 0.12),
+      ambientSecondary: scheme.tertiary.withValues(alpha: 0.08),
+      softShadow: scheme.shadow.withValues(alpha: 0.08),
       primaryTint: scheme.primaryContainer,
     );
   }
@@ -339,6 +463,8 @@ class TasklyPanelTheme extends ThemeExtension<TasklyPanelTheme> {
   final Color mutedBorder;
   final Color gradientStart;
   final Color gradientEnd;
+  final Color ambientPrimary;
+  final Color ambientSecondary;
   final Color softShadow;
   final Color primaryTint;
 
@@ -350,6 +476,8 @@ class TasklyPanelTheme extends ThemeExtension<TasklyPanelTheme> {
     Color? mutedBorder,
     Color? gradientStart,
     Color? gradientEnd,
+    Color? ambientPrimary,
+    Color? ambientSecondary,
     Color? softShadow,
     Color? primaryTint,
   }) {
@@ -360,6 +488,8 @@ class TasklyPanelTheme extends ThemeExtension<TasklyPanelTheme> {
       mutedBorder: mutedBorder ?? this.mutedBorder,
       gradientStart: gradientStart ?? this.gradientStart,
       gradientEnd: gradientEnd ?? this.gradientEnd,
+      ambientPrimary: ambientPrimary ?? this.ambientPrimary,
+      ambientSecondary: ambientSecondary ?? this.ambientSecondary,
       softShadow: softShadow ?? this.softShadow,
       primaryTint: primaryTint ?? this.primaryTint,
     );
@@ -379,6 +509,12 @@ class TasklyPanelTheme extends ThemeExtension<TasklyPanelTheme> {
       mutedBorder: Color.lerp(mutedBorder, other.mutedBorder, t)!,
       gradientStart: Color.lerp(gradientStart, other.gradientStart, t)!,
       gradientEnd: Color.lerp(gradientEnd, other.gradientEnd, t)!,
+      ambientPrimary: Color.lerp(ambientPrimary, other.ambientPrimary, t)!,
+      ambientSecondary: Color.lerp(
+        ambientSecondary,
+        other.ambientSecondary,
+        t,
+      )!,
       softShadow: Color.lerp(softShadow, other.softShadow, t)!,
       primaryTint: Color.lerp(primaryTint, other.primaryTint, t)!,
     );
@@ -389,35 +525,77 @@ class TasklyCardTheme extends ThemeExtension<TasklyCardTheme> {
   const TasklyCardTheme({
     required this.surfaceByVariant,
     required this.borderByVariant,
+    required this.radiusByVariant,
+    required this.paddingByVariant,
+    required this.shadowBlurByVariant,
+    required this.shadowOffsetByVariant,
     required this.shadowColor,
   });
 
   factory TasklyCardTheme.fromTheme(ThemeData theme) {
     final scheme = theme.colorScheme;
+    final tokens = TasklyTokens.fromTheme(theme);
     return TasklyCardTheme(
       surfaceByVariant: <TasklyCardVariant, Color>{
-        TasklyCardVariant.summary: scheme.surface,
+        TasklyCardVariant.summary: Color.alphaBlend(
+          scheme.surfaceContainerLowest.withValues(alpha: 0.9),
+          scheme.surface,
+        ),
         TasklyCardVariant.insight: Color.alphaBlend(
-          scheme.primaryContainer.withValues(alpha: 0.24),
+          scheme.primaryContainer.withValues(alpha: 0.22),
           scheme.surface,
         ),
         TasklyCardVariant.maintenance: Color.alphaBlend(
-          scheme.secondaryContainer.withValues(alpha: 0.18),
+          scheme.secondaryContainer.withValues(alpha: 0.16),
           scheme.surface,
         ),
-        TasklyCardVariant.editor: scheme.surfaceContainerLowest,
-        TasklyCardVariant.subtle: scheme.surfaceContainerLowest,
+        TasklyCardVariant.editor: Color.alphaBlend(
+          scheme.surfaceContainerLowest.withValues(alpha: 0.95),
+          scheme.surface,
+        ),
+        TasklyCardVariant.subtle: Color.alphaBlend(
+          scheme.surfaceContainerLow.withValues(alpha: 0.72),
+          scheme.surface,
+        ),
       },
       borderByVariant: <TasklyCardVariant, Color>{
         TasklyCardVariant.summary: scheme.outlineVariant.withValues(
-          alpha: 0.42,
+          alpha: 0.14,
         ),
-        TasklyCardVariant.insight: scheme.primary.withValues(alpha: 0.18),
-        TasklyCardVariant.maintenance: scheme.secondary.withValues(alpha: 0.16),
-        TasklyCardVariant.editor: scheme.outlineVariant.withValues(alpha: 0.4),
-        TasklyCardVariant.subtle: scheme.outlineVariant.withValues(alpha: 0.28),
+        TasklyCardVariant.insight: scheme.primary.withValues(alpha: 0.1),
+        TasklyCardVariant.maintenance: scheme.secondary.withValues(alpha: 0.1),
+        TasklyCardVariant.editor: scheme.outlineVariant.withValues(alpha: 0.12),
+        TasklyCardVariant.subtle: scheme.outlineVariant.withValues(alpha: 0.08),
       },
-      shadowColor: scheme.shadow.withValues(alpha: 0.06),
+      radiusByVariant: <TasklyCardVariant, double>{
+        TasklyCardVariant.summary: tokens.radiusLg2,
+        TasklyCardVariant.insight: tokens.radiusLg2,
+        TasklyCardVariant.maintenance: tokens.radiusLg,
+        TasklyCardVariant.editor: tokens.radiusLg2,
+        TasklyCardVariant.subtle: tokens.radiusLg,
+      },
+      paddingByVariant: <TasklyCardVariant, EdgeInsets>{
+        TasklyCardVariant.summary: EdgeInsets.all(tokens.spaceLg),
+        TasklyCardVariant.insight: EdgeInsets.all(tokens.spaceLg),
+        TasklyCardVariant.maintenance: EdgeInsets.all(tokens.spaceLg),
+        TasklyCardVariant.editor: EdgeInsets.all(tokens.spaceLg),
+        TasklyCardVariant.subtle: EdgeInsets.all(tokens.spaceMd2),
+      },
+      shadowBlurByVariant: <TasklyCardVariant, double>{
+        TasklyCardVariant.summary: 24,
+        TasklyCardVariant.insight: 28,
+        TasklyCardVariant.maintenance: 22,
+        TasklyCardVariant.editor: 20,
+        TasklyCardVariant.subtle: 16,
+      },
+      shadowOffsetByVariant: const <TasklyCardVariant, Offset>{
+        TasklyCardVariant.summary: Offset(0, 10),
+        TasklyCardVariant.insight: Offset(0, 12),
+        TasklyCardVariant.maintenance: Offset(0, 10),
+        TasklyCardVariant.editor: Offset(0, 8),
+        TasklyCardVariant.subtle: Offset(0, 6),
+      },
+      shadowColor: scheme.shadow.withValues(alpha: 0.09),
     );
   }
 
@@ -429,20 +607,38 @@ class TasklyCardTheme extends ThemeExtension<TasklyCardTheme> {
 
   final Map<TasklyCardVariant, Color> surfaceByVariant;
   final Map<TasklyCardVariant, Color> borderByVariant;
+  final Map<TasklyCardVariant, double> radiusByVariant;
+  final Map<TasklyCardVariant, EdgeInsets> paddingByVariant;
+  final Map<TasklyCardVariant, double> shadowBlurByVariant;
+  final Map<TasklyCardVariant, Offset> shadowOffsetByVariant;
   final Color shadowColor;
 
   Color surface(TasklyCardVariant variant) => surfaceByVariant[variant]!;
   Color border(TasklyCardVariant variant) => borderByVariant[variant]!;
+  double radius(TasklyCardVariant variant) => radiusByVariant[variant]!;
+  EdgeInsets padding(TasklyCardVariant variant) => paddingByVariant[variant]!;
+  double shadowBlur(TasklyCardVariant variant) => shadowBlurByVariant[variant]!;
+  Offset shadowOffset(TasklyCardVariant variant) =>
+      shadowOffsetByVariant[variant]!;
 
   @override
   TasklyCardTheme copyWith({
     Map<TasklyCardVariant, Color>? surfaceByVariant,
     Map<TasklyCardVariant, Color>? borderByVariant,
+    Map<TasklyCardVariant, double>? radiusByVariant,
+    Map<TasklyCardVariant, EdgeInsets>? paddingByVariant,
+    Map<TasklyCardVariant, double>? shadowBlurByVariant,
+    Map<TasklyCardVariant, Offset>? shadowOffsetByVariant,
     Color? shadowColor,
   }) {
     return TasklyCardTheme(
       surfaceByVariant: surfaceByVariant ?? this.surfaceByVariant,
       borderByVariant: borderByVariant ?? this.borderByVariant,
+      radiusByVariant: radiusByVariant ?? this.radiusByVariant,
+      paddingByVariant: paddingByVariant ?? this.paddingByVariant,
+      shadowBlurByVariant: shadowBlurByVariant ?? this.shadowBlurByVariant,
+      shadowOffsetByVariant:
+          shadowOffsetByVariant ?? this.shadowOffsetByVariant,
       shadowColor: shadowColor ?? this.shadowColor,
     );
   }
@@ -466,6 +662,46 @@ class TasklyCardTheme extends ThemeExtension<TasklyCardTheme> {
             other.borderByVariant[variant],
             t,
           )!,
+      },
+      radiusByVariant: {
+        for (final variant in TasklyCardVariant.values)
+          variant:
+              lerpDouble(
+                radiusByVariant[variant],
+                other.radiusByVariant[variant],
+                t,
+              ) ??
+              radiusByVariant[variant]!,
+      },
+      paddingByVariant: {
+        for (final variant in TasklyCardVariant.values)
+          variant:
+              EdgeInsets.lerp(
+                paddingByVariant[variant],
+                other.paddingByVariant[variant],
+                t,
+              ) ??
+              paddingByVariant[variant]!,
+      },
+      shadowBlurByVariant: {
+        for (final variant in TasklyCardVariant.values)
+          variant:
+              lerpDouble(
+                shadowBlurByVariant[variant],
+                other.shadowBlurByVariant[variant],
+                t,
+              ) ??
+              shadowBlurByVariant[variant]!,
+      },
+      shadowOffsetByVariant: {
+        for (final variant in TasklyCardVariant.values)
+          variant:
+              Offset.lerp(
+                shadowOffsetByVariant[variant],
+                other.shadowOffsetByVariant[variant],
+                t,
+              ) ??
+              shadowOffsetByVariant[variant]!,
       },
       shadowColor: Color.lerp(shadowColor, other.shadowColor, t)!,
     );
@@ -562,6 +798,10 @@ class TasklyChipTheme extends ThemeExtension<TasklyChipTheme> {
 
 class TasklyEmptyStateTheme extends ThemeExtension<TasklyEmptyStateTheme> {
   const TasklyEmptyStateTheme({
+    required this.panelSurface,
+    required this.panelBorder,
+    required this.panelShadow,
+    required this.haloSurface,
     required this.iconSurface,
     required this.iconColor,
     required this.titleColor,
@@ -571,6 +811,13 @@ class TasklyEmptyStateTheme extends ThemeExtension<TasklyEmptyStateTheme> {
   factory TasklyEmptyStateTheme.fromTheme(ThemeData theme) {
     final scheme = theme.colorScheme;
     return TasklyEmptyStateTheme(
+      panelSurface: Color.alphaBlend(
+        scheme.surfaceContainerLow.withValues(alpha: 0.8),
+        scheme.surface,
+      ),
+      panelBorder: scheme.outlineVariant.withValues(alpha: 0.12),
+      panelShadow: scheme.shadow.withValues(alpha: 0.08),
+      haloSurface: scheme.primary.withValues(alpha: 0.08),
       iconSurface: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
       iconColor: scheme.onSurfaceVariant.withValues(alpha: 0.6),
       titleColor: scheme.onSurface,
@@ -584,6 +831,10 @@ class TasklyEmptyStateTheme extends ThemeExtension<TasklyEmptyStateTheme> {
         TasklyEmptyStateTheme.fromTheme(theme);
   }
 
+  final Color panelSurface;
+  final Color panelBorder;
+  final Color panelShadow;
+  final Color haloSurface;
   final Color iconSurface;
   final Color iconColor;
   final Color titleColor;
@@ -591,12 +842,20 @@ class TasklyEmptyStateTheme extends ThemeExtension<TasklyEmptyStateTheme> {
 
   @override
   TasklyEmptyStateTheme copyWith({
+    Color? panelSurface,
+    Color? panelBorder,
+    Color? panelShadow,
+    Color? haloSurface,
     Color? iconSurface,
     Color? iconColor,
     Color? titleColor,
     Color? descriptionColor,
   }) {
     return TasklyEmptyStateTheme(
+      panelSurface: panelSurface ?? this.panelSurface,
+      panelBorder: panelBorder ?? this.panelBorder,
+      panelShadow: panelShadow ?? this.panelShadow,
+      haloSurface: haloSurface ?? this.haloSurface,
       iconSurface: iconSurface ?? this.iconSurface,
       iconColor: iconColor ?? this.iconColor,
       titleColor: titleColor ?? this.titleColor,
@@ -611,6 +870,10 @@ class TasklyEmptyStateTheme extends ThemeExtension<TasklyEmptyStateTheme> {
   ) {
     if (other is! TasklyEmptyStateTheme) return this;
     return TasklyEmptyStateTheme(
+      panelSurface: Color.lerp(panelSurface, other.panelSurface, t)!,
+      panelBorder: Color.lerp(panelBorder, other.panelBorder, t)!,
+      panelShadow: Color.lerp(panelShadow, other.panelShadow, t)!,
+      haloSurface: Color.lerp(haloSurface, other.haloSurface, t)!,
       iconSurface: Color.lerp(iconSurface, other.iconSurface, t)!,
       iconColor: Color.lerp(iconColor, other.iconColor, t)!,
       titleColor: Color.lerp(titleColor, other.titleColor, t)!,
@@ -634,15 +897,24 @@ class TasklySheetTheme extends ThemeExtension<TasklySheetTheme> {
     final scheme = theme.colorScheme;
     return TasklySheetTheme(
       backgroundByVariant: <TasklySheetVariant, Color>{
-        TasklySheetVariant.standard: scheme.surface,
-        TasklySheetVariant.editor: scheme.surface,
-        TasklySheetVariant.supporting: scheme.surfaceContainerLow,
+        TasklySheetVariant.standard: Color.alphaBlend(
+          scheme.surfaceContainerLowest.withValues(alpha: 0.92),
+          scheme.surface,
+        ),
+        TasklySheetVariant.editor: Color.alphaBlend(
+          scheme.surfaceContainerLowest.withValues(alpha: 0.96),
+          scheme.surface,
+        ),
+        TasklySheetVariant.supporting: Color.alphaBlend(
+          scheme.surfaceContainerLow.withValues(alpha: 0.82),
+          scheme.surface,
+        ),
       },
       borderByVariant: <TasklySheetVariant, Color>{
         for (final variant in TasklySheetVariant.values)
-          variant: scheme.outlineVariant.withValues(alpha: 0.5),
+          variant: scheme.outlineVariant.withValues(alpha: 0.16),
       },
-      shadowColor: scheme.shadow.withValues(alpha: 0.06),
+      shadowColor: scheme.shadow.withValues(alpha: 0.12),
     );
   }
 

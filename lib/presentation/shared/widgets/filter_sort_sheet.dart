@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_bottom_sheet.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class FilterSortRadioOption {
@@ -63,6 +64,7 @@ Future<void> showFilterSortSheet({
 }) async {
   await showModalBottomSheet<void>(
     context: context,
+    sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
     showDragHandle: true,
     isScrollControlled: true,
     builder: (sheetContext) {

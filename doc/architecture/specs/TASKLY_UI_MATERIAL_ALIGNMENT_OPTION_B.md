@@ -15,6 +15,15 @@ package in `packages/taskly_ui`.
 - App surfaces consume shared entities/sections rather than duplicating
   screen-local variants.
 - Behavior differences should use style presets rather than ad-hoc component flags.
+- First-level and second-level screens should share the same page-surface and
+  page-header language unless a feature spec explicitly calls for a distinct
+  treatment.
+- Shared cards and empty states should use package-owned semantic variants
+  rather than raw Material defaults.
+- Typography hierarchy should be expressed through theme roles and shared chrome
+  primitives, not screen-local font tuning.
+- Motion should be shared and theme-driven for page entry, section reveal, and
+  sheet transitions rather than ad-hoc per-screen animation constants.
 
 ## Governance
 

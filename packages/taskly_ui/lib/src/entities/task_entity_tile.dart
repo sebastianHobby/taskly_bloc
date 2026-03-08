@@ -133,14 +133,20 @@ class TaskEntityTile extends StatelessWidget {
 
     final tile = DecoratedBox(
       decoration: BoxDecoration(
-        color: tileSurface,
+        color: Color.alphaBlend(
+          scheme.surfaceContainerLowest.withValues(alpha: 0.74),
+          tileSurface,
+        ),
         borderRadius: BorderRadius.circular(tokens.taskRadius),
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.2),
+        ),
         boxShadow: [
           BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.05),
-            blurRadius: tokens.cardShadowBlur,
-            offset: tokens.cardShadowOffset,
+            color: scheme.shadow.withValues(alpha: 0.08),
+            blurRadius: tokens.cardShadowBlur + 6,
+            offset: const Offset(0, 10),
+            spreadRadius: -6,
           ),
         ],
       ),

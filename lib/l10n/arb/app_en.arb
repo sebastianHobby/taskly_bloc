@@ -5136,6 +5136,34 @@
     "@settingsNotificationsSubtitle": {
         "description": "Subtitle for notifications settings entry"
     },
+    "settingsNotificationsPermissionRequiredInline": "Enable notifications to use this reminder.",
+    "@settingsNotificationsPermissionRequiredInline": {
+        "description": "Inline hint shown when reminder toggle depends on notification permission"
+    },
+    "settingsNotificationsUnsupportedTitle": "Notifications unavailable",
+    "@settingsNotificationsUnsupportedTitle": {
+        "description": "Title shown when notifications are not supported on the current platform"
+    },
+    "settingsNotificationsPermissionTitle": "Notifications are off",
+    "@settingsNotificationsPermissionTitle": {
+        "description": "Title shown when notification permission has been denied"
+    },
+    "settingsNotificationsUnsupportedBody": "This device or environment does not support local notifications for Taskly reminders.",
+    "@settingsNotificationsUnsupportedBody": {
+        "description": "Body shown when notifications are unsupported"
+    },
+    "settingsNotificationsPermissionBody": "Allow notifications so Taskly can remind you to plan your day.",
+    "@settingsNotificationsPermissionBody": {
+        "description": "Body shown when notification permission is denied"
+    },
+    "settingsNotificationsEnableAction": "Enable notifications",
+    "@settingsNotificationsEnableAction": {
+        "description": "CTA to request notification permission"
+    },
+    "settingsNotificationsOpenSettingsAction": "Open settings",
+    "@settingsNotificationsOpenSettingsAction": {
+        "description": "CTA to open OS settings for notification permissions"
+    },
     "settingsPlanMyDayReminderTitle": "Plan My Day reminder",
     "@settingsPlanMyDayReminderTitle": {
         "description": "Card title for Plan My Day reminder settings"
@@ -5151,6 +5179,38 @@
     "settingsPlanMyDayReminderTimeLabel": "Reminder time",
     "@settingsPlanMyDayReminderTimeLabel": {
         "description": "Label for selecting Plan My Day reminder time"
+    },
+    "settingsNotificationsPermissionTitle": "Turn on notifications",
+    "@settingsNotificationsPermissionTitle": {
+        "description": "Title for the permission panel when notifications are not enabled"
+    },
+    "settingsNotificationsPermissionBody": "Taskly needs notification permission to deliver reminder alerts.",
+    "@settingsNotificationsPermissionBody": {
+        "description": "Body text explaining why notification permission is needed"
+    },
+    "settingsNotificationsEnableAction": "Enable notifications",
+    "@settingsNotificationsEnableAction": {
+        "description": "Primary action to request notification permission"
+    },
+    "settingsNotificationsOpenSettingsAction": "Open system settings",
+    "@settingsNotificationsOpenSettingsAction": {
+        "description": "Secondary action to open the system notification settings"
+    },
+    "settingsNotificationsPermissionRequiredInline": "Notifications must be enabled for reminder alerts.",
+    "@settingsNotificationsPermissionRequiredInline": {
+        "description": "Inline helper text shown when the reminder toggle is on but notifications are blocked"
+    },
+    "settingsNotificationsUnsupportedTitle": "Notifications unavailable",
+    "@settingsNotificationsUnsupportedTitle": {
+        "description": "Title shown when the current platform does not support notifications"
+    },
+    "settingsNotificationsUnsupportedBody": "Reminder alerts are available only on Android and iPhone.",
+    "@settingsNotificationsUnsupportedBody": {
+        "description": "Body shown when the current platform does not support notifications"
+    },
+    "planMyDayReminderNotificationBody": "Open Taskly to plan your day.",
+    "@planMyDayReminderNotificationBody": {
+        "description": "Notification body for the Plan My Day reminder"
     },
     "settingsLanguageRegionTitle": "Language & Region",
     "@settingsLanguageRegionTitle": {
@@ -5365,6 +5425,10 @@
                 "type": "int"
             }
         }
+    },
+    "taskReminderNotificationBody": "Open Taskly to review this task reminder.",
+    "@taskReminderNotificationBody": {
+        "description": "Notification body for generic task reminders"
     },
     "priorityP1Label": "P1",
     "@priorityP1Label": {

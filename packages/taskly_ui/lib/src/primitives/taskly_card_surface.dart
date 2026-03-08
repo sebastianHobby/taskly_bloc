@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:taskly_ui/src/foundations/theme/taskly_semantic_themes.dart';
-import 'package:taskly_ui/src/foundations/tokens/taskly_tokens.dart';
 
 class TasklyCardSurface extends StatelessWidget {
   const TasklyCardSurface({
@@ -22,23 +21,25 @@ class TasklyCardSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cardTheme = TasklyCardTheme.of(context);
-    final tokens = TasklyTokens.of(context);
+    final resolvedRadius =
+        borderRadius ?? BorderRadius.circular(cardTheme.radius(variant));
 
     final content = DecoratedBox(
       decoration: BoxDecoration(
         color: cardTheme.surface(variant),
-        borderRadius: borderRadius ?? BorderRadius.circular(tokens.radiusMd2),
+        borderRadius: resolvedRadius,
         border: Border.all(color: cardTheme.border(variant)),
         boxShadow: [
           BoxShadow(
             color: cardTheme.shadowColor,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: cardTheme.shadowBlur(variant),
+            offset: cardTheme.shadowOffset(variant),
+            spreadRadius: -4,
           ),
         ],
       ),
       child: Padding(
-        padding: padding ?? EdgeInsets.all(tokens.spaceMd),
+        padding: padding ?? cardTheme.padding(variant),
         child: child,
       ),
     );

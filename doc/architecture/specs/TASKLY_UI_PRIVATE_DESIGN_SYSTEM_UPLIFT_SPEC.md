@@ -103,6 +103,8 @@ Delivered in this uplift:
 - Add semantic themes for cards, chips, filters, empty states, sheets, insight
   panels, and entity-row chrome.
 - Migrate high-visibility shared package widgets to semantic theme reads.
+- Expand page surface semantics to support ambient layered backgrounds for
+  branded top-level and editor/detail screens.
 
 ### Wave 3
 

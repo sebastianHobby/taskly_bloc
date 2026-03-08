@@ -16,6 +16,7 @@ import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/presentation/shared/utils/mood_label_utils.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class JournalEntryEditorRoutePage extends StatefulWidget {
@@ -1648,7 +1649,9 @@ class _JournalEntryEditorRoutePageState
                 child: saveButton,
               ),
             ),
-            body: SafeArea(child: body),
+            body: TasklyPageGradientSurface(
+              child: SafeArea(child: body),
+            ),
           );
         },
       ),

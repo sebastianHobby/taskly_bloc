@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_bottom_sheet.dart';
 import 'package:taskly_bloc/presentation/shared/utils/debouncer.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
@@ -69,6 +70,7 @@ class TrackerChoiceInput extends StatelessWidget {
   Future<void> _showChoiceSheet(BuildContext context) async {
     final result = await showModalBottomSheet<_ChoiceSelectionResult>(
       context: context,
+      sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => _TrackerChoiceBottomSheet(
@@ -150,6 +152,7 @@ class TrackerQuantityInput extends StatelessWidget {
   Future<void> _showEditSheet(BuildContext context) async {
     final result = await showModalBottomSheet<_QuantityEditResult>(
       context: context,
+      sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
       isScrollControlled: true,
       useSafeArea: true,
       builder: (context) => _TrackerQuantityEditBottomSheet(

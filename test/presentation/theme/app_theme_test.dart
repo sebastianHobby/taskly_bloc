@@ -98,10 +98,19 @@ void main() {
       theme.colorScheme.surfaceContainerLow,
     );
     expect(headerTheme!.iconColor, theme.colorScheme.primary);
-    expect(panelTheme!.subtleSurface, theme.colorScheme.surfaceContainerLow);
+    expect(
+      panelTheme!.subtleSurface,
+      Color.alphaBlend(
+        theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.84),
+        theme.colorScheme.surface,
+      ),
+    );
     expect(
       cardTheme!.surface(TasklyCardVariant.subtle),
-      theme.colorScheme.surfaceContainerLowest,
+      Color.alphaBlend(
+        theme.colorScheme.surfaceContainerLowest.withValues(alpha: 0.7),
+        theme.colorScheme.surface,
+      ),
     );
     expect(
       chipTheme!.background(TasklyChipVariant.status),
@@ -110,7 +119,10 @@ void main() {
     expect(emptyStateTheme!.titleColor, theme.colorScheme.onSurface);
     expect(
       sheetTheme!.background(TasklySheetVariant.supporting),
-      theme.colorScheme.surfaceContainerLow,
+      Color.alphaBlend(
+        theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.82),
+        theme.colorScheme.surface,
+      ),
     );
     expect(insightTheme!.highlight, theme.colorScheme.primary);
     expect(

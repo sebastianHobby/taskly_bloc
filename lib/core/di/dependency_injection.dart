@@ -37,12 +37,16 @@ import 'package:taskly_bloc/presentation/shared/session/session_allocation_cache
 import 'package:taskly_bloc/presentation/shared/session/session_shared_data_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_mode_service.dart';
 import 'package:taskly_bloc/presentation/shared/session/demo_data_provider.dart';
+import 'package:taskly_bloc/core/notifications/notification_permission_service.dart';
+import 'package:taskly_bloc/core/notifications/taskly_notification_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
 // Register all the classes you want to inject
 Future<void> setupDependencies() async {
   final dataStack = await TasklyDataStack.initialize();
+  final notificationService = TasklyNotificationService();
+  await notificationService.initialize();
 
   // Core stack handles.
   getIt
@@ -65,10 +69,12 @@ Future<void> setupDependencies() async {
         nowService: getIt<NowService>(),
       ),
     )
+    ..registerSingleton<NotificationPermissionService>(notificationService)
     // Bind taskly_data implementations to taskly_domain contracts.
     ..registerSingleton<TasklyDataBindings>(
       dataStack.createBindings(
         clock: getIt<Clock>(),
+        notificationPresenter: notificationService.call,
       ),
     )
     ..registerSingleton<OccurrenceReadService>(

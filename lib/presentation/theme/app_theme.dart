@@ -62,6 +62,7 @@ class AppTheme {
     );
     final tokens = TasklyTokens.fromTheme(base);
     final chromeTheme = TasklyAppChromeTheme.fromTheme(base);
+    final motionTheme = TasklyMotionTheme.fromTheme(base);
     final pageHeaderTheme = TasklyPageHeaderTheme.fromTheme(base);
     final panelTheme = TasklyPanelTheme.fromTheme(base);
     final cardTheme = TasklyCardTheme.fromTheme(base);
@@ -75,6 +76,7 @@ class AppTheme {
       extensions: <ThemeExtension<dynamic>>[
         tokens,
         chromeTheme,
+        motionTheme,
         pageHeaderTheme,
         panelTheme,
         cardTheme,
@@ -120,6 +122,7 @@ class AppTheme {
       textTheme: textTheme,
     );
     final chromeTheme = TasklyAppChromeTheme.fromTheme(semanticBase);
+    final motionTheme = TasklyMotionTheme.fromTheme(semanticBase);
     final pageHeaderTheme = TasklyPageHeaderTheme.fromTheme(semanticBase);
     final panelTheme = TasklyPanelTheme.fromTheme(semanticBase);
     final cardTheme = TasklyCardTheme.fromTheme(semanticBase);
@@ -133,6 +136,7 @@ class AppTheme {
       extensions: <ThemeExtension<dynamic>>[
         tokens,
         chromeTheme,
+        motionTheme,
         pageHeaderTheme,
         panelTheme,
         cardTheme,
@@ -163,10 +167,13 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(tokens.radiusLg),
           side: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.12),
           ),
         ),
-        color: colorScheme.surface,
+        color: Color.alphaBlend(
+          colorScheme.surfaceContainerLowest.withValues(alpha: 0.9),
+          colorScheme.surface,
+        ),
         margin: EdgeInsets.symmetric(
           horizontal: tokens.spaceMd,
           vertical: tokens.spaceXs,
@@ -218,12 +225,61 @@ class AppTheme {
 
       // Floating action button theme
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        elevation: 2,
-        highlightElevation: 4,
+        elevation: 8,
+        highlightElevation: 12,
+        focusElevation: 10,
+        hoverElevation: 10,
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
+        extendedTextStyle: textTheme.titleSmall?.copyWith(
+          color: colorScheme.onPrimary,
+          fontWeight: FontWeight.w700,
+        ),
+        extendedPadding: EdgeInsets.symmetric(
+          horizontal: tokens.spaceLg,
+          vertical: tokens.spaceMd,
+        ),
+        sizeConstraints: BoxConstraints.tightFor(
+          width: 64,
+          height: 64,
+        ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.radiusLg),
+          borderRadius: BorderRadius.circular(tokens.radiusXxl),
+        ),
+      ),
+
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: 2,
+          shadowColor: colorScheme.shadow.withValues(alpha: 0.18),
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spaceLg,
+            vertical: tokens.spaceMd,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(tokens.radiusLg),
+          ),
+          textStyle: textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spaceLg,
+            vertical: tokens.spaceMd,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(tokens.radiusLg),
+          ),
+          side: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.65),
+          ),
+          textStyle: textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
 
@@ -355,6 +411,13 @@ class AppTheme {
         dragHandleSize: Size(tokens.spaceXxl, tokens.spaceXs),
         showDragHandle: true,
       ),
+
+      pageTransitionsTheme: PageTransitionsTheme(
+        builders: {
+          for (final platform in TargetPlatform.values)
+            platform: const _TasklyPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 
@@ -363,49 +426,50 @@ class AppTheme {
     return TextTheme(
       displayLarge: TextStyle(
         fontSize: 57,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w500,
         letterSpacing: -0.25,
         color: colorScheme.onSurface,
       ),
       displayMedium: TextStyle(
         fontSize: 45,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w500,
         color: colorScheme.onSurface,
       ),
       displaySmall: TextStyle(
         fontSize: 36,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w600,
         color: colorScheme.onSurface,
       ),
       headlineLarge: TextStyle(
         fontSize: 32,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w600,
         color: colorScheme.onSurface,
       ),
       headlineMedium: TextStyle(
         fontSize: 28,
-        fontWeight: FontWeight.w400,
+        fontWeight: FontWeight.w600,
         color: colorScheme.onSurface,
       ),
       headlineSmall: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.w400,
+        fontSize: 25,
+        fontWeight: FontWeight.w700,
         color: colorScheme.onSurface,
       ),
       titleLarge: TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.w500,
+        fontSize: 23,
+        fontWeight: FontWeight.w700,
+        letterSpacing: -0.15,
         color: colorScheme.onSurface,
       ),
       titleMedium: TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.15,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.05,
         color: colorScheme.onSurface,
       ),
       titleSmall: TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
         letterSpacing: 0.1,
         color: colorScheme.onSurface,
       ),
@@ -424,21 +488,21 @@ class AppTheme {
         color: colorScheme.onSurface,
       ),
       bodySmall: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w400,
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
         letterSpacing: 0.4,
         color: colorScheme.onSurfaceVariant,
       ),
       labelLarge: TextStyle(
         fontSize: 14,
-        fontWeight: FontWeight.w500,
+        fontWeight: FontWeight.w700,
         letterSpacing: 0.1,
         color: colorScheme.onSurface,
       ),
       labelMedium: TextStyle(
         fontSize: 12,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.5,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.65,
         color: colorScheme.onSurface,
       ),
       labelSmall: TextStyle(
@@ -446,6 +510,38 @@ class AppTheme {
         fontWeight: FontWeight.w500,
         letterSpacing: 0.5,
         color: colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+}
+
+class _TasklyPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _TasklyPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInOutCubic,
+    );
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.03),
+          end: Offset.zero,
+        ).animate(curved),
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.992, end: 1).animate(curved),
+          child: child,
+        ),
       ),
     );
   }

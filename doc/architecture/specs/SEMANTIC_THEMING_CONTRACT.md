@@ -31,6 +31,7 @@ chrome, panels, and shared component appearance easy to restyle later.
   - panel surfaces
   - panel borders
   - page gradient colors
+  - ambient page accent glows
   - soft shadow color
 - `TasklyCardTheme`
   - summary/insight/subtle card surfaces
@@ -75,3 +76,11 @@ When touching existing UI:
 
 These components are the preferred entry points for top-level page chrome and
 repeated page surface treatments.
+
+## Header usage guidance
+
+- Top-level landing pages should prefer `TasklyHeaderVariant.hero` or
+  `TasklyHeaderVariant.screen`.
+- Deeper drill-in/detail/settings pages should prefer
+  `TasklyHeaderVariant.compact` to preserve density while keeping branded
+  hierarchy.

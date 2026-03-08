@@ -391,7 +391,10 @@ final class TasklyDataStack implements SyncAnomalyStream {
   ///
   /// The stack itself owns the wiring between infra + repositories. The app
   /// consumes domain services via the returned bindings.
-  TasklyDataBindings createBindings({Clock clock = systemClock}) {
+  TasklyDataBindings createBindings({
+    Clock clock = systemClock,
+    NotificationPresenter? notificationPresenter,
+  }) {
     final settingsRepository = SettingsRepository(
       driftDb: driftDb,
       clock: clock,
@@ -510,7 +513,8 @@ final class TasklyDataStack implements SyncAnomalyStream {
       clock: clock,
     );
 
-    final notificationPresenter = LoggingNotificationPresenter().call;
+    final resolvedNotificationPresenter =
+        notificationPresenter ?? LoggingNotificationPresenter().call;
 
     final pendingNotificationsRepository = PendingNotificationsRepositoryImpl(
       driftDb,
@@ -519,7 +523,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
 
     final pendingNotificationsProcessor = PendingNotificationsProcessor(
       repository: pendingNotificationsRepository,
-      presenter: notificationPresenter,
+      presenter: resolvedNotificationPresenter,
     );
 
     final initialSyncService = PowerSyncInitialSyncService(syncDb);
@@ -552,7 +556,7 @@ final class TasklyDataStack implements SyncAnomalyStream {
       analyticsRepository: analyticsRepository,
       journalRepository: journalRepository,
       analyticsService: analyticsService,
-      notificationPresenter: notificationPresenter,
+      notificationPresenter: resolvedNotificationPresenter,
       pendingNotificationsRepository: pendingNotificationsRepository,
       pendingNotificationsProcessor: pendingNotificationsProcessor,
       initialSyncService: initialSyncService,

@@ -23,7 +23,49 @@ class TasklyPageGradientSurface extends StatelessWidget {
           end: Alignment.bottomCenter,
         ),
       ),
-      child: child,
+      child: Stack(
+        children: [
+          Positioned(
+            top: -120,
+            right: -56,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    radius: 0.92,
+                    colors: [
+                      panelTheme.ambientPrimary,
+                      panelTheme.ambientPrimary.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+                child: const SizedBox(width: 280, height: 280),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 180,
+            left: -88,
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    radius: 1,
+                    colors: [
+                      panelTheme.ambientSecondary,
+                      panelTheme.ambientSecondary.withValues(alpha: 0),
+                    ],
+                  ),
+                ),
+                child: const SizedBox(width: 232, height: 232),
+              ),
+            ),
+          ),
+          child,
+        ],
+      ),
     );
   }
 }

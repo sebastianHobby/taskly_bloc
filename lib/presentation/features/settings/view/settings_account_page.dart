@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_page_layout.dart';
+import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class SettingsAccountPage extends StatelessWidget {
@@ -13,18 +15,16 @@ class SettingsAccountPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.accountTitle),
-      ),
-      body: ResponsiveBody(
-        isExpandedLayout: context.isExpandedScreen,
-        child: ListView(
-          children: [
-            const _AccountInfo(),
-            const _SignOutItem(),
-            SizedBox(height: TasklyTokens.of(context).spaceSm),
-          ],
-        ),
+      appBar: AppBar(),
+      body: SettingsPageLayout(
+        icon: Icons.person_outline,
+        title: context.l10n.accountTitle,
+        subtitle: context.l10n.settingsAccountSubtitle,
+        children: [
+          const _AccountInfo(),
+          const _SignOutItem(),
+          SizedBox(height: TasklyTokens.of(context).spaceSm),
+        ],
       ),
     );
   }
@@ -48,22 +48,53 @@ class _AccountInfo extends StatelessWidget {
             user.metadata?['full_name'] as String? ??
             user.metadata?['name'] as String?;
 
-        return ListTile(
-          leading: CircleAvatar(
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            child: Text(
-              _getInitials(displayName, email),
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.bold,
-              ),
+        final tokens = TasklyTokens.of(context);
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.sectionPaddingH,
+            tokens.spaceSm,
+            tokens.sectionPaddingH,
+            0,
+          ),
+          child: TasklyCardSurface(
+            variant: TasklyCardVariant.summary,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  child: Text(
+                    _getInitials(displayName, email),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(width: tokens.spaceMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName ?? context.l10n.userFallbackLabel,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      if (email != null) ...[
+                        SizedBox(height: tokens.spaceXs2),
+                        Text(
+                          email,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          title: Text(
-            displayName ?? context.l10n.userFallbackLabel,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          subtitle: email != null ? Text(email) : null,
         );
       },
     );
@@ -104,16 +135,21 @@ class _SignOutItem extends StatelessWidget {
         );
       },
       child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: TasklyTokens.of(context).spaceLg,
-          vertical: TasklyTokens.of(context).spaceSm,
+        padding: EdgeInsets.fromLTRB(
+          TasklyTokens.of(context).sectionPaddingH,
+          TasklyTokens.of(context).spaceSm,
+          TasklyTokens.of(context).sectionPaddingH,
+          TasklyTokens.of(context).spaceSm,
         ),
-        child: OutlinedButton.icon(
-          onPressed: () => _performSignOut(context),
-          icon: const Icon(Icons.logout_rounded),
-          label: Text(context.l10n.signOutLabel),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.error,
+        child: TasklyCardSurface(
+          variant: TasklyCardVariant.editor,
+          child: OutlinedButton.icon(
+            onPressed: () => _performSignOut(context),
+            icon: const Icon(Icons.logout_rounded),
+            label: Text(context.l10n.signOutLabel),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
           ),
         ),
       ),

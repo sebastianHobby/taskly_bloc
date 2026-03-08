@@ -5,7 +5,8 @@ import 'package:taskly_domain/settings.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/review/view/weekly_review_modal.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_page_layout.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_bottom_sheet.dart';
 import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -15,9 +16,7 @@ class SettingsWeeklyReviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.weeklyReviewTitle),
-      ),
+      appBar: AppBar(),
       body: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
         builder: (context, state) {
           if (state.isLoading) {
@@ -27,15 +26,15 @@ class SettingsWeeklyReviewPage extends StatelessWidget {
           final settings = state.settings;
           final tokens = TasklyTokens.of(context);
 
-          return ResponsiveBody(
-            isExpandedLayout: context.isExpandedScreen,
-            child: ListView(
-              padding: EdgeInsets.only(bottom: tokens.spaceSm),
-              children: [
-                _WeeklyReviewSchedule(settings: settings),
-                _WeeklyReviewMaintenance(settings: settings),
-              ],
-            ),
+          return SettingsPageLayout(
+            icon: Icons.event_repeat_outlined,
+            title: context.l10n.weeklyReviewTitle,
+            subtitle: context.l10n.settingsWeeklyReviewSubtitle,
+            children: [
+              _WeeklyReviewSchedule(settings: settings),
+              _WeeklyReviewMaintenance(settings: settings),
+              SizedBox(height: tokens.spaceSm),
+            ],
           );
         },
       ),
@@ -161,6 +160,7 @@ class _WeeklyReviewScheduleState extends State<_WeeklyReviewSchedule> {
 
     return showModalBottomSheet<int>(
       context: context,
+      sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
       showDragHandle: true,
       builder: (context) {
         return ListView(
@@ -190,6 +190,7 @@ class _WeeklyReviewScheduleState extends State<_WeeklyReviewSchedule> {
     const options = [1, 2];
     return showModalBottomSheet<int>(
       context: context,
+      sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
       showDragHandle: true,
       builder: (context) {
         return ListView(

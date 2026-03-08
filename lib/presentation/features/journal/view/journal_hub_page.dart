@@ -9,6 +9,7 @@ import 'package:taskly_bloc/presentation/features/journal/utils/tracker_icon_uti
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_bottom_sheet.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/services.dart';
@@ -233,6 +234,7 @@ class _JournalHubPageState extends State<JournalHubPage> {
 
     final applied = await showModalBottomSheet<bool>(
       context: context,
+      sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
@@ -766,6 +768,7 @@ class _DailySummaryGrid extends StatelessWidget {
     final tokens = TasklyTokens.of(context);
     await showModalBottomSheet<void>(
       context: context,
+      sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
       showDragHandle: true,
       useSafeArea: true,
       builder: (sheetContext) {

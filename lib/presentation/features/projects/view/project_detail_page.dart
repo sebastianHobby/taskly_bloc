@@ -38,9 +38,11 @@ import 'package:taskly_domain/taskly_domain.dart' show EntityType;
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 import 'package:taskly_ui/taskly_ui_feed.dart';
 import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_sections.dart';
+import 'package:taskly_ui/taskly_ui_theme.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
 class ProjectDetailPage extends StatelessWidget {
@@ -572,7 +574,6 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                     : AppBar(
                         centerTitle: true,
                         toolbarHeight: chrome.projectsAppBarHeight,
-                        title: appBarTitle.isEmpty ? null : Text(appBarTitle),
                         leading: canPop
                             ? IconButton(
                                 tooltip: context.l10n.backLabel,
@@ -668,39 +669,41 @@ class _ProjectDetailViewState extends State<_ProjectDetailView> {
                         onCreateTask: () => _openNewTaskEditor(context),
                         onCreateRoutine: () => _openNewRoutineEditor(context),
                       ),
-                body: BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
-                  builder: (context, state) {
-                    return switch (state) {
-                      ProjectOverviewLoading() => const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                      ProjectOverviewError(:final message) => Center(
-                        child: Text(message),
-                      ),
-                      ProjectOverviewLoaded(
-                        :final project,
-                        :final tasks,
-                        :final routines,
-                        :final todayDayKeyUtc,
-                      ) =>
-                        _ProjectDetailBody(
-                          project: project,
-                          tasks: tasks,
-                          routines: routines,
-                          todayDayKeyUtc: todayDayKeyUtc,
-                          selectionState: selectionState,
-                          sortOrder: _sortOrder,
-                          showCompleted: _showCompleted,
-                          tasksCollapsed: _tasksCollapsed,
-                          routinesCollapsed: _routinesCollapsed,
-                          onToggleTasksCollapsed: _toggleTasksCollapsed,
-                          onToggleRoutinesCollapsed: _toggleRoutinesCollapsed,
-                          onRoutineLogRequested: _logRoutines,
-                          onRoutineUnlogRequested: _unlogRoutines,
-                          density: density,
+                body: TasklyPageGradientSurface(
+                  child: BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
+                    builder: (context, state) {
+                      return switch (state) {
+                        ProjectOverviewLoading() => const Center(
+                          child: CircularProgressIndicator(),
                         ),
-                    };
-                  },
+                        ProjectOverviewError(:final message) => Center(
+                          child: Text(message),
+                        ),
+                        ProjectOverviewLoaded(
+                          :final project,
+                          :final tasks,
+                          :final routines,
+                          :final todayDayKeyUtc,
+                        ) =>
+                          _ProjectDetailBody(
+                            project: project,
+                            tasks: tasks,
+                            routines: routines,
+                            todayDayKeyUtc: todayDayKeyUtc,
+                            selectionState: selectionState,
+                            sortOrder: _sortOrder,
+                            showCompleted: _showCompleted,
+                            tasksCollapsed: _tasksCollapsed,
+                            routinesCollapsed: _routinesCollapsed,
+                            onToggleTasksCollapsed: _toggleTasksCollapsed,
+                            onToggleRoutinesCollapsed: _toggleRoutinesCollapsed,
+                            onRoutineLogRequested: _logRoutines,
+                            onRoutineUnlogRequested: _unlogRoutines,
+                            density: density,
+                          ),
+                      };
+                    },
+                  ),
                 ),
               );
             },
@@ -907,6 +910,15 @@ class _ProjectDetailBody extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              TasklyPageHeader(
+                icon: isInbox
+                    ? Icons.inbox_outlined
+                    : Icons.folder_open_rounded,
+                title: isInbox
+                    ? context.l10n.inboxLabel
+                    : context.l10n.projectDetailsTitle,
+                variant: TasklyHeaderVariant.compact,
+              ),
               _ProjectDetailHeader(
                 data: headerData,
                 isInbox: isInbox,
@@ -942,6 +954,15 @@ class _ProjectDetailBody extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              TasklyPageHeader(
+                icon: isInbox
+                    ? Icons.inbox_outlined
+                    : Icons.folder_open_rounded,
+                title: isInbox
+                    ? context.l10n.inboxLabel
+                    : context.l10n.projectDetailsTitle,
+                variant: TasklyHeaderVariant.compact,
+              ),
               _ProjectDetailHeader(
                 data: headerData,
                 isInbox: isInbox,
@@ -982,6 +1003,13 @@ class _ProjectDetailBody extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            TasklyPageHeader(
+              icon: isInbox ? Icons.inbox_outlined : Icons.folder_open_rounded,
+              title: isInbox
+                  ? context.l10n.inboxLabel
+                  : context.l10n.projectDetailsTitle,
+              variant: TasklyHeaderVariant.compact,
+            ),
             _ProjectDetailHeader(
               data: headerData,
               isInbox: isInbox,
@@ -1187,39 +1215,42 @@ class _ProjectDetailHeader extends StatelessWidget {
       ],
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (canEdit)
-          InkWell(
-            onTap: onEditRequested,
-            borderRadius: BorderRadius.circular(tokens.radiusMd),
-            child: Padding(
+    return TasklyCardSurface(
+      padding: EdgeInsets.all(tokens.spaceMd),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (canEdit)
+            InkWell(
+              onTap: onEditRequested,
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+              child: Padding(
+                padding: EdgeInsets.only(bottom: tokens.spaceXs2),
+                child: titleRow,
+              ),
+            )
+          else
+            Padding(
               padding: EdgeInsets.only(bottom: tokens.spaceXs2),
               child: titleRow,
             ),
-          )
-        else
-          Padding(
-            padding: EdgeInsets.only(bottom: tokens.spaceXs2),
-            child: titleRow,
-          ),
-        if (showInboxHint)
-          Padding(
-            padding: EdgeInsets.only(bottom: tokens.spaceXs2),
-            child: Text(
-              l10n.inboxNonEmptyHint,
-              style: inboxHintStyle,
+          if (showInboxHint)
+            Padding(
+              padding: EdgeInsets.only(bottom: tokens.spaceXs2),
+              child: Text(
+                l10n.inboxNonEmptyHint,
+                style: inboxHintStyle,
+              ),
             ),
-          ),
-        if (metaChildren.isNotEmpty)
-          Wrap(
-            spacing: tokens.spaceSm2,
-            runSpacing: tokens.spaceXs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: metaChildren,
-          ),
-      ],
+          if (metaChildren.isNotEmpty)
+            Wrap(
+              spacing: tokens.spaceSm2,
+              runSpacing: tokens.spaceXs,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: metaChildren,
+            ),
+        ],
+      ),
     );
   }
 }
@@ -1399,9 +1430,22 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
           child: Ink(
             padding: EdgeInsets.all(tokens.spaceSm),
             decoration: BoxDecoration(
-              color: scheme.surfaceContainerLow,
+              color: Color.alphaBlend(
+                scheme.surfaceContainerLow.withValues(alpha: 0.7),
+                scheme.surface,
+              ),
               borderRadius: BorderRadius.circular(tokens.radiusMd),
-              border: Border.all(color: scheme.outlineVariant),
+              border: Border.all(
+                color: scheme.outlineVariant.withValues(alpha: 0.18),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: scheme.shadow.withValues(alpha: 0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -6,
+                ),
+              ],
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1479,9 +1523,22 @@ class _ProjectNotesEditorState extends State<_ProjectNotesEditor> {
         Container(
           height: editorHeight,
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerLow,
+            color: Color.alphaBlend(
+              scheme.surfaceContainerLow.withValues(alpha: 0.76),
+              scheme.surface,
+            ),
             borderRadius: BorderRadius.circular(tokens.radiusMd),
-            border: Border.all(color: scheme.outlineVariant),
+            border: Border.all(
+              color: scheme.outlineVariant.withValues(alpha: 0.18),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: scheme.shadow.withValues(alpha: 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+                spreadRadius: -6,
+              ),
+            ],
           ),
           child: Stack(
             children: [

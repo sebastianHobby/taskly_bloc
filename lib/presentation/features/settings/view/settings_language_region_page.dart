@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/settings.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_page_layout.dart';
 import 'package:taskly_ui/taskly_ui_primitives.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -13,9 +13,7 @@ class SettingsLanguageRegionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.settingsLanguageRegionSection),
-      ),
+      appBar: AppBar(),
       body: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
         builder: (context, state) {
           if (state.isLoading) {
@@ -24,19 +22,19 @@ class SettingsLanguageRegionPage extends StatelessWidget {
 
           final settings = state.settings;
 
-          return ResponsiveBody(
-            isExpandedLayout: context.isExpandedScreen,
-            child: ListView(
-              children: [
-                _SettingsSectionPadding(
-                  child: _LanguageCard(settings: settings),
-                ),
-                _SettingsSectionPadding(
-                  child: _HomeTimeZoneCard(settings: settings),
-                ),
-                SizedBox(height: TasklyTokens.of(context).spaceSm),
-              ],
-            ),
+          return SettingsPageLayout(
+            icon: Icons.language_outlined,
+            title: context.l10n.settingsLanguageRegionSection,
+            subtitle: context.l10n.settingsLanguageRegionSubtitle,
+            children: [
+              _SettingsSectionPadding(
+                child: _LanguageCard(settings: settings),
+              ),
+              _SettingsSectionPadding(
+                child: _HomeTimeZoneCard(settings: settings),
+              ),
+              SizedBox(height: TasklyTokens.of(context).spaceSm),
+            ],
           );
         },
       ),

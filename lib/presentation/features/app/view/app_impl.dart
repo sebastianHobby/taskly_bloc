@@ -23,6 +23,7 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher_defaults.dart';
 import 'package:taskly_bloc/presentation/features/micro_learning/bloc/micro_learning_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/notification_permission_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
 import 'package:taskly_bloc/presentation/routing/session_entry_policy.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
@@ -47,6 +48,7 @@ import 'package:taskly_domain/attention.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/telemetry.dart';
+import 'package:taskly_bloc/core/notifications/notification_permission_service.dart';
 
 /// Root application widget with router-based auth gating.
 ///
@@ -234,6 +236,12 @@ class App extends StatelessWidget {
                 nowService: context.read<NowService>(),
                 errorReporter: context.read<AppErrorReporter>(),
               )..add(const GlobalSettingsEvent.started()),
+            ),
+            BlocProvider<NotificationPermissionBloc>(
+              lazy: false,
+              create: (context) => NotificationPermissionBloc(
+                permissionService: getIt<NotificationPermissionService>(),
+              )..add(const NotificationPermissionStarted()),
             ),
             BlocProvider<AuthBloc>(
               lazy: false,

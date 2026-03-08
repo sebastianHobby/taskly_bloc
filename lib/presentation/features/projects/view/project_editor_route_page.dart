@@ -5,6 +5,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
+import 'package:taskly_ui/taskly_ui_chrome.dart';
 
 /// Route-backed entry point for the project editor.
 ///
@@ -47,12 +48,14 @@ class _ProjectEditorFullPage extends StatelessWidget {
     final projectWriteService = context.read<ProjectWriteService>();
 
     return Scaffold(
-      body: SafeArea(
-        child: ProjectEditSheetPage(
-          projectId: projectId,
-          projectRepository: projectRepository,
-          valueRepository: valueRepository,
-          projectWriteService: projectWriteService,
+      body: TasklyPageGradientSurface(
+        child: SafeArea(
+          child: ProjectEditSheetPage(
+            projectId: projectId,
+            projectRepository: projectRepository,
+            valueRepository: valueRepository,
+            projectWriteService: projectWriteService,
+          ),
         ),
       ),
     );

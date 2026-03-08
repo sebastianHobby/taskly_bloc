@@ -5022,6 +5022,34 @@
     "@settingsNotificationsSubtitle": {
         "description": "Subtitle for notifications settings entry"
     },
+    "settingsNotificationsPermissionRequiredInline": "Activa las notificaciones para usar este recordatorio.",
+    "@settingsNotificationsPermissionRequiredInline": {
+        "description": "Inline hint shown when reminder toggle depends on notification permission"
+    },
+    "settingsNotificationsUnsupportedTitle": "Notificaciones no disponibles",
+    "@settingsNotificationsUnsupportedTitle": {
+        "description": "Title shown when notifications are not supported on the current platform"
+    },
+    "settingsNotificationsPermissionTitle": "Las notificaciones están desactivadas",
+    "@settingsNotificationsPermissionTitle": {
+        "description": "Title shown when notification permission has been denied"
+    },
+    "settingsNotificationsUnsupportedBody": "Este dispositivo o entorno no admite notificaciones locales para los recordatorios de Taskly.",
+    "@settingsNotificationsUnsupportedBody": {
+        "description": "Body shown when notifications are unsupported"
+    },
+    "settingsNotificationsPermissionBody": "Permite las notificaciones para que Taskly pueda recordarte planificar tu día.",
+    "@settingsNotificationsPermissionBody": {
+        "description": "Body shown when notification permission is denied"
+    },
+    "settingsNotificationsEnableAction": "Activar notificaciones",
+    "@settingsNotificationsEnableAction": {
+        "description": "CTA to request notification permission"
+    },
+    "settingsNotificationsOpenSettingsAction": "Abrir ajustes",
+    "@settingsNotificationsOpenSettingsAction": {
+        "description": "CTA to open OS settings for notification permissions"
+    },
     "settingsPlanMyDayReminderTitle": "Recordatorio de Plan My Day",
     "@settingsPlanMyDayReminderTitle": {
         "description": "Card title for Plan My Day reminder settings"
@@ -5037,6 +5065,38 @@
     "settingsPlanMyDayReminderTimeLabel": "Hora del recordatorio",
     "@settingsPlanMyDayReminderTimeLabel": {
         "description": "Label for selecting Plan My Day reminder time"
+    },
+    "settingsNotificationsPermissionTitle": "Activa las notificaciones",
+    "@settingsNotificationsPermissionTitle": {
+        "description": "Title for the permission panel when notifications are not enabled"
+    },
+    "settingsNotificationsPermissionBody": "Taskly necesita permiso de notificaciones para entregar alertas de recordatorio.",
+    "@settingsNotificationsPermissionBody": {
+        "description": "Body text explaining why notification permission is needed"
+    },
+    "settingsNotificationsEnableAction": "Activar notificaciones",
+    "@settingsNotificationsEnableAction": {
+        "description": "Primary action to request notification permission"
+    },
+    "settingsNotificationsOpenSettingsAction": "Abrir ajustes del sistema",
+    "@settingsNotificationsOpenSettingsAction": {
+        "description": "Secondary action to open the system notification settings"
+    },
+    "settingsNotificationsPermissionRequiredInline": "Las notificaciones deben estar activadas para las alertas de recordatorio.",
+    "@settingsNotificationsPermissionRequiredInline": {
+        "description": "Inline helper text shown when the reminder toggle is on but notifications are blocked"
+    },
+    "settingsNotificationsUnsupportedTitle": "Notificaciones no disponibles",
+    "@settingsNotificationsUnsupportedTitle": {
+        "description": "Title shown when the current platform does not support notifications"
+    },
+    "settingsNotificationsUnsupportedBody": "Las alertas de recordatorio solo estan disponibles en Android y iPhone.",
+    "@settingsNotificationsUnsupportedBody": {
+        "description": "Body shown when the current platform does not support notifications"
+    },
+    "planMyDayReminderNotificationBody": "Abre Taskly para planificar tu dia.",
+    "@planMyDayReminderNotificationBody": {
+        "description": "Notification body for the Plan My Day reminder"
     },
     "settingsLanguageRegionTitle": "Idioma y regin",
     "@settingsLanguageRegionTitle": {
@@ -5251,6 +5311,10 @@
                 "type": "int"
             }
         }
+    },
+    "taskReminderNotificationBody": "Abre Taskly para revisar este recordatorio de tarea.",
+    "@taskReminderNotificationBody": {
+        "description": "Notification body for generic task reminders"
     },
     "priorityP1Label": "P1",
     "@priorityP1Label": {

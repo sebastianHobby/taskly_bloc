@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/widgets/taskly_bottom_sheet.dart';
 import 'package:taskly_ui/taskly_ui_forms.dart';
 import 'package:taskly_ui/taskly_ui_tokens.dart';
 
@@ -72,6 +73,7 @@ Future<T?> _showAsBottomSheet<T>({
   return showModalBottomSheet<T>(
     context: context,
     isScrollControlled: true,
+    sheetAnimationStyle: tasklyBottomSheetAnimationStyle(context),
     showDragHandle: showDragHandle,
     isDismissible: barrierDismissible,
     useSafeArea: useSafeArea,
